@@ -1,0 +1,457 @@
+{
+  "schemaVersion": 1,
+  "generatorVersion": 1,
+  "level": "expert",
+  "count": 20,
+  "puzzles": [
+    {
+      "id": "expert-001",
+      "index": 0,
+      "puzzle": "....3.1....8..6....6...53....1......2.....7..5.421.9....7..3..8..3.72..449..8...3",
+      "solution": "745839162318726459962145387671394825239658741584217936127463598853972614496581273",
+      "givens": 26,
+      "symmetry": "none",
+      "seed": 1529904022,
+      "rating": {
+        "maxCost": 33,
+        "score": 228,
+        "hardest": "w-wing",
+        "counts": {
+          "naked-single": 25,
+          "hidden-single-box": 6,
+          "hidden-single-line": 4,
+          "pointing": 2,
+          "claiming": 3,
+          "hidden-pair": 2,
+          "naked-pair": 1,
+          "xy-wing": 1,
+          "w-wing": 1,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "expert-002",
+      "index": 1,
+      "puzzle": "581....6.....35..29...16...4..57............3.......2..749...3.2..1...4.19..2..57",
+      "solution": "581792364746835912932416578429573186865241793317689425674958231253167849198324657",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 2425241869,
+      "rating": {
+        "maxCost": 30,
+        "score": 141,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 20,
+          "hidden-single-box": 5,
+          "hidden-single-line": 4,
+          "hidden-pair": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-003",
+      "index": 2,
+      "puzzle": ".2...734...4......8..5..........9.7518...2.3..5..6...1....7..24.9.4857...7.6..8..",
+      "solution": "526197348914238657837546192643819275189752436752364981368971524291485763475623819",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 1516850321,
+      "rating": {
+        "maxCost": 30,
+        "score": 131,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 19,
+          "hidden-single-box": 13,
+          "full-house": 20,
+          "hidden-single-line": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-004",
+      "index": 3,
+      "puzzle": "6.2..791...5.....2.9.1.........8....2.......4.89.7.......56.3..5..7.....4...3187.",
+      "solution": "642857913815693742793142658354286197267319584189475236978564321531728469426931875",
+      "givens": 25,
+      "symmetry": "none",
+      "seed": 2389585587,
+      "rating": {
+        "maxCost": 26,
+        "score": 154,
+        "hardest": "skyscraper",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 21,
+          "hidden-single-box": 6,
+          "hidden-single-line": 4,
+          "pointing": 1,
+          "claiming": 1,
+          "hidden-pair": 1,
+          "skyscraper": 1
+        }
+      }
+    },
+    {
+      "id": "expert-005",
+      "index": 4,
+      "puzzle": "....54...54...2.91.97.815...7........51.9......32..........965......8.1.36..1.2..",
+      "solution": "138954726546732891297681534972146385651893472483275169814329657725468913369517248",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 2395848910,
+      "rating": {
+        "maxCost": 30,
+        "score": 151,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 22,
+          "full-house": 19,
+          "hidden-single-box": 12,
+          "hidden-single-line": 1,
+          "pointing": 3,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-006",
+      "index": 5,
+      "puzzle": "..37......5...2.4368.9....1......4.78....42..4..6.5........9.3.9.....86.2...8.7..",
+      "solution": "143756928759812643682943571365298417897134256421675389578469132914327865236581794",
+      "givens": 26,
+      "symmetry": "none",
+      "seed": 746700397,
+      "rating": {
+        "maxCost": 30,
+        "score": 136,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 27,
+          "full-house": 20,
+          "hidden-single-box": 7,
+          "hidden-single-line": 1,
+          "claiming": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-007",
+      "index": 6,
+      "puzzle": ".67.5.92......64.....21..8.3.97...6.61...2.......3...848.1....9.....7.1.9...2.3..",
+      "solution": "167458923892376451543219687359784162618592734724631598485163279236947815971825346",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 2452222697,
+      "rating": {
+        "maxCost": 33,
+        "score": 209,
+        "hardest": "w-wing",
+        "counts": {
+          "naked-single": 13,
+          "hidden-single-box": 19,
+          "hidden-single-line": 2,
+          "pointing": 1,
+          "claiming": 1,
+          "x-wing": 1,
+          "w-wing": 2,
+          "full-house": 19
+        }
+      }
+    },
+    {
+      "id": "expert-008",
+      "index": 7,
+      "puzzle": "6.....1....41..8.38...37.92........15..64.7..793.2........79..6.7.....8.1.8......",
+      "solution": "637982145924165873851437692486793251512648739793521468245879316379216584168354927",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 2995158105,
+      "rating": {
+        "maxCost": 26,
+        "score": 142,
+        "hardest": "skyscraper",
+        "counts": {
+          "hidden-single-box": 24,
+          "naked-single": 11,
+          "full-house": 18,
+          "hidden-single-line": 1,
+          "skyscraper": 1
+        }
+      }
+    },
+    {
+      "id": "expert-009",
+      "index": 8,
+      "puzzle": "........24..93..5..73.15...9...7...5.8.2.9.7....56.....2.....31.3...68....51.3...",
+      "solution": "659487312418932756273615984962378145581249673347561298726894531134756829895123467",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 3435957497,
+      "rating": {
+        "maxCost": 26,
+        "score": 137,
+        "hardest": "skyscraper",
+        "counts": {
+          "naked-single": 13,
+          "hidden-single-box": 19,
+          "full-house": 20,
+          "hidden-single-line": 2,
+          "skyscraper": 1
+        }
+      }
+    },
+    {
+      "id": "expert-010",
+      "index": 9,
+      "puzzle": "4.1...5.3.3...48.28...32.1.7...1.....4..2.9....9....2.264..9....5..........7.....",
+      "solution": "421698573935174862876532419782915346643827951519463728264359187357281694198746235",
+      "givens": 25,
+      "symmetry": "none",
+      "seed": 1051915409,
+      "rating": {
+        "maxCost": 26,
+        "score": 156,
+        "hardest": "skyscraper",
+        "counts": {
+          "hidden-single-box": 18,
+          "naked-single": 12,
+          "full-house": 20,
+          "hidden-single-line": 6,
+          "naked-pair": 1,
+          "skyscraper": 1
+        }
+      }
+    },
+    {
+      "id": "expert-011",
+      "index": 10,
+      "puzzle": ".4..5...7.1..2........6.42.5.......1.......9..92.3...5......17...9..2..6.8.6.43..",
+      "solution": "246358917913427568875961423567849231138275694492136785624583179359712846781694352",
+      "givens": 24,
+      "symmetry": "none",
+      "seed": 784774287,
+      "rating": {
+        "maxCost": 30,
+        "score": 154,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 17,
+          "hidden-single-box": 22,
+          "full-house": 18,
+          "pointing": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-012",
+      "index": 11,
+      "puzzle": "69....73...7.....6.83...2.....2..8......6.3.5..6589.12.24..5.....8....4.3.5...6..",
+      "solution": "691852734257394186483176259549213867812467395736589412124635978968721543375948621",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 4284113043,
+      "rating": {
+        "maxCost": 26,
+        "score": 129,
+        "hardest": "skyscraper",
+        "counts": {
+          "naked-single": 17,
+          "full-house": 20,
+          "hidden-single-box": 15,
+          "hidden-single-line": 1,
+          "skyscraper": 1
+        }
+      }
+    },
+    {
+      "id": "expert-013",
+      "index": 12,
+      "puzzle": "..4.....99.5.437..73.....8.........84..53..72...7.2.....9..4.2.5.89...1.6....85..",
+      "solution": "864175239925843761731296485297461358486539172153782946319654827548927613672318594",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 3649121585,
+      "rating": {
+        "maxCost": 30,
+        "score": 151,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 18,
+          "hidden-single-box": 12,
+          "full-house": 21,
+          "hidden-single-line": 2,
+          "pointing": 2,
+          "naked-pair": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-014",
+      "index": 13,
+      "puzzle": "4.52....8.....15..8.6...2....49.8..77..16........4..3..8.....7..9......4..2...956",
+      "solution": "415293768279681543836574291154938627723165489968742135681459372597326814342817956",
+      "givens": 26,
+      "symmetry": "none",
+      "seed": 3571647942,
+      "rating": {
+        "maxCost": 32,
+        "score": 184,
+        "hardest": "xyz-wing",
+        "counts": {
+          "hidden-single-box": 7,
+          "hidden-single-line": 2,
+          "pointing": 6,
+          "naked-single": 25,
+          "naked-pair": 2,
+          "xyz-wing": 1,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "expert-015",
+      "index": 14,
+      "puzzle": "65.....49.48..265...1...3.8.8...1.....438...23.6....15.694.............6......72.",
+      "solution": "653718249748932651921546378582691437174385962396274815269457183417823596835169724",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 3676003587,
+      "rating": {
+        "maxCost": 33,
+        "score": 141,
+        "hardest": "w-wing",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 21,
+          "hidden-single-box": 7,
+          "naked-pair": 2,
+          "w-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-016",
+      "index": 15,
+      "puzzle": "..4.9..8.2.9........13.65......5.817.6..83........296...8...13...37..6........4.5",
+      "solution": "654297381239518746781346529392654817167983254845172963578469132413725698926831475",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 4036162953,
+      "rating": {
+        "maxCost": 30,
+        "score": 164,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 22,
+          "full-house": 20,
+          "hidden-single-box": 11,
+          "hidden-single-line": 1,
+          "pointing": 3,
+          "claiming": 1,
+          "naked-pair": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-017",
+      "index": 16,
+      "puzzle": "...98..7443..75..19........3......2....25...9.6...3....8.52....1.......2.438.7.1.",
+      "solution": "615982374438675291927314658391748526874256139562193847789521463156439782243867915",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 640909085,
+      "rating": {
+        "maxCost": 30,
+        "score": 150,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 23,
+          "hidden-single-box": 9,
+          "full-house": 20,
+          "hidden-single-line": 2,
+          "pointing": 2,
+          "claiming": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-018",
+      "index": 17,
+      "puzzle": "47.....5.6.189.3..8.5..4..6...68..94......2...8.....3..5.4.1.82..8.7......79.....",
+      "solution": "473216859621895347895734126712683594536149278984527631359461782148372965267958413",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 750011531,
+      "rating": {
+        "maxCost": 30,
+        "score": 151,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 21,
+          "full-house": 21,
+          "hidden-single-box": 11,
+          "pointing": 3,
+          "claiming": 1,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-019",
+      "index": 18,
+      "puzzle": "....3.8.91..6.8..53.89..74..3...4...592......4.1.5....8..4.6..1.....5..8...1..2..",
+      "solution": "246537819179648325358912746637894152592761483481253967823476591914325678765189234",
+      "givens": 28,
+      "symmetry": "none",
+      "seed": 3683634125,
+      "rating": {
+        "maxCost": 30,
+        "score": 145,
+        "hardest": "xy-wing",
+        "counts": {
+          "naked-single": 24,
+          "full-house": 19,
+          "hidden-single-box": 10,
+          "pointing": 3,
+          "xy-wing": 1
+        }
+      }
+    },
+    {
+      "id": "expert-020",
+      "index": 19,
+      "puzzle": "...7.39...9.24..3.5..9..4.86...3.8.23........215..8....2.1...9...4..97.......4...",
+      "solution": "461783925798245136532961478649537812387412659215698347823176594154829763976354281",
+      "givens": 27,
+      "symmetry": "none",
+      "seed": 1727249772,
+      "rating": {
+        "maxCost": 33,
+        "score": 214,
+        "hardest": "w-wing",
+        "counts": {
+          "hidden-single-box": 8,
+          "hidden-single-line": 6,
+          "naked-single": 20,
+          "pointing": 2,
+          "claiming": 3,
+          "full-house": 20,
+          "naked-pair": 1,
+          "xyz-wing": 1,
+          "w-wing": 1
+        }
+      }
+    }
+  ]
+}

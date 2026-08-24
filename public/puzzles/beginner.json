@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 1,
+  "generatorVersion": 1,
+  "level": "beginner",
+  "count": 20,
+  "puzzles": [
+    {
+      "id": "beginner-001",
+      "index": 0,
+      "puzzle": ".98..5...12597...6347....528.4319625.39.6.74.5617423.841....2697...94813...6..57.",
+      "solution": "698425137125973486347186952874319625239568741561742398413857269756294813982631574",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 218737964,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 11
+        }
+      }
+    },
+    {
+      "id": "beginner-002",
+      "index": 1,
+      "puzzle": "9..83741.1.46..3..73....29.526491.373.1.6.5.947.583162.47....81..3..87.4.15974..3",
+      "solution": "962837415154629378738145296526491837381762549479583162247356981693218754815974623",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 155393351,
+      "rating": {
+        "maxCost": 2,
+        "score": 44,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 12
+        }
+      }
+    },
+    {
+      "id": "beginner-003",
+      "index": 2,
+      "puzzle": "837.91..25..82.67....47.31..52.4698161.5.9.4779421.56..79.64....83.52..62..98.134",
+      "solution": "837691452541823679926475318352746981618539247794218563179364825483152796265987134",
+      "givens": 50,
+      "symmetry": "rotational-180",
+      "seed": 1915654110,
+      "rating": {
+        "maxCost": 2,
+        "score": 42,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 11
+        }
+      }
+    },
+    {
+      "id": "beginner-004",
+      "index": 3,
+      "puzzle": "....8.629132..48.79.82..314...46217.8.63195.2.14857...523..67.17.95..463641.3....",
+      "solution": "457183629132694857968275314395462178876319542214857936523946781789521463641738295",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 1605935873,
+      "rating": {
+        "maxCost": 2,
+        "score": 44,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 12
+        }
+      }
+    },
+    {
+      "id": "beginner-005",
+      "index": 4,
+      "puzzle": ".4..59238.854...1..6.718.546541.7829..7...4..2398.457119.342.8..7...614.42857..9.",
+      "solution": "741659238985423617362718954654137829817295463239864571196342785573986142428571396",
+      "givens": 50,
+      "symmetry": "rotational-180",
+      "seed": 3513678656,
+      "rating": {
+        "maxCost": 2,
+        "score": 41,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 10
+        }
+      }
+    },
+    {
+      "id": "beginner-006",
+      "index": 5,
+      "puzzle": "3..5..6.2.6.1248.38246.951.7.8.63.24.9.8.1.5.63.45.9.8.732.64852.5318.6.9.6..5..1",
+      "solution": "319587642567124893824639517758963124492871356631452978173296485245318769986745231",
+      "givens": 50,
+      "symmetry": "rotational-180",
+      "seed": 1313244571,
+      "rating": {
+        "maxCost": 2,
+        "score": 42,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 11,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "beginner-007",
+      "index": 6,
+      "puzzle": "8.27.4965.19..2.8.74.6893.212...845.9...4...1.742...962.1875.43.8.1..57.3574.61.8",
+      "solution": "832714965619352784745689312123968457968547231574231896291875643486123579357496128",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 915627506,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 11,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "beginner-008",
+      "index": 7,
+      "puzzle": ".2.51.8.9..1.694.59.57..31681.69..5..4915726..5..28.94268..15.71.347.6..5.4.86.3.",
+      "solution": "426513879731869425985742316812694753349157268657328194268931547193475682574286931",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 2753444501,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 11,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "beginner-009",
+      "index": 8,
+      "puzzle": ".27.5839..1.69..87..831765.7.1..4...356871249...5..1.8.657498..87..35.6..3928.71.",
+      "solution": "627458391513692487948317652781924536356871249294563178165749823872135964439286715",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 3040193268,
+      "rating": {
+        "maxCost": 2,
+        "score": 44,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 12,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "beginner-010",
+      "index": 9,
+      "puzzle": "2.7...4.1.8623.5.945..1638254..8.7.671..6..259.3.2..1437169..486.5.4819.8.4...6.3",
+      "solution": "237859461186234579459716382542981736718463925963527814371695248625348197894172653",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 2460753199,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 11
+        }
+      }
+    },
+    {
+      "id": "beginner-011",
+      "index": 10,
+      "puzzle": ".9..5.768714.8692..8.97..1.368..9..7471.2.5395..7..186.4..97.5..5283.674137.6..9.",
+      "solution": "293154768714386925685972413368519247471628539529743186846297351952831674137465892",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 2533362921,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 11
+        }
+      }
+    },
+    {
+      "id": "beginner-012",
+      "index": 11,
+      "puzzle": ".24..7195.97..18..8165..472159.64.3.6...7...9.7.39.618731..8926..59..78.9487..35.",
+      "solution": "324687195597241863816539472159864237683172549472395618731458926265913784948726351",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 705991686,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 11,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "beginner-013",
+      "index": 12,
+      "puzzle": ".7.348..95..7928....8156.7.867.2534.1.9.8.7.2.2361.985.1.2396....6571..39..864.2.",
+      "solution": "672348519541792836398156274867925341159483762423617985714239658286571493935864127",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 1103608751,
+      "rating": {
+        "maxCost": 2,
+        "score": 46,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 14,
+          "full-house": 18
+        }
+      }
+    },
+    {
+      "id": "beginner-014",
+      "index": 13,
+      "puzzle": "..98..14..4.71..65..1..49289.73462..612957483..42817.64965..8..87..92.3..23..85..",
+      "solution": "369825147248719365751634928987346251612957483534281796496573812875192634123468579",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 1683048820,
+      "rating": {
+        "maxCost": 2,
+        "score": 45,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 13,
+          "full-house": 19
+        }
+      }
+    },
+    {
+      "id": "beginner-015",
+      "index": 14,
+      "puzzle": "4..1789....8...12..196.5384967..4813.428.367.3817..5422954.173..76...4....4567..8",
+      "solution": "423178965658349127719625384967254813542813679381796542295481736876932451134567298",
+      "givens": 50,
+      "symmetry": "rotational-180",
+      "seed": 2070220125,
+      "rating": {
+        "maxCost": 2,
+        "score": 41,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 10
+        }
+      }
+    },
+    {
+      "id": "beginner-016",
+      "index": 15,
+      "puzzle": "493..8627.1.937..8...246.3.94.5.3762...469...3617.2.45.5.671...7..324.9.1348..276",
+      "solution": "493158627612937458875246139948513762527469813361782945259671384786324591134895276",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 2400726714,
+      "rating": {
+        "maxCost": 2,
+        "score": 45,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 19,
+          "naked-single": 13
+        }
+      }
+    },
+    {
+      "id": "beginner-017",
+      "index": 16,
+      "puzzle": "53871..267.1.6.953..423......39817.58.6.2.1.91.54762......586..389.4.5.265..92384",
+      "solution": "538719426721864953964235871243981765876523149195476238412358697389647512657192384",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 103582147,
+      "rating": {
+        "maxCost": 2,
+        "score": 44,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 12,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "beginner-018",
+      "index": 17,
+      "puzzle": "18...9.2.63412.98.27986.3419.3..2...8.6.3.2.9...9..4.8458.71693.61.98572.9.6...14",
+      "solution": "185349726634127985279865341943582167816734259527916438458271693361498572792653814",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 683022216,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 11
+        }
+      }
+    },
+    {
+      "id": "beginner-019",
+      "index": 18,
+      "puzzle": "..7.25314.1.8..7..356.1...82.578164.849.6.137.719345.21...7.853..8..9.2.52314.9..",
+      "solution": "987625314412893765356417298235781649849562137671934582194276853768359421523148976",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 248791425,
+      "rating": {
+        "maxCost": 2,
+        "score": 44,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 12,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "beginner-020",
+      "index": 19,
+      "puzzle": "87..3.2.514.7528....54.61794.....5969.76143.8628.....45621.39....1867.527.4.2..31",
+      "solution": "876931245149752863235486179413278596957614328628395714562143987391867452784529631",
+      "givens": 49,
+      "symmetry": "rotational-180",
+      "seed": 558509662,
+      "rating": {
+        "maxCost": 2,
+        "score": 43,
+        "hardest": "naked-single",
+        "counts": {
+          "naked-single": 11,
+          "full-house": 21
+        }
+      }
+    }
+  ]
+}

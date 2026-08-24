@@ -5,6 +5,7 @@ import type { Settings, Stats } from '../storage/schema';
 import { Board } from './Board';
 import { CompletionModal } from './CompletionModal';
 import { NumberPad } from './NumberPad';
+import { PrintablePuzzle } from './PrintablePuzzle';
 import { Timer } from './Timer';
 import { Toolbar } from './Toolbar';
 import { useGameSession } from './hooks/useGameSession';
@@ -108,6 +109,10 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
     setHintPreview(step);
   }, [paused, hint]);
 
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
       const target = e.target;
@@ -197,6 +202,14 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         onHint={handleHint}
         paused={paused}
         onTogglePause={() => setPaused((p) => !p)}
+        onPrint={handlePrint}
+      />
+
+      <PrintablePuzzle
+        puzzleId={puzzle.id}
+        level={levelFromPuzzleId(puzzle.id)}
+        puzzleNumber={puzzle.index + 1}
+        givens={puzzle.puzzle}
       />
 
       {showCompletion && (

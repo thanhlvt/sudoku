@@ -12,8 +12,8 @@ export const GENERATOR_VERSION = 1;
 const MAX_ATTEMPTS: Record<Level, number> = {
   beginner: 50,
   easy: 200,
-  medium: 150,
-  hard: 300,
+  medium: 300,
+  hard: 2000,
   expert: 400,
 };
 

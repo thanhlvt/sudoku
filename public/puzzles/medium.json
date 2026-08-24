@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "generatorVersion": 1,
   "level": "medium",
-  "count": 20,
+  "count": 100,
   "puzzles": [
     {
       "id": "medium-001",
@@ -419,6 +419,1695 @@
           "full-house": 20,
           "hidden-single-box": 5,
           "hidden-single-line": 2,
+          "pointing": 3,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-021",
+      "index": 20,
+      "puzzle": "4......79.8.9.73....7...2.8...15248...........54689...9.6...5....83.6.2.74......6",
+      "solution": "463825179285917364197463258679152483821734695354689712936278541518346927742591836",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 806806162,
+      "rating": {
+        "maxCost": 6,
+        "score": 99,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 25,
+          "hidden-single-box": 4,
+          "hidden-single-line": 1,
+          "pointing": 2,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-022",
+      "index": 21,
+      "puzzle": "...2573...6....4.2.....8..9.8..9.6.793.....255.6.1..3.6..1.....1.3....5...7563...",
+      "solution": "849257361765931482312648579284395617931476825576812934658129743193784256427563198",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 2601963692,
+      "rating": {
+        "maxCost": 8,
+        "score": 119,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 15,
+          "full-house": 20,
+          "hidden-single-box": 15,
+          "hidden-single-line": 1,
+          "pointing": 2,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-023",
+      "index": 22,
+      "puzzle": ".31.4.79....312.....2.8.1..78.....16..3...5......9....3.8.5.4.7.9.....8..148.795.",
+      "solution": "831546792975312864642789135789425316123678549456193278368951427597234681214867953",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 3566068951,
+      "rating": {
+        "maxCost": 6,
+        "score": 112,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 21,
+          "naked-single": 8,
+          "hidden-single-line": 2,
+          "pointing": 1,
+          "full-house": 19
+        }
+      }
+    },
+    {
+      "id": "medium-024",
+      "index": 23,
+      "puzzle": "...4.8.1..4.....737....34...36.25..9.71...38.9..38.76...38....768.....2..9.5.7...",
+      "solution": "325478916148956273769213458836725149271694385954381762513842697687139524492567831",
+      "givens": 32,
+      "symmetry": "rotational-180",
+      "seed": 3939493910,
+      "rating": {
+        "maxCost": 6,
+        "score": 99,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 19,
+          "full-house": 21,
+          "hidden-single-box": 8,
+          "hidden-single-line": 1,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-025",
+      "index": 24,
+      "puzzle": ".3.4......6...1837.7.9..4.6..3.9.1...2.....7...7.8.5..7.1..2.9.2951...4......9.1.",
+      "solution": "538476921469521837172938456653297184824615379917384562741852693295163748386749215",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 3892107386,
+      "rating": {
+        "maxCost": 6,
+        "score": 109,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 10,
+          "hidden-single-line": 5,
+          "full-house": 19,
+          "pointing": 1,
+          "naked-single": 17
+        }
+      }
+    },
+    {
+      "id": "medium-026",
+      "index": 25,
+      "puzzle": "1...24.73...1.6..4....3869....3..7..8..247..6..2..9....2471....7..4.5...35.89...7",
+      "solution": "168924573539176284247538691695381742813247956472659138924713865781465329356892417",
+      "givens": 33,
+      "symmetry": "rotational-180",
+      "seed": 747958232,
+      "rating": {
+        "maxCost": 6,
+        "score": 89,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 27,
+          "full-house": 20,
+          "hidden-single-box": 1,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-027",
+      "index": 26,
+      "puzzle": "..8.2.6...73..9.8.5....413..162..9432.......6354..782..359....2.2.4..39...7.3.4..",
+      "solution": "148723659673159284592864137716285943289341576354697821435918762821476395967532418",
+      "givens": 36,
+      "symmetry": "rotational-180",
+      "seed": 3435403722,
+      "rating": {
+        "maxCost": 7,
+        "score": 89,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 18,
+          "full-house": 21,
+          "hidden-single-box": 5,
+          "pointing": 1,
+          "claiming": 1,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-028",
+      "index": 27,
+      "puzzle": ".9..3..7.86.7.2.59.251.943..8.4.5.6.2..897..1.1.....9.1.......5............6.4...",
+      "solution": "491536872863742159725189436987415263236897541514263798149378625672951384358624917",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1777103776,
+      "rating": {
+        "maxCost": 6,
+        "score": 106,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 18,
+          "full-house": 21,
+          "hidden-single-box": 11,
+          "hidden-single-line": 1,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-029",
+      "index": 28,
+      "puzzle": "2......8..1.5.9...6...4..51....56.121..2.4..676.98....98..3...4...1.5.7..7......9",
+      "solution": "254617983318529647697843251849356712135274896762981435981732564426195378573468129",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 210611452,
+      "rating": {
+        "maxCost": 8,
+        "score": 121,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 19,
+          "hidden-single-box": 15,
+          "hidden-single-line": 1,
+          "pointing": 1,
+          "claiming": 1,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-030",
+      "index": 29,
+      "puzzle": ".8..436...64..17.3.....61....3....7.4..3.9..8.2....3....59.....7.61..45...265..1.",
+      "solution": "581743629264591783379286145913862574457319268628475391145927836796138452832654917",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 3329855510,
+      "rating": {
+        "maxCost": 6,
+        "score": 101,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 8,
+          "naked-single": 22,
+          "full-house": 21,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-031",
+      "index": 30,
+      "puzzle": ".1.....8...8.1.7.....852...1.65.39.45..9.7..1.4.....5...1...2.....395...7.4.2.5.8",
+      "solution": "615739482238614795479852316126583974583947621947261853351478269862395147794126538",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 2103411683,
+      "rating": {
+        "maxCost": 8,
+        "score": 96,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 21,
+          "hidden-single-box": 3,
+          "hidden-single-line": 2,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-032",
+      "index": 31,
+      "puzzle": ".6..2..59.9...728..28359.6..1......8...275...3......9..4.76391..365...2.95..4..3.",
+      "solution": "761824359593617284428359761214936578689275143375481692842763915136598427957142836",
+      "givens": 35,
+      "symmetry": "rotational-180",
+      "seed": 2858021111,
+      "rating": {
+        "maxCost": 6,
+        "score": 88,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 17,
+          "full-house": 21,
+          "hidden-single-box": 5,
+          "hidden-single-line": 3,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-033",
+      "index": 32,
+      "puzzle": ".1...35...5378..166.7....9.49..786......4......693..47.7....1.334..2176...13...8.",
+      "solution": "814693572953782416627514398495278631732146859186935247578469123349821765261357984",
+      "givens": 35,
+      "symmetry": "rotational-180",
+      "seed": 210834878,
+      "rating": {
+        "maxCost": 6,
+        "score": 105,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 10,
+          "hidden-single-line": 3,
+          "naked-single": 12,
+          "pointing": 3,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-034",
+      "index": 33,
+      "puzzle": ".5....8..3...7..9..29..5....756..9.39..258..76.8..952....1..45..9..2...1..1....3.",
+      "solution": "157396842386472195429815376275641983934258617618739524762183459893524761541967238",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 3159878689,
+      "rating": {
+        "maxCost": 6,
+        "score": 104,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 23,
+          "full-house": 19,
+          "hidden-single-box": 5,
+          "hidden-single-line": 3,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-035",
+      "index": 34,
+      "puzzle": "2.6.4.8.35.36879.17.8.1.5.68.41527.9...3.8......794....5.....3....9.6......825...",
+      "solution": "216549873543687921798213546834152769927368415165794382659471238482936157371825694",
+      "givens": 36,
+      "symmetry": "mirror-vertical",
+      "seed": 661604584,
+      "rating": {
+        "maxCost": 6,
+        "score": 82,
+        "hardest": "pointing",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 17,
+          "hidden-single-box": 7,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-036",
+      "index": 35,
+      "puzzle": "..39156...........9.......7.2934675.4.7...1.6.........7..4.1..3..16924...6.7.3.9.",
+      "solution": "273915684648237519915864327129346758487529136356178942792451863831692475564783291",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 1737487055,
+      "rating": {
+        "maxCost": 6,
+        "score": 103,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 21,
+          "hidden-single-box": 6,
+          "hidden-single-line": 3,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-037",
+      "index": 36,
+      "puzzle": "...6.7.....6.4.3...9.5.8.2...27.59...5.....6.38.962.5126.....944.......2.38...67.",
+      "solution": "843627519526149387791538426612785943957413268384962751265371894479856132138294675",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 1931431911,
+      "rating": {
+        "maxCost": 8,
+        "score": 116,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 16,
+          "hidden-single-box": 11,
+          "pointing": 3,
+          "hidden-single-line": 1,
+          "naked-pair": 1,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-038",
+      "index": 37,
+      "puzzle": "...4...537....8.624.....78..4..7.6...6.3.9.1...2.5..9..75.....639.7....881...6...",
+      "solution": "681427953753918462429563781948172635567389214132654897275891346396745128814236579",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 1662407039,
+      "rating": {
+        "maxCost": 8,
+        "score": 94,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 21,
+          "hidden-single-box": 5,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-039",
+      "index": 38,
+      "puzzle": ".........8...127..12476....3.2...67...51.64...46...9.5....21387..849...6.........",
+      "solution": "567349821893512764124768593312954678985176432746283915459621387238497156671835249",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 1307042519,
+      "rating": {
+        "maxCost": 8,
+        "score": 111,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 20,
+          "hidden-single-box": 5,
+          "hidden-single-line": 1,
+          "pointing": 1,
+          "naked-pair": 2
+        }
+      }
+    },
+    {
+      "id": "medium-040",
+      "index": 39,
+      "puzzle": "..94617.....753.......9.....1.....4.967...532...526...682.7.4193.......6..4.1.3..",
+      "solution": "859461723126753894743298165215937648967184532438526971682375419371849256594612387",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 3401090846,
+      "rating": {
+        "maxCost": 6,
+        "score": 96,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 23,
+          "full-house": 20,
+          "hidden-single-box": 6,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-041",
+      "index": 40,
+      "puzzle": "....4....5..236..16.......415.7.3.2884..1..39.798.415..........96.....43..8...2..",
+      "solution": "791548362584236971623971584156793428842615739379824156235489617967152843418367295",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 1231925646,
+      "rating": {
+        "maxCost": 6,
+        "score": 95,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 21,
+          "hidden-single-box": 8,
+          "hidden-single-line": 1,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-042",
+      "index": 41,
+      "puzzle": ".1.2..63.8.69..7....5.71...194..2...............5..294...15.9....1..95.3.69..4.2.",
+      "solution": "417285639826943751935671482194362875258497316673518294382156947741829563569734128",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 2533042828,
+      "rating": {
+        "maxCost": 6,
+        "score": 114,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 16,
+          "hidden-single-box": 13,
+          "pointing": 3,
+          "hidden-single-line": 1,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-043",
+      "index": 42,
+      "puzzle": ".........39.....845..364..76.75.81.948..9..72..5...8..2..917..8....8.....7.....2.",
+      "solution": "764829315392751684518364297627548139481693572935172846253917468149286753876435921",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 3510613527,
+      "rating": {
+        "maxCost": 6,
+        "score": 104,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 8,
+          "naked-single": 22,
+          "full-house": 20,
+          "pointing": 2,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-044",
+      "index": 43,
+      "puzzle": ".5.62.978.........9...8.25..49.51...6.......5...74.31..68.7...2.........235.19.4.",
+      "solution": "153624978824597631976183254349251867617938425582746319468375192791462583235819746",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 2260018839,
+      "rating": {
+        "maxCost": 7,
+        "score": 110,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 18,
+          "full-house": 20,
+          "hidden-single-box": 11,
+          "hidden-single-line": 2,
+          "pointing": 1,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-045",
+      "index": 44,
+      "puzzle": "9.......2...324....2..9..6.....1......15894...93.4.58.46.1.2.59....3......94.67..",
+      "solution": "937865142186324975524791863845613297271589436693247581468172359752938614319456728",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 2234021869,
+      "rating": {
+        "maxCost": 8,
+        "score": 97,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 24,
+          "full-house": 20,
+          "hidden-single-box": 7,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-046",
+      "index": 45,
+      "puzzle": ".........6.3...9.7.24...83.835...124.1..4..6.46.....989..1.6..3...7.9....8..2..7.",
+      "solution": "798463512653812947124975836835697124219348765467251398972186453546739281381524679",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 3602432244,
+      "rating": {
+        "maxCost": 6,
+        "score": 110,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 26,
+          "full-house": 21,
+          "hidden-single-box": 3,
+          "pointing": 4,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-047",
+      "index": 46,
+      "puzzle": "8.6.2.5.154..1..86.9.....3..6..5..7....643...1..9.8..568.....52.........4..2.6..9",
+      "solution": "836724591547319286291865437368152974759643128124978365683491752912587643475236819",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1893057247,
+      "rating": {
+        "maxCost": 6,
+        "score": 103,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 21,
+          "hidden-single-box": 10,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-048",
+      "index": 47,
+      "puzzle": "3.9.7.2.67...9...56...4...7..76.23..2..489..1...317...9...2...387.....42.2.864.7.",
+      "solution": "349578216718296435652143987187652394235489761496317528964721853871935642523864179",
+      "givens": 35,
+      "symmetry": "mirror-vertical",
+      "seed": 1463354016,
+      "rating": {
+        "maxCost": 7,
+        "score": 101,
+        "hardest": "claiming",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 11,
+          "hidden-single-box": 14,
+          "pointing": 1,
+          "claiming": 1,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-049",
+      "index": 48,
+      "puzzle": "928..3654..5.9..1...6..8..9.5..36......2.7......91..6.5..7..1...7..5.9..8143..275",
+      "solution": "928173654745692318136548729251436897469287531387915462593724186672851943814369275",
+      "givens": 34,
+      "symmetry": "rotational-180",
+      "seed": 35467064,
+      "rating": {
+        "maxCost": 8,
+        "score": 115,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 21,
+          "hidden-single-box": 10,
+          "pointing": 4,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-050",
+      "index": 49,
+      "puzzle": "..1.7.5..6...4...8.45...92..6.432.7..8..6..9..73...26.7.......2.1..2..8...87.63..",
+      "solution": "931278546627945138845613927169432875582167493473859261794381652316524789258796314",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 3129259198,
+      "rating": {
+        "maxCost": 6,
+        "score": 94,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 22,
+          "hidden-single-box": 8,
+          "full-house": 20,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-051",
+      "index": 50,
+      "puzzle": ".41...72..36...98...9.5.4....4...8...732.659.9...4...6..58742....7.1.6.....569...",
+      "solution": "841693725536427981729158463654931872173286594982745136365874219497312658218569347",
+      "givens": 33,
+      "symmetry": "mirror-vertical",
+      "seed": 3920834774,
+      "rating": {
+        "maxCost": 6,
+        "score": 95,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 20,
+          "hidden-single-box": 11,
+          "hidden-single-line": 1,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-052",
+      "index": 51,
+      "puzzle": ".5...2..8..93.456..2..5..9.8.5.3.......561.......4.9.7.1..2..7..734.56..4..7...8.",
+      "solution": "356192748189374562724856193845937216297561834631248957518623479973485621462719385",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 687394492,
+      "rating": {
+        "maxCost": 6,
+        "score": 91,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 23,
+          "full-house": 21,
+          "hidden-single-box": 6,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-053",
+      "index": 52,
+      "puzzle": "7..2.9..4....1....4.3.7.5.2.........3...6...987..2..616...4...5.8.753.4.5.7.9.2.3",
+      "solution": "758239614296514738413678592965381427321467859874925361639842175182753946547196283",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 2393780516,
+      "rating": {
+        "maxCost": 8,
+        "score": 114,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 24,
+          "hidden-single-box": 6,
+          "pointing": 1,
+          "naked-pair": 1,
+          "claiming": 2,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "medium-054",
+      "index": 53,
+      "puzzle": "...596....9..7..2...73249....47318...3.....4....645...1..2.9..3.6..1..5.2.9...7.1",
+      "solution": "412596378396178524587324916654731892731982645928645137175269483863417259249853761",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 1397927419,
+      "rating": {
+        "maxCost": 6,
+        "score": 99,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 20,
+          "hidden-single-box": 9,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-055",
+      "index": 54,
+      "puzzle": "..71.23............92...68..2983546..7.6.1.3.36..9..28...3.4....4.2.8.7.....1....",
+      "solution": "687152394413986752592743681129835467874621935365497128256374819941268573738519246",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 3347856090,
+      "rating": {
+        "maxCost": 6,
+        "score": 99,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 17,
+          "full-house": 21,
+          "hidden-single-box": 10,
+          "hidden-single-line": 2,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-056",
+      "index": 55,
+      "puzzle": "26..3..48..........5.6.8.3..7..1..6..8.9.3.1...5...4...4.....5.5.62819.49...6...1",
+      "solution": "261739548893154627754628139479512863682943715315876492148397256536281974927465381",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1605299777,
+      "rating": {
+        "maxCost": 8,
+        "score": 109,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 26,
+          "full-house": 20,
+          "hidden-single-box": 5,
+          "pointing": 1,
+          "naked-pair": 2
+        }
+      }
+    },
+    {
+      "id": "medium-057",
+      "index": 56,
+      "puzzle": "..4...5..5...9...8.1..4..9...3.1.8......6.....5.9.2.3.16.437.85.3865912.9..1.8..3",
+      "solution": "394876512526391748817245396273514869489763251651982437162437985738659124945128673",
+      "givens": 34,
+      "symmetry": "mirror-vertical",
+      "seed": 977736548,
+      "rating": {
+        "maxCost": 7,
+        "score": 105,
+        "hardest": "claiming",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 16,
+          "hidden-single-box": 10,
+          "hidden-single-line": 1,
+          "pointing": 2,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-058",
+      "index": 57,
+      "puzzle": "...9.8...94.....75..8...3.....325...25.....367...1...84.9.8.6.3.8754319..1.....8.",
+      "solution": "536978241942136875178452369864325917251897436793614528429781653687543192315269784",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 4048727341,
+      "rating": {
+        "maxCost": 7,
+        "score": 132,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 20,
+          "hidden-single-box": 10,
+          "hidden-single-line": 3,
+          "pointing": 4,
+          "claiming": 2
+        }
+      }
+    },
+    {
+      "id": "medium-059",
+      "index": 58,
+      "puzzle": "..1.4.6...2.....84...89215.2......35..4.2.7..15......6.18934...37.....6...2.6.3..",
+      "solution": "981745623725613984463892157296471835834526719157389246618934572379258461542167398",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 3547931531,
+      "rating": {
+        "maxCost": 6,
+        "score": 127,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "hidden-single-box": 6,
+          "hidden-single-line": 3,
+          "full-house": 21,
+          "pointing": 6
+        }
+      }
+    },
+    {
+      "id": "medium-060",
+      "index": 59,
+      "puzzle": "2.6.1.3........69.7....6..2.85..2..742.....166..4..52.3..6....1.12........7.4.2.5",
+      "solution": "296815374531274698748936152185362947423597816679481523354629781812753469967148235",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 2725062205,
+      "rating": {
+        "maxCost": 6,
+        "score": 98,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 9,
+          "pointing": 1,
+          "hidden-single-line": 1,
+          "naked-single": 20,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-061",
+      "index": 60,
+      "puzzle": ".3.....6.....5....1..469..2..........9683174..4.7.2.3.4..673..9..3.8.2...8.214.7.",
+      "solution": "934128567628357491157469382371546928296831745845792136412673859763985214589214673",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 2171339391,
+      "rating": {
+        "maxCost": 6,
+        "score": 94,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 18,
+          "full-house": 21,
+          "hidden-single-box": 9,
+          "pointing": 1,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-062",
+      "index": 61,
+      "puzzle": "...364.....2.1.4..4.5.9.3.8.58...73.74..5..82....7.....3.189.5...7...9...2.....4.",
+      "solution": "871364529392815476465297318958621734746953182213478695634189257187542963529736841",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 583134629,
+      "rating": {
+        "maxCost": 8,
+        "score": 127,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 22,
+          "full-house": 21,
+          "hidden-single-box": 4,
+          "hidden-single-line": 4,
+          "pointing": 2,
+          "claiming": 2,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-063",
+      "index": 62,
+      "puzzle": ".7.4.9.2.9..1.5..4.48.7.93.4.5...1.9....6.....3..9..5...32.64..6..7.3..2....4....",
+      "solution": "371489526962135784548672931485327169729561348136894257893216475614753892257948613",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 2298426686,
+      "rating": {
+        "maxCost": 8,
+        "score": 111,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 22,
+          "full-house": 21,
+          "hidden-single-box": 6,
+          "hidden-single-line": 2,
+          "pointing": 2,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-064",
+      "index": 63,
+      "puzzle": ".5.126.9.....3.....6.4.9.7.987...5346..948..11.......9.94...35...........7..5..4.",
+      "solution": "758126493419735268263489175987261534635948721142573689894617352526394817371852946",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1179848656,
+      "rating": {
+        "maxCost": 6,
+        "score": 104,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 21,
+          "full-house": 21,
+          "hidden-single-box": 7,
+          "hidden-single-line": 2,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-065",
+      "index": 64,
+      "puzzle": "....9....321...769.47.2.85...8...4.....7.6...4..589..1..54183..1..275..4....6....",
+      "solution": "856397142321854769947621853678132495519746238432589671795418326163275984284963517",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 3474411673,
+      "rating": {
+        "maxCost": 6,
+        "score": 88,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 20,
+          "hidden-single-box": 4,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-066",
+      "index": 65,
+      "puzzle": "26.....98.54...67.9.12674.3..5.3.2..6...8...4...4.5....26...84....1.6...1.......9",
+      "solution": "267354198354891672981267453415639287639782514872415936526973841798146325143528769",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 607723639,
+      "rating": {
+        "maxCost": 6,
+        "score": 104,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 19,
+          "hidden-single-box": 11,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-067",
+      "index": 66,
+      "puzzle": "..42.18....8.3.4..67.....128.......5.6.....2..5.392.8..86.4.53.3...2...8.4..8..7.",
+      "solution": "594271863128936457673458912832764195769815324451392786286147539317529648945683271",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 1096720108,
+      "rating": {
+        "maxCost": 6,
+        "score": 100,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 20,
+          "hidden-single-box": 9,
+          "full-house": 21,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-068",
+      "index": 67,
+      "puzzle": "....4....4...3...6.3.6.9.8..9.4.5.6...67921....58634......8....3.42.69.7.6.....2.",
+      "solution": "629548731458137296137629584793415862846792153215863479972381645384256917561974328",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 3280861458,
+      "rating": {
+        "maxCost": 6,
+        "score": 99,
+        "hardest": "pointing",
+        "counts": {
+          "full-house": 20,
+          "naked-single": 20,
+          "hidden-single-box": 7,
+          "hidden-single-line": 3,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-069",
+      "index": 68,
+      "puzzle": "54..8..61.6894275..2.6.1.4..8.3.4.9..1.....8.7...9...2.91...43...5...8...........",
+      "solution": "549783261168942753327651948286314597913527684754896312691278435475139826832465179",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 1722989032,
+      "rating": {
+        "maxCost": 7,
+        "score": 100,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 20,
+          "full-house": 19,
+          "hidden-single-box": 10,
+          "hidden-single-line": 1,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-070",
+      "index": 69,
+      "puzzle": "9.5...1.....253..6.64......5....9.6.497.8.312.8.1....7......27.1..872.....2...4.9",
+      "solution": "925647138871253946364918725513729864497586312286134597638495271149872653752361489",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 3955583707,
+      "rating": {
+        "maxCost": 6,
+        "score": 102,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 18,
+          "hidden-single-box": 11,
+          "hidden-single-line": 2,
+          "full-house": 19,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-071",
+      "index": 70,
+      "puzzle": "6..2.1..5.........2..3.5..1...9.3....387.245..6.....7.75.136.92.1..2..3....4.9...",
+      "solution": "643291785591678243287345961475963128938712456162854379754136892819527634326489517",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 926687007,
+      "rating": {
+        "maxCost": 7,
+        "score": 95,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 25,
+          "full-house": 21,
+          "hidden-single-box": 3,
+          "hidden-single-line": 2,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-072",
+      "index": 71,
+      "puzzle": "8...7...3.3.829.5...74.38....8...5......8....419...3825.31.26.8...745...7.1...9.5",
+      "solution": "892576413134829756657413829278931564365284197419657382543192678986745231721368945",
+      "givens": 34,
+      "symmetry": "mirror-vertical",
+      "seed": 2294391309,
+      "rating": {
+        "maxCost": 7,
+        "score": 92,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 22,
+          "full-house": 21,
+          "hidden-single-box": 2,
+          "hidden-single-line": 2,
+          "pointing": 1,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-073",
+      "index": 72,
+      "puzzle": "7.5..21..9...7..8....58......87.6...5.12986.3...3.19......25....7..1...4..98..2.1",
+      "solution": "785632149926174385134589726398756412541298673267341958613425897872913564459867231",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 1903123321,
+      "rating": {
+        "maxCost": 6,
+        "score": 100,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 21,
+          "hidden-single-box": 11,
+          "hidden-single-line": 2,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-074",
+      "index": 73,
+      "puzzle": "4.27..........37..57....23..6529..7...4.5.1...8..3165..51....26..98..........58.7",
+      "solution": "432786591918523764576149238165298473394657182287431659851374926749862315623915847",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 2974690213,
+      "rating": {
+        "maxCost": 6,
+        "score": 101,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 21,
+          "full-house": 20,
+          "hidden-single-box": 9,
+          "pointing": 2
+        }
+      }
+    },
+    {
+      "id": "medium-075",
+      "index": 74,
+      "puzzle": ".6.3.45.....61.479....57...4.3...1....2.7.9....5...6.2...72....137.46.....61.8.4.",
+      "solution": "769384521358612479241957863493265187612873954875491632584729316137546298926138745",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 456811837,
+      "rating": {
+        "maxCost": 6,
+        "score": 111,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 16,
+          "full-house": 21,
+          "hidden-single-box": 12,
+          "hidden-single-line": 1,
+          "pointing": 3
+        }
+      }
+    },
+    {
+      "id": "medium-076",
+      "index": 75,
+      "puzzle": ".6.1.5.4.....6......8.3.1..5.......482.674.51..7...9...7.8.3.1..8..4..7.43.....85",
+      "solution": "263195847194768532758432196516389724829674351347251968675823419981546273432917685",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1308346701,
+      "rating": {
+        "maxCost": 8,
+        "score": 115,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 15,
+          "full-house": 19,
+          "hidden-single-box": 17,
+          "claiming": 1,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-077",
+      "index": 76,
+      "puzzle": "...746...8..321..6..2.9.4...2..3..6.....8....1.64752.9..1...6...6.....9.579...123",
+      "solution": "953746812847321956612598437428139765795682341136475289281953674364217598579864123",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 578915303,
+      "rating": {
+        "maxCost": 8,
+        "score": 95,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 24,
+          "full-house": 21,
+          "hidden-single-box": 4,
+          "pointing": 1,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-078",
+      "index": 77,
+      "puzzle": ".63.9.18.4...6...3.981.367.35.....418.......5..4...8...47.1.23....3.2......7.9...",
+      "solution": "563497182471268593298153674359826741816974325724531869947615238685342917132789456",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 26271225,
+      "rating": {
+        "maxCost": 6,
+        "score": 127,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 7,
+          "pointing": 6,
+          "hidden-single-line": 2,
+          "naked-single": 21,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "medium-079",
+      "index": 78,
+      "puzzle": ".14.3..2...5769.4...6.....58.9..7.5.....9.....6.2..9.76.....5...9.5234...5..7.29.",
+      "solution": "714835629235769148986142735829617354571394862463258917642981573197523486358476291",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 2442332060,
+      "rating": {
+        "maxCost": 10,
+        "score": 129,
+        "hardest": "hidden-pair",
+        "counts": {
+          "naked-single": 14,
+          "hidden-single-box": 11,
+          "full-house": 20,
+          "hidden-single-line": 5,
+          "pointing": 3,
+          "hidden-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-080",
+      "index": 79,
+      "puzzle": "7...5...6.9.....4..6.941.5...8...4..9.......245.7.6.89....7....3.9.6.5.41.6.3.7.8",
+      "solution": "724853916591627843863941257618392475937584162452716389285479631379168524146235798",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 3424147822,
+      "rating": {
+        "maxCost": 6,
+        "score": 104,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 9,
+          "hidden-single-line": 2,
+          "pointing": 2,
+          "full-house": 21,
+          "naked-single": 18
+        }
+      }
+    },
+    {
+      "id": "medium-081",
+      "index": 80,
+      "puzzle": "..83269..52.847.633...9...7.3.....7.6...1...2..79.25....3...7....41.98...5.....4.",
+      "solution": "178326954529847163346591287932485671685713492417962538893254716764139825251678349",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 2178254899,
+      "rating": {
+        "maxCost": 8,
+        "score": 99,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 27,
+          "full-house": 19,
+          "hidden-single-box": 2,
+          "hidden-single-line": 1,
+          "naked-pair": 2
+        }
+      }
+    },
+    {
+      "id": "medium-082",
+      "index": 81,
+      "puzzle": "....6....12.3.5.46.57...23....142...2...3...8.7..5..2.54.8.3.72...5.4.....9...3..",
+      "solution": "493261785128375946657489231385142697264937518971658423546893172732514869819726354",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 2637458112,
+      "rating": {
+        "maxCost": 6,
+        "score": 107,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 18,
+          "hidden-single-box": 10,
+          "pointing": 2,
+          "hidden-single-line": 2,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-083",
+      "index": 82,
+      "puzzle": ".17.3.5.26...5.91..58.........41.8.6.........8.4.69.........63..36.7...42.1.4.75.",
+      "solution": "917836542623754918458192367392415876165287493874369125749528631536971284281643759",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 171045429,
+      "rating": {
+        "maxCost": 6,
+        "score": 102,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 7,
+          "pointing": 2,
+          "naked-single": 25,
+          "full-house": 19
+        }
+      }
+    },
+    {
+      "id": "medium-084",
+      "index": 83,
+      "puzzle": "28...3.5...6.2..4.45...82....824.....2.....6.....591....57...31.1..3.7...7.6...24",
+      "solution": "281473956936125847457968213198246375523817469764359182845792631612534798379681524",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 3353649722,
+      "rating": {
+        "maxCost": 6,
+        "score": 112,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 12,
+          "naked-single": 16,
+          "hidden-single-line": 3,
+          "pointing": 2,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "medium-085",
+      "index": 84,
+      "puzzle": "..3.5.7.....3.9......287....19.3.42..84.2.51.625.1.37819.....35...........81739..",
+      "solution": "863451792572369841941287653719835426384726519625914378197648235436592187258173964",
+      "givens": 34,
+      "symmetry": "mirror-vertical",
+      "seed": 1383996682,
+      "rating": {
+        "maxCost": 8,
+        "score": 109,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 18,
+          "full-house": 21,
+          "hidden-single-box": 8,
+          "pointing": 1,
+          "claiming": 2,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-086",
+      "index": 85,
+      "puzzle": "125.8.964..71.95..9...6...1.59.3.61...6...4..8.......5614.5.8735..376..9....1....",
+      "solution": "125783964367149528948265731459837612236591487871624395614952873582376149793418256",
+      "givens": 36,
+      "symmetry": "mirror-vertical",
+      "seed": 281914352,
+      "rating": {
+        "maxCost": 8,
+        "score": 91,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 17,
+          "full-house": 21,
+          "hidden-single-box": 6,
+          "pointing": 1,
+          "naked-pair": 1,
+          "hidden-single-line": 1
+        }
+      }
+    },
+    {
+      "id": "medium-087",
+      "index": 86,
+      "puzzle": ".8.5.3.2.2.74198.5.........9.......2.4.3.2.8.8.26.74.15...3...83.......76..2.1..3",
+      "solution": "486573129237419865195826374963148752741352986852697431529734618318965247674281593",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 2992922632,
+      "rating": {
+        "maxCost": 10,
+        "score": 134,
+        "hardest": "hidden-pair",
+        "counts": {
+          "hidden-single-box": 6,
+          "hidden-single-line": 1,
+          "pointing": 5,
+          "naked-pair": 1,
+          "hidden-pair": 1,
+          "naked-single": 22,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "medium-088",
+      "index": 87,
+      "puzzle": "..47896...........19.3.6.78..96.47....85719...........5.7...1.2...952....2..6..5.",
+      "solution": "234789615876215439195346278359624781648571923712893546567438192481952367923167854",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 309428660,
+      "rating": {
+        "maxCost": 8,
+        "score": 121,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 23,
+          "hidden-single-box": 7,
+          "full-house": 20,
+          "hidden-single-line": 1,
+          "naked-pair": 3,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-089",
+      "index": 88,
+      "puzzle": ".8.519.3.....4......72638...49.3.58...59841.....6.5...8.6...4.7...1.6...7...5...3",
+      "solution": "682519734593847621417263895249731586365984172178625349856392417934176258721458963",
+      "givens": 32,
+      "symmetry": "mirror-vertical",
+      "seed": 1136535134,
+      "rating": {
+        "maxCost": 6,
+        "score": 100,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 23,
+          "full-house": 21,
+          "hidden-single-box": 5,
+          "pointing": 3
+        }
+      }
+    },
+    {
+      "id": "medium-090",
+      "index": 89,
+      "puzzle": "............948...6...3...8..45.13....3.7.1...15.2.79....253.....7...2...2819763.",
+      "solution": "589612473732948561641735928974561382263879154815324796196253847357486219428197635",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 2115541324,
+      "rating": {
+        "maxCost": 8,
+        "score": 134,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 21,
+          "hidden-single-box": 8,
+          "hidden-single-line": 2,
+          "pointing": 3,
+          "claiming": 2,
+          "naked-pair": 1,
+          "full-house": 20
+        }
+      }
+    },
+    {
+      "id": "medium-091",
+      "index": 90,
+      "puzzle": ".3...4.71....5..2.95...18.4.435.....8...1...5.....864.2.81...57.7..9....51.2...8.",
+      "solution": "632984571481657329957321864743562198826419735195738642268143957374895216519276483",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 2968339639,
+      "rating": {
+        "maxCost": 7,
+        "score": 104,
+        "hardest": "claiming",
+        "counts": {
+          "naked-single": 19,
+          "full-house": 21,
+          "hidden-single-box": 8,
+          "hidden-single-line": 2,
+          "pointing": 1,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-092",
+      "index": 91,
+      "puzzle": "6.3.9.8.1..92.16...4..6..2..........8.4.5.2.69.6.3.1.84.......2..5...3....83.95..",
+      "solution": "623795841789241653541863729372186495814957236956432178437518962195624387268379514",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 1239031204,
+      "rating": {
+        "maxCost": 8,
+        "score": 120,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 20,
+          "hidden-single-box": 10,
+          "full-house": 20,
+          "hidden-single-line": 1,
+          "pointing": 3,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-093",
+      "index": 92,
+      "puzzle": ".58...41...6...2..42.....59.6.7.5.4..74.1.86..........3.7.9.6.4..21.63..6...2...1",
+      "solution": "758239416196457238423861759269785143574913862831642597317598624942176385685324971",
+      "givens": 31,
+      "symmetry": "mirror-vertical",
+      "seed": 4064595659,
+      "rating": {
+        "maxCost": 6,
+        "score": 92,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 24,
+          "full-house": 20,
+          "hidden-single-box": 6,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-094",
+      "index": 93,
+      "puzzle": "1.3..9....6.5.2..4...7..9...9...1.65..84752..25.9...4...2..8...9..3.7.1....6..3.7",
+      "solution": "173849652869532174425716983394281765618475239257963841732158496946327518581694327",
+      "givens": 31,
+      "symmetry": "rotational-180",
+      "seed": 3374279208,
+      "rating": {
+        "maxCost": 8,
+        "score": 110,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 26,
+          "full-house": 21,
+          "hidden-single-box": 2,
+          "hidden-single-line": 1,
+          "pointing": 2,
+          "claiming": 1,
+          "naked-pair": 1
+        }
+      }
+    },
+    {
+      "id": "medium-095",
+      "index": 94,
+      "puzzle": "5.2..9.....926.....6...7.4...5.34....265.143....87.6...8.1...7.....861.....7..8.6",
+      "solution": "532419768749268513168357942975634281826591437413872695684125379357986124291743856",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 922265770,
+      "rating": {
+        "maxCost": 6,
+        "score": 96,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 24,
+          "full-house": 21,
+          "hidden-single-box": 3,
+          "hidden-single-line": 3,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-096",
+      "index": 95,
+      "puzzle": "..37.91.....186.......4.............719.5.24684.6.1.73.2..3..1..6.....9...15.48..",
+      "solution": "453729168297186354186345729635472981719853246842691573524938617368217495971564832",
+      "givens": 30,
+      "symmetry": "mirror-vertical",
+      "seed": 3078506164,
+      "rating": {
+        "maxCost": 6,
+        "score": 92,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 26,
+          "full-house": 21,
+          "hidden-single-box": 3,
+          "hidden-single-line": 1,
+          "pointing": 1
+        }
+      }
+    },
+    {
+      "id": "medium-097",
+      "index": 96,
+      "puzzle": "7..93..1..1.4.......6.15..42.....3.51.53.74.86.3.....78..24.7.......8.4..2..93..1",
+      "solution": "754932816312486579986715234278164395195327468643859127869241753531678942427593681",
+      "givens": 32,
+      "symmetry": "rotational-180",
+      "seed": 1899596092,
+      "rating": {
+        "maxCost": 6,
+        "score": 95,
+        "hardest": "pointing",
+        "counts": {
+          "naked-single": 19,
+          "hidden-single-box": 6,
+          "hidden-single-line": 3,
+          "pointing": 1,
+          "full-house": 21
+        }
+      }
+    },
+    {
+      "id": "medium-098",
+      "index": 97,
+      "puzzle": "..61.37....36752...1742963...25618..6.17389.5....4....3...5...1....9.......3.6...",
+      "solution": "296183754483675219517429638932561847641738925758942163369257481125894376874316592",
+      "givens": 35,
+      "symmetry": "mirror-vertical",
+      "seed": 4163292309,
+      "rating": {
+        "maxCost": 7,
+        "score": 89,
+        "hardest": "claiming",
+        "counts": {
+          "full-house": 21,
+          "naked-single": 18,
+          "hidden-single-box": 3,
+          "hidden-single-line": 4,
+          "claiming": 1
+        }
+      }
+    },
+    {
+      "id": "medium-099",
+      "index": 98,
+      "puzzle": "5..691..412..7..869...4...5.5.8.6.9.36..1..58...........5.8.4..6..154..9.41...53.",
+      "solution": "583691724124573986976248315457826193369417258218935647795382461632154879841769532",
+      "givens": 34,
+      "symmetry": "mirror-vertical",
+      "seed": 1776353072,
+      "rating": {
+        "maxCost": 6,
+        "score": 103,
+        "hardest": "pointing",
+        "counts": {
+          "hidden-single-box": 22,
+          "pointing": 1,
+          "naked-single": 6,
+          "full-house": 19
+        }
+      }
+    },
+    {
+      "id": "medium-100",
+      "index": 99,
+      "puzzle": "...35.6..6..1.4..2.....67...97.3..4.2..4.1..7.1..8.25...42.....9..7.5..8..1.43...",
+      "solution": "172359684658174932349826715897532146235461897416987253564298371923715468781643529",
+      "givens": 30,
+      "symmetry": "rotational-180",
+      "seed": 3123602741,
+      "rating": {
+        "maxCost": 8,
+        "score": 121,
+        "hardest": "naked-pair",
+        "counts": {
+          "naked-single": 16,
+          "hidden-single-box": 14,
+          "full-house": 21,
           "pointing": 3,
           "naked-pair": 1
         }

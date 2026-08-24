@@ -59,10 +59,16 @@ function writeManifest(manifest: Manifest): void {
   writeAtomic(join(PUZZLES_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
 }
 
-function generateLevel(level: Level, count: number, force: boolean): LevelBank {
+interface GenerateLevelResult {
+  bank: LevelBank;
+  failedIndices: number[];
+}
+
+function generateLevel(level: Level, count: number, force: boolean): GenerateLevelResult {
   const existing = readBank(level);
   const canReuseBank = existing !== null && existing.generatorVersion === GENERATOR_VERSION && !force;
   const puzzles: PuzzleRecord[] = [];
+  const failedIndices: number[] = [];
   let generated = 0;
   let failed = 0;
   let totalMs = 0;
@@ -79,7 +85,8 @@ function generateLevel(level: Level, count: number, force: boolean): LevelBank {
     generated++;
     if (!record) {
       failed++;
-      process.stdout.write(`\n  ! failed to generate ${level}#${index}, skipping\n`);
+      failedIndices.push(index);
+      process.stdout.write(`\n  ! failed to generate ${level}#${index} after all retries\n`);
       continue;
     }
     puzzles.push(record);
@@ -88,12 +95,13 @@ function generateLevel(level: Level, count: number, force: boolean): LevelBank {
   }
   process.stdout.write('\n');
 
+  // A puzzle missing from the middle of the array would leave every later id/index
+  // pair mismatched (verify's "index liên tục từ 0" invariant) -- pushing whatever we
+  // did generate would produce a bank that looks fine at a glance but is silently
+  // short a puzzle. Only a fully populated 0..count-1 array is a valid bank.
   return {
-    schemaVersion: SCHEMA_VERSION,
-    generatorVersion: GENERATOR_VERSION,
-    level,
-    count: puzzles.length,
-    puzzles,
+    bank: { schemaVersion: SCHEMA_VERSION, generatorVersion: GENERATOR_VERSION, level, count, puzzles },
+    failedIndices,
   };
 }
 
@@ -125,9 +133,21 @@ function main(): void {
     : null;
 
   const manifestLevels: Manifest['levels'] = [];
+  let anyFailures = false;
   for (const level of LEVELS) {
     if (touchedLevels.includes(level)) {
-      const bank = generateLevel(level, args.count, args.force);
+      const { bank, failedIndices } = generateLevel(level, args.count, args.force);
+      if (failedIndices.length > 0) {
+        anyFailures = true;
+        console.error(
+          `  ✗ ${level}: ${failedIndices.length} index(es) failed after all retries (${failedIndices.join(', ')}) -- leaving ${level}.json untouched. Re-run to retry (attempts are seeded per index, so a fresh run tries the same seeds; increase MAX_ATTEMPTS in src/core/generator.ts if it keeps failing).`,
+        );
+        // Existing on-disk bank (if any) is left as-is -- a gapped bank must never replace a good one.
+        const prior = existingManifest?.levels.find((l) => l.level === level);
+        const priorBank = readBank(level);
+        manifestLevels.push({ level, count: prior?.count ?? priorBank?.count ?? 0, file: `${level}.json` });
+        continue;
+      }
       writeBank(level, bank);
       manifestLevels.push({ level, count: bank.count, file: `${level}.json` });
       if (args.stats) printStats(bank);
@@ -139,6 +159,11 @@ function main(): void {
   }
 
   writeManifest({ schemaVersion: SCHEMA_VERSION, generatorVersion: GENERATOR_VERSION, levels: manifestLevels });
+
+  if (anyFailures) {
+    console.error('FAILED: one or more levels had unresolvable generation failures. See above.');
+    process.exit(1);
+  }
   console.log('Done.');
 }
 

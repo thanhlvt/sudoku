@@ -4,27 +4,27 @@
   "levels": [
     {
       "level": "beginner",
-      "count": 20,
+      "count": 100,
       "file": "beginner.json"
     },
     {
       "level": "easy",
-      "count": 20,
+      "count": 100,
       "file": "easy.json"
     },
     {
       "level": "medium",
-      "count": 20,
+      "count": 99,
       "file": "medium.json"
     },
     {
       "level": "hard",
-      "count": 20,
+      "count": 100,
       "file": "hard.json"
     },
     {
       "level": "expert",
-      "count": 20,
+      "count": 100,
       "file": "expert.json"
     }
   ]

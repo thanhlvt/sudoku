@@ -1,5 +1,9 @@
 import type { Level, LevelBank, Manifest, PuzzleRecord } from '../core/types';
 
+// import.meta.env.BASE_URL always ends with '/', and reflects Vite's `base` config --
+// '/' locally, '/<repo>/' when deployed to a GitHub Pages project site.
+const PUZZLES_URL = `${import.meta.env.BASE_URL}puzzles/`;
+
 let manifestCache: Manifest | null = null;
 let manifestPromise: Promise<Manifest> | null = null;
 const levelCache = new Map<Level, LevelBank>();
@@ -14,7 +18,7 @@ async function fetchJSON<T>(url: string): Promise<T> {
 export function loadManifest(): Promise<Manifest> {
   if (manifestCache) return Promise.resolve(manifestCache);
   if (!manifestPromise) {
-    manifestPromise = fetchJSON<Manifest>('/puzzles/manifest.json').then((m) => {
+    manifestPromise = fetchJSON<Manifest>(`${PUZZLES_URL}manifest.json`).then((m) => {
       manifestCache = m;
       return m;
     });
@@ -31,7 +35,7 @@ export async function loadLevel(level: Level): Promise<LevelBank> {
     promise = loadManifest().then(async (manifest) => {
       const entry = manifest.levels.find((l) => l.level === level);
       if (!entry) throw new Error(`Unknown level: ${level}`);
-      const bank = await fetchJSON<LevelBank>(`/puzzles/${entry.file}`);
+      const bank = await fetchJSON<LevelBank>(`${PUZZLES_URL}${entry.file}`);
       levelCache.set(level, bank);
       return bank;
     });

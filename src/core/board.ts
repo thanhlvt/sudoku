@@ -1,8 +1,16 @@
 import type { Candidates, Grid, Unit } from './types';
 
-function boxOf(idx: number): number {
-  const r = Math.floor(idx / 9);
-  const c = idx % 9;
+export function rowOf(idx: number): number {
+  return Math.floor(idx / 9);
+}
+
+export function colOf(idx: number): number {
+  return idx % 9;
+}
+
+export function boxOf(idx: number): number {
+  const r = rowOf(idx);
+  const c = colOf(idx);
   return Math.floor(r / 3) * 3 + Math.floor(c / 3);
 }
 

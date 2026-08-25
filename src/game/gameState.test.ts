@@ -139,6 +139,36 @@ describe('completion', () => {
   });
 });
 
+describe('reset', () => {
+  it('clears progress back to the givens and restarts counters after completion', () => {
+    const session = makeSession();
+    for (let i = 0; i < 81; i++) {
+      if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    }
+    session.hintsUsed = 2; // pretend some hints were used along the way
+    expect(session.status).toBe('completed');
+
+    session.reset();
+
+    expect(session.status).toBe('in-progress');
+    expect(session.elapsedMs).toBe(0);
+    expect(session.mistakes).toBe(0);
+    expect(session.hintsUsed).toBe(0);
+    expect(session.canUndo()).toBe(false);
+    expect(Array.from(session.board)).toEqual(Array.from(session.givens));
+    expect(session.notes.every((n) => n === 0)).toBe(true);
+  });
+
+  it('allows solving the puzzle again after a reset', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.reset();
+    session.setDigit(2, 4);
+    expect(session.board[2]).toBe(4);
+    expect(session.mistakes).toBe(0);
+  });
+});
+
 describe('hint', () => {
   it('previews a step on the first call and applies it on the second', () => {
     const session = makeSession();

@@ -148,6 +148,18 @@ export class GameSession {
     return this.undoStack.length > 0;
   }
 
+  /** Clears all player input and counters, returning the session to a fresh in-progress state. */
+  reset(): void {
+    this.board = cloneGrid(this.givens);
+    this.notes = new Uint16Array(81);
+    this.elapsedMs = 0;
+    this.mistakes = 0;
+    this.hintsUsed = 0;
+    this.status = 'in-progress';
+    this.undoStack = [];
+    this.pendingHintStep = null;
+  }
+
   undo(): void {
     const move = this.undoStack.pop();
     if (!move) return;

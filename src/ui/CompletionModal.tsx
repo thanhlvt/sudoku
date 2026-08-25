@@ -7,6 +7,7 @@ interface CompletionModalProps {
   isNewRecord: boolean;
   onNext: () => void;
   onClose: () => void;
+  onReset: () => void;
 }
 
 export function CompletionModal({
@@ -16,6 +17,7 @@ export function CompletionModal({
   isNewRecord,
   onNext,
   onClose,
+  onReset,
 }: CompletionModalProps): JSX.Element {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="completion-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -32,17 +34,26 @@ export function CompletionModal({
           <dt className="text-slate-500">Gợi ý đã dùng</dt>
           <dd>{hintsUsed}</dd>
         </dl>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] flex-1 rounded-md border border-slate-300 dark:border-slate-600"
-          >
-            Đóng
-          </button>
-          <button type="button" onClick={onNext} className="min-h-[44px] flex-1 rounded-md bg-blue-600 text-white">
+        <div className="flex flex-col gap-2">
+          <button type="button" onClick={onNext} className="min-h-[44px] w-full rounded-md bg-blue-600 text-white">
             Màn tiếp theo
           </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onReset}
+              className="min-h-[44px] flex-1 rounded-md border border-slate-300 dark:border-slate-600"
+            >
+              Chơi lại
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] flex-1 rounded-md border border-slate-300 dark:border-slate-600"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
       </div>
     </div>

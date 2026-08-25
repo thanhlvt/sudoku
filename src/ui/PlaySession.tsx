@@ -35,7 +35,7 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
   const [showCompletion, setShowCompletion] = useState(false);
   const [recordAtCompletion, setRecordAtCompletion] = useState(false);
 
-  const { session, version, setDigit, eraseCell, toggleNote, undo, hint } = useGameSession({
+  const { session, version, setDigit, eraseCell, toggleNote, undo, hint, reset } = useGameSession({
     puzzle,
     autoRemoveNotes: settings.autoRemoveNotes,
     paused,
@@ -112,6 +112,14 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
+
+  const handleReset = useCallback(() => {
+    reset();
+    statsUpdatedRef.current = false;
+    setSelected(null);
+    setHintPreview(null);
+    setShowCompletion(false);
+  }, [reset]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
@@ -219,6 +227,7 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
           hintsUsed={session.hintsUsed}
           isNewRecord={recordAtCompletion}
           onClose={() => setShowCompletion(false)}
+          onReset={handleReset}
           onNext={() => {
             setShowCompletion(false);
             onNavigate(nextPuzzleHash(puzzle));

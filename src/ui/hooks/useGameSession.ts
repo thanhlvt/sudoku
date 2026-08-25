@@ -19,6 +19,7 @@ export interface GameSessionApi {
   toggleNote: (idx: number, digit: number) => void;
   undo: () => void;
   hint: () => Step | null;
+  reset: () => void;
 }
 
 const DEBOUNCE_MS = 500;
@@ -120,5 +121,11 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     return step;
   }, [session, persist, rerender]);
 
-  return { session, version, setDigit, eraseCell, toggleNote, undo, hint };
+  const reset = useCallback(() => {
+    session.reset();
+    rerender();
+    persist(true);
+  }, [session, persist, rerender]);
+
+  return { session, version, setDigit, eraseCell, toggleNote, undo, hint, reset };
 }

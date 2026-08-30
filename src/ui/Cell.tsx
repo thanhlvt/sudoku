@@ -1,6 +1,6 @@
 import { memo } from 'react';
 
-export type HighlightState = 'hint' | 'selected' | 'mistake' | 'same-value' | 'peer' | 'none';
+export type HighlightState = 'hint' | 'selected' | 'same-value' | 'peer' | 'none';
 
 interface CellProps {
   idx: number;
@@ -14,7 +14,6 @@ interface CellProps {
 const HIGHLIGHT_BG: Record<HighlightState, string> = {
   hint: 'bg-amber-200 dark:bg-amber-800/60',
   selected: 'bg-blue-200 dark:bg-blue-800/70',
-  mistake: 'bg-red-100 dark:bg-red-900/50',
   'same-value': 'bg-blue-100 dark:bg-blue-900/40',
   peer: 'bg-slate-100 dark:bg-slate-800/60',
   none: 'bg-white dark:bg-slate-900',
@@ -39,12 +38,9 @@ function CellImpl({ idx, value, notes, isGiven, highlight, onSelect }: CellProps
       ? 'border-b-2 border-b-slate-500 dark:border-b-slate-400'
       : 'border-b border-b-slate-300 dark:border-b-slate-700';
 
-  const textColor =
-    highlight === 'mistake'
-      ? 'text-red-600 dark:text-red-400'
-      : isGiven
-        ? 'text-slate-900 dark:text-slate-100 font-semibold'
-        : 'text-blue-700 dark:text-blue-300';
+  const textColor = isGiven
+    ? 'text-slate-900 dark:text-slate-100 font-semibold'
+    : 'text-blue-700 dark:text-blue-300';
 
   return (
     <button

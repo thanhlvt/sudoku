@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PuzzleRecord, Step } from '../core/types';
 import { levelFromPuzzleId } from '../game/puzzleBank';
 import type { Settings, Stats } from '../storage/schema';
@@ -73,17 +73,6 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
       setHintPreview(null);
     }
   }, [session.hintsUsed]);
-
-  const remaining = useMemo(() => {
-    const counts = new Array(9).fill(9) as number[];
-    for (let i = 0; i < 81; i++) {
-      const v = session.board[i]!;
-      if (v !== 0) counts[v - 1]!--;
-    }
-    return counts;
-    // `session.board` is mutated in place, so `version` (not the array reference) is what
-    // actually changes when a digit is placed -- see useGameSession's doc comment.
-  }, [session.board, version]);
 
   const handleDigit = useCallback(
     (digit: number) => {
@@ -182,7 +171,6 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         givens={session.givens}
         board={session.board}
         notes={session.notes}
-        solution={session.solution}
         version={version}
         selected={selected}
         onSelect={(idx) => !paused && setSelected(idx)}
@@ -200,7 +188,7 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         </div>
       )}
 
-      <NumberPad remaining={remaining} noteMode={noteMode} onDigit={handleDigit} />
+      <NumberPad noteMode={noteMode} onDigit={handleDigit} />
 
       <Toolbar
         noteMode={noteMode}

@@ -4,7 +4,6 @@ import type { Grid } from '../core/types';
 import { Cell, type HighlightState } from './Cell';
 
 export interface BoardHighlightSettings {
-  showMistakes: boolean;
   highlightSameDigit: boolean;
   highlightPeers: boolean;
 }
@@ -13,7 +12,6 @@ interface BoardProps {
   givens: Grid;
   board: Grid;
   notes: Uint16Array;
-  solution: Grid;
   /** Bumps on every mutation; `board`/`notes` are mutated in place so their
    *  references never change -- this is what the highlight memo must key on. */
   version: number;
@@ -27,7 +25,6 @@ export function Board({
   givens,
   board,
   notes,
-  solution,
   version,
   selected,
   onSelect,
@@ -48,10 +45,6 @@ export function Board({
         result[idx] = 'selected';
         continue;
       }
-      if (settings.showMistakes && board[idx] !== 0 && board[idx] !== solution[idx]) {
-        result[idx] = 'mistake';
-        continue;
-      }
       if (selected !== null && settings.highlightSameDigit && selectedValue !== 0 && board[idx] === selectedValue) {
         result[idx] = 'same-value';
         continue;
@@ -61,7 +54,7 @@ export function Board({
       }
     }
     return result;
-  }, [board, solution, version, selected, settings, hintCells]);
+  }, [board, version, selected, settings, hintCells]);
 
   return (
     <div

@@ -34,7 +34,6 @@ export interface SavedGame {
 export interface Settings {
   highlightSameDigit: boolean;
   highlightPeers: boolean;
-  showMistakes: boolean;
   autoRemoveNotes: boolean;
   theme: 'system' | 'light' | 'dark';
   soundEnabled: boolean;
@@ -43,7 +42,6 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   highlightSameDigit: true,
   highlightPeers: true,
-  showMistakes: true,
   autoRemoveNotes: true,
   theme: 'system',
   soundEnabled: false,

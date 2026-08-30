@@ -14,7 +14,11 @@ export function NumberPad({ noteMode, onDigit }: NumberPadProps): JSX.Element {
           type="button"
           onClick={() => onDigit(d)}
           aria-label={`Số ${d}${noteMode ? ', chế độ ghi chú' : ''}`}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-slate-300 text-lg font-medium tabular-nums hover:bg-slate-100 active:bg-slate-200 dark:border-slate-600 dark:hover:bg-slate-800"
+          className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border text-lg font-medium tabular-nums ${
+            noteMode
+              ? 'border-blue-400 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 dark:border-blue-500 dark:bg-blue-900/30 dark:hover:bg-blue-900/50'
+              : 'border-slate-300 hover:bg-slate-100 active:bg-slate-200 dark:border-slate-600 dark:hover:bg-slate-800'
+          }`}
         >
           {d}
         </button>

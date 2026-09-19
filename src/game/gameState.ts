@@ -97,8 +97,7 @@ export class GameSession {
 
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.board[idx] = digit;
-    this.notes[idx] = 0;
-    const after = { value: digit, notes: 0 };
+    const after = { value: digit, notes: this.notes[idx]! };
 
     const autoNoteChanges: { idx: number; before: number; after: number }[] = [];
     if (this.autoRemoveNotes) {

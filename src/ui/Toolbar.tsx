@@ -3,6 +3,8 @@ interface ToolbarProps {
   onToggleNoteMode: () => void;
   onUndo: () => void;
   canUndo: boolean;
+  onErase: () => void;
+  canErase: boolean;
   onHint: () => void;
   paused: boolean;
   onTogglePause: () => void;
@@ -17,6 +19,8 @@ export function Toolbar({
   onToggleNoteMode,
   onUndo,
   canUndo,
+  onErase,
+  canErase,
   onHint,
   paused,
   onTogglePause,
@@ -26,6 +30,9 @@ export function Toolbar({
     <div className="flex w-full flex-wrap items-center gap-2" style={{ maxWidth: 560 }}>
       <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Hoàn tác (U)" className={BTN}>
         ↶ Hoàn tác
+      </button>
+      <button type="button" onClick={onErase} disabled={!canErase} aria-label="Xóa số (Backspace)" className={BTN}>
+        🗑 Xóa
       </button>
       <button
         type="button"

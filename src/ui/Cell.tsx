@@ -54,7 +54,7 @@ function CellImpl({ idx, value, notes, isGiven, highlight, onSelect }: CellProps
       {value !== 0 ? (
         value
       ) : notes !== 0 ? (
-        <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-0.5 text-[28%] leading-none text-slate-500 dark:text-slate-400">
+        <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-px text-[42%] leading-none text-slate-500 dark:text-slate-400">
           {NOTE_DIGITS.map((d) => (
             <span key={d} className="flex items-center justify-center">
               {notes & (1 << (d - 1)) ? d : ''}

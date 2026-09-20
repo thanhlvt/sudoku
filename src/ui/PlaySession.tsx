@@ -113,6 +113,12 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
     setShowCompletion(false);
   }, [reset]);
 
+  const handleResetClick = useCallback(() => {
+    if (window.confirm('Đặt lại ván này? Toàn bộ số đã điền, ghi chú và thời gian sẽ bị xóa.')) {
+      handleReset();
+    }
+  }, [handleReset]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
       const target = e.target;
@@ -204,6 +210,7 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         paused={paused}
         onTogglePause={() => setPaused((p) => !p)}
         onPrint={handlePrint}
+        onReset={handleResetClick}
       />
 
       <PrintablePuzzle

@@ -9,6 +9,7 @@ interface ToolbarProps {
   paused: boolean;
   onTogglePause: () => void;
   onPrint: () => void;
+  onReset: () => void;
 }
 
 const BTN =
@@ -25,6 +26,7 @@ export function Toolbar({
   paused,
   onTogglePause,
   onPrint,
+  onReset,
 }: ToolbarProps): JSX.Element {
   return (
     <div className="flex w-full flex-wrap items-center gap-2" style={{ maxWidth: 560 }}>
@@ -51,6 +53,9 @@ export function Toolbar({
       </button>
       <button type="button" onClick={onPrint} aria-label="In câu đố ra giấy" className={BTN}>
         🖨 In
+      </button>
+      <button type="button" onClick={onReset} aria-label="Đặt lại ván chơi" className={BTN}>
+        🔄 Đặt lại
       </button>
     </div>
   );

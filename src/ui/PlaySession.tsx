@@ -93,6 +93,9 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
     if (selected !== null && !paused) eraseCell(selected);
   }, [selected, paused, eraseCell]);
 
+  const canErase =
+    selected !== null && !paused && !session.isGiven(selected) && session.board[selected] !== 0;
+
   const handleHint = useCallback(() => {
     if (paused) return;
     const step = hint();
@@ -110,6 +113,12 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
     setHintPreview(null);
     setShowCompletion(false);
   }, [reset]);
+
+  const handleResetClick = useCallback(() => {
+    if (window.confirm('Đặt lại ván này? Toàn bộ số đã điền, ghi chú và thời gian sẽ bị xóa.')) {
+      handleReset();
+    }
+  }, [handleReset]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
@@ -196,10 +205,13 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         onToggleNoteMode={() => setNoteMode((m) => !m)}
         onUndo={undo}
         canUndo={session.canUndo()}
+        onErase={handleErase}
+        canErase={canErase}
         onHint={handleHint}
         paused={paused}
         onTogglePause={() => setPaused((p) => !p)}
         onPrint={isNative ? undefined : handlePrint}
+        onReset={handleResetClick}
       />
 
       <PrintablePuzzle

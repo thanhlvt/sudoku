@@ -3,11 +3,14 @@ interface ToolbarProps {
   onToggleNoteMode: () => void;
   onUndo: () => void;
   canUndo: boolean;
+  onErase: () => void;
+  canErase: boolean;
   onHint: () => void;
   paused: boolean;
   onTogglePause: () => void;
   /** Omit where printing is unavailable (e.g. the native Android WebView). */
   onPrint?: () => void;
+  onReset: () => void;
 }
 
 const BTN =
@@ -18,15 +21,21 @@ export function Toolbar({
   onToggleNoteMode,
   onUndo,
   canUndo,
+  onErase,
+  canErase,
   onHint,
   paused,
   onTogglePause,
   onPrint,
+  onReset,
 }: ToolbarProps): JSX.Element {
   return (
     <div className="flex w-full flex-wrap items-center gap-2" style={{ maxWidth: 560 }}>
       <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Hoàn tác (U)" className={BTN}>
         ↶ Hoàn tác
+      </button>
+      <button type="button" onClick={onErase} disabled={!canErase} aria-label="Xóa số (Backspace)" className={BTN}>
+        🗑 Xóa
       </button>
       <button
         type="button"
@@ -48,6 +57,9 @@ export function Toolbar({
           🖨 In
         </button>
       )}
+      <button type="button" onClick={onReset} aria-label="Đặt lại ván chơi" className={BTN}>
+        🔄 Đặt lại
+      </button>
     </div>
   );
 }

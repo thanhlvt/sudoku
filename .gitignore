@@ -3,3 +3,8 @@ dist/
 *.local
 .DS_Store
 *.tmp
+
+# Android release signing (never commit)
+android/keystore.properties
+*.jks
+*.keystore

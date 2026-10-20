@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PuzzleRecord, Step } from '../core/types';
 import { levelFromPuzzleId } from '../game/puzzleBank';
+import { isNative } from '../native';
 import type { Settings, Stats } from '../storage/schema';
 import { Board } from './Board';
 import { CompletionModal } from './CompletionModal';
@@ -198,7 +199,7 @@ export function PlaySession({ puzzle, onBack, onNavigate, settings, stats, updat
         onHint={handleHint}
         paused={paused}
         onTogglePause={() => setPaused((p) => !p)}
-        onPrint={handlePrint}
+        onPrint={isNative ? undefined : handlePrint}
       />
 
       <PrintablePuzzle

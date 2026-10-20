@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { LevelBank, Manifest } from './core/types';
 import { loadLevel, loadManifest } from './game/puzzleBank';
+import { setupBackButton } from './native';
 import { loadLast, migrate, syncGeneratorVersion } from './storage/schema';
 import { HomeScreen } from './ui/HomeScreen';
 import { LevelListScreen } from './ui/LevelListScreen';
@@ -19,6 +20,8 @@ export default function App(): JSX.Element {
   useEffect(() => {
     migrate();
   }, []);
+
+  useEffect(() => setupBackButton(), []);
 
   useEffect(() => {
     loadManifest()

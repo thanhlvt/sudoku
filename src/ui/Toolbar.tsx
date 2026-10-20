@@ -6,7 +6,8 @@ interface ToolbarProps {
   onHint: () => void;
   paused: boolean;
   onTogglePause: () => void;
-  onPrint: () => void;
+  /** Omit where printing is unavailable (e.g. the native Android WebView). */
+  onPrint?: () => void;
 }
 
 const BTN =
@@ -42,9 +43,11 @@ export function Toolbar({
       <button type="button" onClick={onTogglePause} aria-label="Tạm dừng (Space)" className={BTN}>
         {paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'}
       </button>
-      <button type="button" onClick={onPrint} aria-label="In câu đố ra giấy" className={BTN}>
-        🖨 In
-      </button>
+      {onPrint && (
+        <button type="button" onClick={onPrint} aria-label="In câu đố ra giấy" className={BTN}>
+          🖨 In
+        </button>
+      )}
     </div>
   );
 }

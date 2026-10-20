@@ -60,6 +60,7 @@ npm run gen -- --level all --count 20         # sinh ngân hàng màn (giai đo�
 npm run gen -- --level all --count 100        # mở rộng, giữ nguyên 20 màn cũ
 npm run gen -- --level expert --count 100 --force   # sinh lại từ đầu (đổi puzzle!)
 npm run verify                                # kiểm unique + solvable + đúng tier cho toàn bank
+npm run android:debug                         # build APK debug (Capacitor); release/AAB: xem docs/ANDROID.md
 ```
 
 ## Năm cấp độ

@@ -298,7 +298,7 @@ Khối dưới giới hạn `max-h-[80dvh]` và cuộn được, phần trên (s
 
 ### 5.5 Bảng Cài đặt — `ui/SettingsSheet.tsx` (bottom sheet)
 
-6 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (công tắc Rung chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần); nhóm radio Giao diện (Theo máy/Sáng/Tối);
+7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối);
 nhóm radio **Màu bàn cờ** (4 bảng, bảng chưa mở khoá bị `disabled` kèm ổ khoá + cấp cần); nhóm **Dữ liệu**: "Hướng dẫn chơi", "Sao lưu" (web: tải file `sudoku-backup-<ngày>.json`; Android: bảng chia sẻ), "Khôi phục" (chọn file, `confirm` rồi thay thế toàn bộ tiến độ và `reload`);
 nút "Xóa toàn bộ tiến độ" (có `confirm`, rồi `location.reload()`). Mở từ Home.
 
@@ -318,6 +318,14 @@ Danh sách 21 kỹ thuật (số thứ tự hoặc dấu tick xanh nếu đã th
 
 6 thẻ tổng (màn đã giải, tổng sao, thời gian chơi `Ng Mp`, số màn không sai & không gợi ý, lần sai, gợi ý) và mỗi cấp một thẻ: số màn/sao, nhanh nhất, trung bình, hoàn hảo, thanh so sánh thời gian trung bình giữa các cấp.
 
+### 5.11 Chế độ thử thách (`#/modes`) — `ui/ModesScreen.tsx`
+
+Ba khối. **Chuỗi thử thách tuần**: khoảng ngày (`Tuần 19/10 – 25/10`), huy hiệu `n/5`, 5 nút bước (số thứ tự + chấm màu cấp; xong = nền xanh + tick; bấm để chơi bước đó), nút "Bắt đầu chuỗi tuần / Làm màn tiếp theo" (hoặc dải xanh "Bạn đã hoàn thành tuần này"), dòng thưởng 300 XP và số tuần đã xong.
+**Đua thời gian** và **Không sai**: biểu tượng, luật một dòng, "Thưởng thêm 50% XP", `Thắng n`, và 5 nút cấp (màu cấp; Đua thời gian ghi giới hạn `03:00…20:00`, Không sai ghi "Chơi"). Bấm một cấp ⇒ `pickFreshIndex` ⇒ `#/play/<màn mới>/<chế độ>`; hết màn mới ở cấp đó thì báo "Bạn đã chơi hết…".
+Home có thẻ rộng "Chế độ thử thách" (kèm `Chuỗi tuần n/5`) trước thẻ người chơi.
+
+**Trong màn chơi**: chip chế độ dưới tiêu đề (đồng hồ ⏳ / mục tiêu 🎯 + tên); `Timer` của Đua thời gian **đếm ngược** (nhãn aria "Còn lại mm:ss", đỏ khi ≤ 60 s). Thua ⇒ lớp phủ cùng chỗ với lớp Tạm dừng (`Hết giờ!` / `Sai mất rồi!`) với 3 nút: "Thử lại", "Chơi tiếp như bình thường", "Chọn chế độ khác"; bàn bị khoá, đồng hồ dừng. Màn Hoàn thành thêm dòng "Chế độ …: thưởng thêm 50% XP" và "Chuỗi tuần n/5" (+ "Hoàn thành! +300 XP"); nút chính đổi thành "Màn tuần tiếp theo" khi còn bước tuần chưa xong.
+
 ### 5.10 Hướng dẫn lần đầu — `ui/IntroSheet.tsx`
 
 `Sheet` 4 trang (Luật chơi, Ghi chú, Không cần đoán, Quay lại mỗi ngày), chấm trang, nút "Bỏ qua/Quay lại" và "Tiếp/Bắt đầu chơi".
@@ -332,19 +340,20 @@ Danh sách 21 kỹ thuật (số thứ tự hoặc dấu tick xanh nếu đã th
 | `HomeScreen` | màn Home | `manifest, stats, daily, today, dailyId, settings, onSettingsChange, onNavigate` | App | `settingsOpen`, `introOpen` |
 | `AchievementsScreen` / `CalendarScreen` / `StatsScreen` / `LearnScreen` / `TechniqueScreen` | các màn phụ (§5.6–5.9) | `onBack` + dữ liệu riêng | App | tháng đang xem (Lịch) |
 | `ScreenHeader` | nút Back + tiêu đề chung của các màn phụ | `title, onBack, right?` | các màn phụ | — |
+| `ModesScreen` | chuỗi tuần + hai chế độ (§5.11) | `manifest, weekly, onNavigate, onBack` | App | thông báo "hết màn mới" |
 | `PlayerCard` | cấp + XP | `games, onClick?` | Home, Thành tựu | — |
 | `AchievementIcon` | ánh xạ tên biểu tượng → lucide | `name, size` | Thành tựu, Hoàn thành | — |
 | `ExampleBoard` | bàn ví dụ chỉ đọc | `example` | TechniqueScreen | — |
 | `IntroSheet` | hướng dẫn 4 trang | `onClose` | Home | `page` |
 | `LevelListScreen` | danh sách màn | `level, bank, onNavigate, onBack` | App | `pageOverride` |
 | `PlayScreen` | tải puzzle rồi giao cho session | `puzzleId, onNavigate, settings, stats, updateStats, dailyId, today, daily, updateDaily` | App | `loaded`, `error` |
-| `PlaySession` | điều phối một ván: phím, gợi ý, sóng, hoàn thành | + `puzzle, levelCount, onBack` | PlayScreen | `selected, noteMode, paused, hintPreview, wave, showCompletion, recordAtCompletion` |
+| `PlaySession` | điều phối một ván: phím, gợi ý, sóng, hoàn thành, thất bại của chế độ | + `puzzle, levelCount, onBack, mode?, weekly` | PlayScreen | `selected, noteMode, paused, hintPreview, wave, showCompletion, recordAtCompletion` |
 | `Board` | lưới 9×9, tính `highlights` | `givens, board, solution, notes, version, selected, onSelect, settings, hintCells, wave` | PlaySession | — (`useMemo`) |
 | `Cell` (`memo`) | một ô | `idx, value, notes, isGiven, isWrong, highlight, waveDelay, onSelect` | Board | `mounted` ref |
 | `Toolbar` | 6 công cụ | `noteMode, onToggleNoteMode, onUndo, canUndo, onRedo, canRedo, onErase, canErase, onFillNotes, onHint, hintPending, hintsUsed` | PlaySession | — |
 | `NumberPad` | 9 phím + bộ đếm, nhấn giữ = ghi chú nhanh | `noteMode, remaining[], onDigit(digit, quick?)` | PlaySession | timer nhấn giữ trong từng `DigitButton` |
 | `Hearts` | 3 tim từ `mistakes` | `mistakes` | PlaySession | `lostIdx` (animation) |
-| `Timer` | chip đồng hồ + `formatTime` | `elapsedMs, paused` | PlaySession | — |
+| `Timer` | chip đồng hồ (đếm xuôi, hoặc đếm ngược khi có `limitMs`) + `formatTime` | `elapsedMs, paused, limitMs?` | PlaySession, ModesScreen (chỉ `formatTime`) | — |
 | `Stars` | hàng sao | `count, total, size, filledClass, emptyClass, animated` | LevelList (ô xong) | — |
 | `CompletionScreen` | tổng kết + phần thưởng | `level, puzzleNumber, stars, elapsedMs, mistakes, hintsUsed, isNewRecord, dailyStreak, reward, technique, shareNote, onShare, hasNext, onNext, onReplay, onList` | PlaySession | — |
 | `Confetti` | giấy kim tuyến CSS | `count` | CompletionScreen | — |
@@ -353,7 +362,7 @@ Danh sách 21 kỹ thuật (số thứ tự hoặc dấu tick xanh nếu đã th
 | `PrintablePuzzle` | bản in (ẩn trên màn hình, chỉ hiện khi `print`) | `puzzleId, level, puzzleNumber, givens, solution?` | PlaySession | — |
 | `levelLabels.ts` | `LEVEL_LABELS`, `LEVEL_THEME` | — | Home, LevelList, PlaySession, Completion | — |
 
-Hooks UI (`ui/hooks`): `useHashRoute`, `useSettings`, `useStats`, `useDaily`, `useSavedProgress`, `useGameSession`, `useFeedback`, `useAchievements`, `useAllBanks` — chi tiết ở FUNCTION_DESIGN §9.
+Hooks UI (`ui/hooks`): `useHashRoute`, `useSettings`, `useStats`, `useDaily`, `useSavedProgress`, `useGameSession`, `useFeedback`, `useAchievements`, `useAllBanks`, `useReminders` — chi tiết ở FUNCTION_DESIGN §9.
 
 ### 6.1 Cây component & luồng prop
 

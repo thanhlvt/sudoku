@@ -2,7 +2,8 @@ import { ChevronLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PuzzleRecord } from '../core/types';
 import { levelFromPuzzleId, loadLevel } from '../game/puzzleBank';
-import type { DailyState, Settings, Stats } from '../storage/schema';
+import type { WeeklyWeek } from '../game/weekly';
+import type { DailyState, GameMode, Settings, Stats } from '../storage/schema';
 import { PlaySession } from './PlaySession';
 
 interface PlayScreenProps {
@@ -15,6 +16,10 @@ interface PlayScreenProps {
   today: string;
   daily: DailyState;
   updateDaily: (updater: (prev: DailyState) => DailyState) => void;
+  /** Challenge rules requested by the link, applied only to a puzzle with no saved game. */
+  mode?: GameMode;
+  /** This week's challenge puzzles, to credit a solve towards it. */
+  weekly: WeeklyWeek | null;
 }
 
 interface Loaded {

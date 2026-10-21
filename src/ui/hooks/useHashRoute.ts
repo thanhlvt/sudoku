@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { isLevel, isPuzzleId } from '../../core/levels';
 import type { Level } from '../../core/types';
+import { isGameMode } from '../../game/modes';
 import { isTechniqueId } from '../../game/techniqueInfo';
+import type { GameMode } from '../../storage/schema';
 
 export type Route =
   | { name: 'home' }
   | { name: 'level'; level: Level }
-  | { name: 'play'; puzzleId: string }
+  | { name: 'play'; puzzleId: string; mode?: GameMode }
+  | { name: 'modes' }
   | { name: 'achievements' }
   | { name: 'calendar' }
   | { name: 'stats' }
@@ -22,12 +25,14 @@ export function parseHash(hash: string): Route {
     return { name: 'level', level: parts[1] };
   }
   if (parts[0] === 'play' && isPuzzleId(parts[1])) {
-    return { name: 'play', puzzleId: parts[1] };
+    // `#/play/<id>/<mode>` starts the puzzle under challenge rules; an unknown mode is just ignored.
+    return isGameMode(parts[2]) ? { name: 'play', puzzleId: parts[1], mode: parts[2] } : { name: 'play', puzzleId: parts[1] };
   }
   if (parts.length === 1) {
     if (parts[0] === 'achievements') return { name: 'achievements' };
     if (parts[0] === 'calendar') return { name: 'calendar' };
     if (parts[0] === 'stats') return { name: 'stats' };
+    if (parts[0] === 'modes') return { name: 'modes' };
     if (parts[0] === 'learn') return { name: 'learn' };
   }
   if (parts[0] === 'learn' && isTechniqueId(parts[1])) {

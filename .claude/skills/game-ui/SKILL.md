@@ -82,6 +82,7 @@ mù màu và cho màn hình chói.
 - Thử thách hôm nay: `dailyPuzzle(ngày)` chọn màn xác định theo ngày (`src/game/daily.ts`); hoàn thành đúng màn
   đó thì `completeDaily` tăng chuỗi. Chuỗi còn sống nếu hôm qua hoặc hôm nay đã xong, hoặc (còn đóng băng) hôm kia.
   Cứ 7 ngày liên tiếp nhận 1 đóng băng (tối đa 2); đóng băng bù đúng một ngày lỡ. Làm bù ngày cũ từ Lịch không tính chuỗi.
+- Chế độ thử thách (`#/play/<id>/time|perfect`, chọn ở `#/modes`): đua thời gian (đếm ngược theo cấp) và không sai (sai một số là thua). Thua ⇒ khoá bàn + lớp phủ 3 lựa chọn; thất bại dẫn xuất từ số liệu ván (`GameSession.failure()`), không có cờ lưu riêng. Chuỗi tuần = 5 màn tăng dần trong tuần, chỉ tính ván xong *trong tuần*.
 - Phần thưởng khi vừa hoàn thành (XP, lên cấp, thành tựu mới, mốc chuỗi) tính **một lần** ở effect hoàn thành của `PlaySession`; mở lại màn đã xong không có phần thưởng.
 
 ## Undo

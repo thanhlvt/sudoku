@@ -207,3 +207,41 @@ describe('stats screen', () => {
     await act(async () => {});
   });
 });
+
+describe('modes screen', () => {
+  it('lists the weekly challenge and both modes', async () => {
+    put('settings', { seenIntro: true });
+    renderAt('#/modes');
+    await screen.findByRole('heading', { name: 'Chế độ thử thách' });
+    expect(await screen.findByRole('region', { name: 'Chuỗi thử thách tuần' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Đua thời gian' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Không sai' })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('button', { name: /Bắt đầu chuỗi tuần/ })).toBeTruthy());
+  });
+
+  it('starts a mode on a puzzle the player has not touched yet', async () => {
+    put('settings', { seenIntro: true });
+    savedGame('beginner-001');
+    savedGame('beginner-002', { status: 'in-progress', completedAt: undefined });
+    renderAt('#/modes');
+    const group = await screen.findByRole('group', { name: 'Chọn cấp cho Không sai' });
+    await waitFor(() => expect((group.querySelector('button') as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(group.querySelector('button')!);
+    expect(window.location.hash).toBe('#/play/beginner-003/perfect');
+  });
+
+  it('shows the time limit of each level in time attack', async () => {
+    put('settings', { seenIntro: true });
+    renderAt('#/modes');
+    const group = await screen.findByRole('group', { name: 'Chọn cấp cho Đua thời gian' });
+    expect(group.textContent).toContain('03:00');
+    expect(group.textContent).toContain('20:00');
+  });
+
+  it('is reachable from the home screen', async () => {
+    put('settings', { seenIntro: true });
+    renderAt('');
+    fireEvent.click(await screen.findByRole('button', { name: /Chế độ thử thách/ }));
+    expect(window.location.hash).toBe('#/modes');
+  });
+});

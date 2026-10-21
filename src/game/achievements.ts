@@ -1,6 +1,6 @@
 import { LEVELS } from '../core/levels';
 import type { Level } from '../core/types';
-import type { DailyState, SavedGame, Stats } from '../storage/schema';
+import type { DailyState, GameMode, SavedGame, Stats } from '../storage/schema';
 import { summarizeByLevel } from './progress';
 
 /** Everything an achievement can be computed from. All of it already exists; nothing is stored per achievement. */
@@ -8,6 +8,8 @@ export interface AchievementContext {
   games: readonly SavedGame[];
   stats: Stats;
   daily: DailyState;
+  /** How many weekly challenges have been finished. */
+  weeklyDone: number;
 }
 
 /** Name of the symbol the UI draws; kept as a string so this module stays free of React. */
@@ -48,6 +50,11 @@ const fasterThan =
     return best !== null && best <= limitMs ? 1 : 0;
   };
 const longestStreak = (ctx: AchievementContext): number => ctx.daily.longest;
+const solvedUnder =
+  (mode: GameMode) =>
+  (ctx: AchievementContext): number =>
+    completed(ctx).filter((g) => g.mode === mode).length;
+const weeks = (ctx: AchievementContext): number => ctx.weeklyDone;
 
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'solved-1', title: 'Bước đầu tiên', description: 'Giải xong màn đầu tiên', icon: 'medal', target: 1, progress: solved },
@@ -68,6 +75,12 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'expert-1', title: 'Chuyên gia', description: 'Giải một màn cấp Chuyên gia', icon: 'target', target: 1, progress: solvedAt('expert') },
   { id: 'expert-10', title: 'Bậc thầy suy luận', description: 'Giải 10 màn cấp Chuyên gia', icon: 'crown', target: 10, progress: solvedAt('expert') },
   { id: 'all-levels', title: 'Đủ năm cấp', description: 'Giải ít nhất một màn ở mỗi cấp độ', icon: 'trophy', target: 5, progress: levelsTried },
+
+  { id: 'time-1', title: 'Chạy nước rút', description: 'Thắng một màn Đua thời gian', icon: 'zap', target: 1, progress: solvedUnder('time') },
+  { id: 'perfect-1', title: 'Bất bại', description: 'Thắng một màn Không sai', icon: 'target', target: 1, progress: solvedUnder('perfect') },
+  { id: 'perfect-10', title: 'Tay không run', description: 'Thắng 10 màn Không sai', icon: 'crown', target: 10, progress: solvedUnder('perfect') },
+  { id: 'weekly-1', title: 'Chinh phục tuần', description: 'Hoàn thành chuỗi thử thách tuần', icon: 'calendar', target: 1, progress: weeks },
+  { id: 'weekly-4', title: 'Bốn tuần rực rỡ', description: 'Hoàn thành chuỗi thử thách tuần 4 lần', icon: 'trophy', target: 4, progress: weeks },
 
   { id: 'speed-easy', title: 'Nhanh như chớp', description: 'Giải một màn Dễ trong 4 phút', icon: 'zap', target: 1, progress: fasterThan('easy', 4 * MINUTE_MS) },
   { id: 'speed-medium', title: 'Tay nhanh', description: 'Giải một màn Trung bình trong 6 phút', icon: 'zap', target: 1, progress: fasterThan('medium', 6 * MINUTE_MS) },

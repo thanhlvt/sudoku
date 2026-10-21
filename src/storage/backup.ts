@@ -7,6 +7,7 @@ import {
   loadLast,
   loadSettings,
   loadStats,
+  loadWeekly,
   migrate,
   parseAchievements,
   parseDaily,
@@ -14,17 +15,20 @@ import {
   parseSavedGame,
   parseSettings,
   parseStats,
+  parseWeekly,
   saveAchievements,
   saveDaily,
   saveGame,
   saveLast,
   saveSettings,
   saveStats,
+  saveWeekly,
   type DailyState,
   type LastPlayed,
   type SavedGame,
   type Settings,
   type Stats,
+  type WeeklyState,
 } from './schema';
 
 /** Marks the file as ours and lets a later build change the layout. */
@@ -44,6 +48,7 @@ export interface Backup {
     daily: DailyState;
     last: LastPlayed | null;
     achievements: Record<string, number>;
+    weekly: WeeklyState;
     games: Record<string, SavedGame>;
   };
 }
@@ -62,6 +67,7 @@ export function createBackup(now: number): string {
       daily: loadDaily(),
       last: loadLast(),
       achievements: loadAchievements(),
+      weekly: loadWeekly(),
       games,
     },
   };
@@ -75,6 +81,7 @@ export interface ParsedBackup {
   daily: DailyState | null;
   last: LastPlayed | null;
   achievements: Record<string, number> | null;
+  weekly: WeeklyState | null;
   games: SavedGame[];
 }
 
@@ -117,10 +124,17 @@ export function parseBackup(text: string): ParsedBackup | null {
     daily: parseDaily(data.daily),
     last: parseLast(data.last),
     achievements: parseAchievements(data.achievements),
+    weekly: parseWeekly(data.weekly),
     games,
   };
   const hasAnything =
-    games.length > 0 || parsed.settings || parsed.stats || parsed.daily || parsed.last || parsed.achievements;
+    games.length > 0 ||
+    parsed.settings ||
+    parsed.stats ||
+    parsed.daily ||
+    parsed.last ||
+    parsed.achievements ||
+    parsed.weekly;
   return hasAnything ? parsed : null;
 }
 
@@ -133,5 +147,6 @@ export function applyBackup(backup: ParsedBackup): void {
   if (backup.daily) saveDaily(backup.daily);
   if (backup.last) saveLast(backup.last);
   if (backup.achievements) saveAchievements(backup.achievements);
+  if (backup.weekly) saveWeekly(backup.weekly);
   for (const game of backup.games) saveGame(game);
 }

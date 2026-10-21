@@ -9,6 +9,8 @@ import {
   deleteGame,
   listGames,
   loadAchievements,
+  loadWeekly,
+  saveWeekly,
   loadDaily,
   loadGame,
   loadLast,
@@ -319,5 +321,47 @@ describe('clearAllProgress', () => {
     expect(readJSON('sudoku:v1:settings', null)).toBeNull();
     expect(readJSON('sudoku:v0:legacy', null)).toBeNull();
     expect(readJSON('unrelated:key', null)).not.toBeNull();
+  });
+});
+
+describe('saved game mode', () => {
+  const base = { puzzleId: 'easy-001', board: '.'.repeat(81), notes: '0'.repeat(243), elapsedMs: 1, mistakes: 0, hintsUsed: 0, status: 'in-progress', updatedAt: 1 };
+
+  it('keeps a known mode and drops an unknown one', () => {
+    expect(parseSavedGame({ ...base, mode: 'perfect' })?.mode).toBe('perfect');
+    expect(parseSavedGame({ ...base, mode: 'time' })?.mode).toBe('time');
+    expect(parseSavedGame({ ...base, mode: 'hardcore' })).not.toHaveProperty('mode');
+    expect(parseSavedGame({ ...base, mode: { x: 1 } })).not.toHaveProperty('mode');
+    expect(parseSavedGame(base)).not.toHaveProperty('mode');
+  });
+});
+
+describe('weekly record', () => {
+  it('round-trips and starts empty', () => {
+    expect(loadWeekly()).toEqual({ done: [] });
+    saveWeekly({ done: ['2026-10-19', '2026-10-26'] });
+    expect(loadWeekly()).toEqual({ done: ['2026-10-19', '2026-10-26'] });
+  });
+
+  it('keeps only well-formed, distinct week keys', () => {
+    writeJSON(KEYS.weekly, { done: ['2026-10-19', '2026-10-19', 'nope', 5, '2026-10-26<x>', null, '2026-11-02'] });
+    expect(loadWeekly()).toEqual({ done: ['2026-10-19', '2026-11-02'] });
+  });
+
+  it('replaces a record of the wrong shape', () => {
+    writeJSON(KEYS.weekly, { done: 'all of them' });
+    expect(loadWeekly()).toEqual({ done: [] });
+    writeJSON(KEYS.weekly, [1]);
+    expect(loadWeekly()).toEqual({ done: [] });
+  });
+});
+
+describe('reminder setting', () => {
+  it('is on by default and can be switched off', () => {
+    expect(DEFAULT_SETTINGS.reminderEnabled).toBe(true);
+    writeJSON(KEYS.settings, { reminderEnabled: false });
+    expect(loadSettings().reminderEnabled).toBe(false);
+    writeJSON(KEYS.settings, { reminderEnabled: 'no' });
+    expect(loadSettings().reminderEnabled).toBe(true);
   });
 });

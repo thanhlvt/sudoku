@@ -40,6 +40,17 @@ export function summarizeByLevel(games: readonly SavedGame[]): Record<Level, Lev
 }
 
 /**
+ * A puzzle of `level` with no saved game at all, for starting a challenge mode (which only applies to a fresh
+ * puzzle). Null when every puzzle has been touched.
+ */
+export function pickFreshIndex(level: Level, count: number, games: ReadonlyMap<string, SavedGame>): number | null {
+  for (let i = 0; i < count; i++) {
+    if (!games.has(puzzleIdOf(level, i))) return i;
+  }
+  return null;
+}
+
+/**
  * Which puzzle of a level to offer next: the most recently touched game in progress, otherwise the
  * first puzzle never completed, otherwise the first one (everything is done; replay from the start).
  */

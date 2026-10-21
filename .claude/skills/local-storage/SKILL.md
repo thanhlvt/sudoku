@@ -21,6 +21,7 @@ Mọi khoá bắt đầu bằng `sudoku:v1:`. Số `v1` là **schema version**, 
 | `sudoku:v1:game:<puzzleId>` | ván đang chơi hoặc đã xong của màn đó |
 | `sudoku:v1:last` | `{ puzzleId, at }` để nút "Chơi tiếp" |
 | `sudoku:v1:daily` | `{ streak, longest, lastDate, freezes }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy, `freezes` = đóng băng chuỗi đang giữ (0–2) |
+| `sudoku:v1:weekly` | `{ done: string[] }` — các tuần (ngày thứ Hai, `YYYY-MM-DD`) đã hoàn thành chuỗi thử thách tuần |
 | `sudoku:v1:achievements` | `Record<id, unlockedAtMs>` — chỉ lưu *thời điểm mở khoá*; tiến độ thành tựu luôn tính lại từ games/stats/daily |
 
 Một khoá riêng cho mỗi ván (thay vì gộp hết vào một object khổng lồ) giúp ghi nhanh và giới hạn
@@ -37,7 +38,8 @@ interface SavedGame {
   mistakes: number;
   hintsUsed: number;
   status: 'in-progress' | 'completed';
-  completedAt?: number;
+  completedAt?: number;          // đóng dấu một lần khi xong, KHÔNG đổi khi lưu lại (chuỗi tuần dựa vào nó)
+  mode?: 'time' | 'perfect';     // chế độ thử thách của lượt chơi; vắng = ván thường
   updatedAt: number;
 }
 
@@ -51,6 +53,7 @@ interface Settings {
   hapticsEnabled: boolean;       // default true
   boardPalette: 'violet' | 'ocean' | 'forest' | 'sunset';   // default 'violet'; ngoài 'violet' mở khoá theo cấp người chơi
   seenIntro: boolean;            // default false; hướng dẫn lần đầu đã hiện
+  reminderEnabled: boolean;      // default true; nhắc làm thử thách hằng ngày (chỉ có tác dụng trên Android)
 }
 
 interface LevelStats {

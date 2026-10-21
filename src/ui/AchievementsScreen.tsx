@@ -1,7 +1,7 @@
 import { Lock } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { evaluateAchievements } from '../game/achievements';
-import type { DailyState, Stats } from '../storage/schema';
+import { loadWeekly, type DailyState, type Stats } from '../storage/schema';
 import { AchievementIcon } from './AchievementIcon';
 import { PlayerCard } from './PlayerCard';
 import { ScreenHeader } from './ScreenHeader';
@@ -29,7 +29,7 @@ export function AchievementsScreen({ stats, daily, onBack }: AchievementsScreenP
   }, [check]);
 
   const rows = useMemo(() => {
-    const statuses = evaluateAchievements({ games, stats, daily });
+    const statuses = evaluateAchievements({ games, stats, daily, weeklyDone: loadWeekly().done.length });
     // Once recorded, an achievement stays unlocked even if the data behind it has since shrunk.
     return statuses.map((s) => ({ ...s, unlocked: s.unlocked || Object.hasOwn(unlocked, s.def.id) }));
   }, [games, stats, daily, unlocked]);

@@ -39,11 +39,13 @@ src/
     generator.ts        # sinh full grid + đào lỗ + retry theo target level
     rng.ts              # mulberry32 + fnv1a hash (deterministic)
   game/                 # state máy chơi + logic thuần của tầng game: nhập số, ghi chú, undo/redo, đồng hồ, lỗi,
-                        #   thử thách ngày + chuỗi/đóng băng, thành tựu, XP, lịch, bài học kỹ thuật, văn bản chia sẻ
+                        #   thử thách ngày + chuỗi/đóng băng, chế độ thử thách (đua thời gian / không sai) + chuỗi tuần,
+                        #   thành tựu, XP, lịch, bài học kỹ thuật, văn bản chia sẻ, kế hoạch nhắc nhở
   storage/              # localStorage adapter, schema versioning, migration, sao lưu/khôi phục (backup.ts)
   ui/                   # components React
   feedback.ts           # âm thanh (mp3 trong public/sounds/) + rung
   share.ts              # chia sẻ / tải file
+  notifications.ts      # nhắc nhở thử thách hằng ngày (Android local notifications)
   App.tsx
 tools/
   generate.ts           # CLI sinh ngân hàng màn chơi

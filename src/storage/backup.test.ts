@@ -14,6 +14,8 @@ import {
   saveGame,
   saveSettings,
   saveStats,
+  saveWeekly,
+  loadWeekly,
   defaultStats,
   type SavedGame,
 } from './schema';
@@ -42,6 +44,8 @@ function seed(): void {
   saveStats(stats);
   saveDaily({ streak: 3, longest: 5, lastDate: '2026-10-21', freezes: 1 });
   saveAchievements({ 'solved-1': 123 });
+  saveWeekly({ done: ['2026-10-19'] });
+  saveGame(game('easy-009', { mode: 'time' }));
 }
 
 beforeEach(() => {
@@ -63,11 +67,13 @@ describe('backup round trip', () => {
       listGames()
         .map((g) => g.puzzleId)
         .sort(),
-    ).toEqual(['easy-001', 'hard-007']);
+    ).toEqual(['easy-001', 'easy-009', 'hard-007']);
     expect(loadSettings()).toMatchObject({ theme: 'dark', boardPalette: 'forest' });
     expect(loadStats().easy.completed).toBe(4);
     expect(loadDaily()).toEqual({ streak: 3, longest: 5, lastDate: '2026-10-21', freezes: 1 });
     expect(loadAchievements()).toEqual({ 'solved-1': 123 });
+    expect(loadWeekly()).toEqual({ done: ['2026-10-19'] });
+    expect(listGames().find((g) => g.puzzleId === 'easy-009')?.mode).toBe('time');
   });
 
   it('replaces existing progress instead of merging into it', () => {
@@ -82,7 +88,7 @@ describe('backup round trip', () => {
     seed();
     const text = createBackup(1);
     expect(text).not.toContain('solution');
-    expect(Object.keys(JSON.parse(text).data).sort()).toEqual(['achievements', 'daily', 'games', 'last', 'settings', 'stats']);
+    expect(Object.keys(JSON.parse(text).data).sort()).toEqual(['achievements', 'daily', 'games', 'last', 'settings', 'stats', 'weekly']);
   });
 });
 

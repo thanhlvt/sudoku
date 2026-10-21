@@ -2,11 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameSession, type GameOptions } from '../../game/gameState';
 import { deleteGame, loadGame, saveGame, saveLast } from '../../storage/schema';
 import type { PuzzleRecord, Step } from '../../core/types';
+import type { GameMode } from '../../storage/schema';
 
 interface UseGameSessionOptions {
   puzzle: PuzzleRecord;
   autoRemoveNotes: boolean;
   paused: boolean;
+  /** Challenge rules to start a *new* game under; a saved game keeps its own. */
+  mode?: GameMode;
 }
 
 export interface GameSessionApi {
@@ -23,6 +26,8 @@ export interface GameSessionApi {
   fillNotes: () => boolean;
   hint: () => Step | null;
   reset: () => void;
+  /** Drops the challenge rules and carries on with the same board as a normal game. */
+  clearMode: () => void;
 }
 
 const DEBOUNCE_MS = 500;
@@ -44,7 +49,7 @@ function createSession(opts: GameOptions): GameSession {
   return new GameSession(opts);
 }
 
-export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessionOptions): GameSessionApi {
+export function useGameSession({ puzzle, autoRemoveNotes, paused, mode }: UseGameSessionOptions): GameSessionApi {
   const sessionRef = useRef<GameSession | null>(null);
   const [version, setVersion] = useState(0);
   const rerender = useCallback(() => setVersion((n) => n + 1), []);
@@ -55,6 +60,7 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
       puzzle: puzzle.puzzle,
       solution: puzzle.solution,
       autoRemoveNotes,
+      mode,
     });
   }
   const session = sessionRef.current;
@@ -92,8 +98,10 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     };
   }, [persist]);
 
+  // A lost challenge attempt (time up, or a mistake under "no mistakes") stops the clock.
+  const failed = session.failure() !== null;
   useEffect(() => {
-    if (session.status === 'completed' || paused) return;
+    if (session.status === 'completed' || paused || failed) return;
     const interval = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
         session.tick(1000);
@@ -101,7 +109,7 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
       }
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [session, session.status, paused, rerender]);
+  }, [session, session.status, paused, failed, rerender]);
 
   const setDigit = useCallback(
     (idx: number, digit: number) => {
@@ -164,5 +172,11 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     persist(true);
   }, [session, persist, rerender]);
 
-  return { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset };
+  const clearMode = useCallback(() => {
+    session.clearMode();
+    rerender();
+    persist(true);
+  }, [session, persist, rerender]);
+
+  return { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset, clearMode };
 }

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { unlockNew, type AchievementDef, type UnlockedMap } from '../../game/achievements';
-import { listGames, loadAchievements, loadDaily, loadStats, saveAchievements } from '../../storage/schema';
+import { listGames, loadAchievements, loadDaily, loadStats, loadWeekly, saveAchievements } from '../../storage/schema';
 
 /**
  * The achievements the player has unlocked (id -> when), and `check()` to find out whether anything new was
@@ -12,7 +12,11 @@ export function useAchievements(): { unlocked: UnlockedMap; check: () => Achieve
 
   const check = useCallback((): AchievementDef[] => {
     const stored = loadAchievements();
-    const result = unlockNew(stored, { games: listGames(), stats: loadStats(), daily: loadDaily() }, Date.now());
+    const result = unlockNew(
+      stored,
+      { games: listGames(), stats: loadStats(), daily: loadDaily(), weeklyDone: loadWeekly().done.length },
+      Date.now(),
+    );
     if (result.unlocked !== stored) saveAchievements(result.unlocked);
     setUnlocked(result.unlocked);
     return result.added;

@@ -9,6 +9,7 @@ import {
   Play,
   Settings as SettingsIcon,
   Star,
+  Timer as TimerIcon,
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
@@ -18,8 +19,9 @@ import { ACHIEVEMENTS } from '../game/achievements';
 import { currentStreak, isDailyDone } from '../game/daily';
 import { heartsLeft, pickNextIndex, summarizeByLevel } from '../game/progress';
 import { levelFromPuzzleId, puzzleIdOf } from '../game/puzzleBank';
+import { weeklyProgress, type WeeklyWeek } from '../game/weekly';
 import { playerLevel, totalXp } from '../game/xp';
-import type { DailyState, Settings, Stats } from '../storage/schema';
+import { loadWeekly, type DailyState, type Settings, type Stats } from '../storage/schema';
 import { IntroSheet } from './IntroSheet';
 import { PlayerCard } from './PlayerCard';
 import { SettingsSheet } from './SettingsSheet';
@@ -37,6 +39,8 @@ interface HomeScreenProps {
   daily: DailyState;
   today: string;
   dailyId: string | null;
+  /** This week's challenge puzzles, for the progress shown on the challenge card. */
+  weekly: WeeklyWeek | null;
   settings: Settings;
   onSettingsChange: (patch: Partial<Settings>) => void;
   onNavigate: (hash: string) => void;
@@ -67,6 +71,7 @@ export function HomeScreen({
   daily,
   today,
   dailyId,
+  weekly,
   settings,
   onSettingsChange,
   onNavigate,
@@ -74,7 +79,11 @@ export function HomeScreen({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { games, byId, last } = useSavedProgress();
   const summary = useMemo(() => summarizeByLevel(games), [games]);
-  const level = useMemo(() => playerLevel(totalXp(games)).level, [games]);
+  const level = useMemo(() => playerLevel(totalXp(games, loadWeekly().done.length)).level, [games]);
+  const weekDone = useMemo(
+    () => (weekly ? weeklyProgress(weekly.key, weekly.ids.map((id) => ({ id })), games).filter(Boolean).length : 0),
+    [weekly, games],
+  );
 
   // The how-to-play intro greets a brand-new player once; someone who already has saved games does not need it.
   const [introOpen, setIntroOpen] = useState(() => !settings.seenIntro && games.length === 0);
@@ -229,6 +238,23 @@ export function HomeScreen({
           )}
         </section>
       )}
+
+      <button
+        type="button"
+        onClick={() => onNavigate('#/modes')}
+        className="btn btn-white animate-screen-in !h-auto w-full justify-start gap-4 !rounded-3xl !px-4 !py-4 text-left"
+        style={stagger(3)}
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
+          <TimerIcon size={26} strokeWidth={2.75} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg font-black leading-tight">Chế độ thử thách</span>
+          <span className="block text-sm font-bold text-accent">
+            Đua thời gian · Không sai · Chuỗi tuần{weekly ? ` ${weekDone}/5` : ''}
+          </span>
+        </span>
+      </button>
 
       <PlayerCard games={games} onClick={() => onNavigate('#/achievements')} className="animate-screen-in" style={stagger(3)} />
 

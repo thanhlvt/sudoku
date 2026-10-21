@@ -16,8 +16,13 @@ function game(id: string, extra: Partial<SavedGame> = {}): SavedGame {
   };
 }
 
-function ctx(games: SavedGame[] = [], stats: Stats = defaultStats(), daily: DailyState = DEFAULT_DAILY): AchievementContext {
-  return { games, stats, daily };
+function ctx(
+  games: SavedGame[] = [],
+  stats: Stats = defaultStats(),
+  daily: DailyState = DEFAULT_DAILY,
+  weeklyDone = 0,
+): AchievementContext {
+  return { games, stats, daily, weeklyDone };
 }
 
 const status = (c: AchievementContext, id: string) => evaluateAchievements(c).find((s) => s.def.id === id)!;
@@ -68,6 +73,25 @@ describe('achievements', () => {
     const fast = defaultStats();
     fast.hard.bestMs = 10 * 60_000;
     expect(status(ctx([], fast), 'speed-hard').unlocked).toBe(true);
+  });
+
+  it('counts wins under each challenge mode separately', () => {
+    const c = ctx([
+      game('easy-001', { mode: 'time' }),
+      game('easy-002', { mode: 'perfect' }),
+      game('easy-003', { mode: 'perfect' }),
+      game('easy-004', { mode: 'perfect', status: 'in-progress' }), // not a win
+      game('easy-005'), // a normal solve
+    ]);
+    expect(status(c, 'time-1').unlocked).toBe(true);
+    expect(status(c, 'perfect-1').unlocked).toBe(true);
+    expect(status(c, 'perfect-10').value).toBe(2);
+  });
+
+  it('counts finished weekly challenges', () => {
+    expect(status(ctx(), 'weekly-1').unlocked).toBe(false);
+    expect(status(ctx([], defaultStats(), DEFAULT_DAILY, 1), 'weekly-1').unlocked).toBe(true);
+    expect(status(ctx([], defaultStats(), DEFAULT_DAILY, 3), 'weekly-4').value).toBe(3);
   });
 
   it('ignores games whose id is not a known level', () => {

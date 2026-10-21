@@ -12,6 +12,7 @@ export const KEYS = {
   last: `${NAMESPACE}:last`,
   daily: `${NAMESPACE}:daily`,
   achievements: `${NAMESPACE}:achievements`,
+  weekly: `${NAMESPACE}:weekly`,
   game: (puzzleId: string): string => `${NAMESPACE}:game:${puzzleId}`,
 };
 
@@ -22,6 +23,10 @@ export interface Meta {
   updatedAt: number;
 }
 
+/** Rule sets a single attempt can be played under: a countdown, or "the first mistake ends it". */
+export const GAME_MODES = ['time', 'perfect'] as const;
+export type GameMode = (typeof GAME_MODES)[number];
+
 export interface SavedGame {
   puzzleId: string;
   board: string;
@@ -31,6 +36,8 @@ export interface SavedGame {
   hintsUsed: number;
   status: 'in-progress' | 'completed';
   completedAt?: number;
+  /** Present when the attempt was started in a challenge mode; absent for a normal game. */
+  mode?: GameMode;
   updatedAt: number;
 }
 
@@ -44,6 +51,8 @@ export interface Settings {
   hapticsEnabled: boolean;
   /** Board colour scheme; the non-default ones unlock with the player level. */
   boardPalette: PaletteId;
+  /** Remind about the daily challenge in the evening (Android only: the web build cannot schedule notifications). */
+  reminderEnabled: boolean;
   /** The how-to-play intro has been shown (or the player already has progress and does not need it). */
   seenIntro: boolean;
 }
@@ -60,6 +69,7 @@ export const DEFAULT_SETTINGS: Settings = {
   soundEnabled: true,
   hapticsEnabled: true,
   boardPalette: 'violet',
+  reminderEnabled: true,
   seenIntro: false,
 };
 
@@ -119,7 +129,7 @@ function isCountIn(v: unknown, max: number): v is number {
 
 export function parseSavedGame(v: unknown): SavedGame | null {
   if (!isObj(v)) return null;
-  const { puzzleId, board, notes, elapsedMs, mistakes, hintsUsed, status, completedAt, updatedAt } = v;
+  const { puzzleId, board, notes, elapsedMs, mistakes, hintsUsed, status, completedAt, updatedAt, mode } = v;
   if (!isPuzzleId(puzzleId)) return null;
   if (typeof board !== 'string' || !BOARD_RE.test(board)) return null;
   if (typeof notes !== 'string' || !NOTES_RE.test(notes)) return null;
@@ -130,6 +140,8 @@ export function parseSavedGame(v: unknown): SavedGame | null {
   if (completedAt !== undefined && !isNumberIn(completedAt, 0, MAX_TIMESTAMP)) return null;
   const game: SavedGame = { puzzleId, board, notes, elapsedMs, mistakes, hintsUsed, status, updatedAt };
   if (completedAt !== undefined) game.completedAt = completedAt;
+  // An unknown mode (a newer build, a hand edit) is dropped: the game is then simply a normal one.
+  if ((GAME_MODES as readonly unknown[]).includes(mode)) game.mode = mode as GameMode;
   return game;
 }
 
@@ -154,7 +166,7 @@ export function parseStats(v: unknown): Stats | null {
 export function parseSettings(v: unknown): Settings | null {
   if (!isObj(v)) return null;
   const settings: Settings = { ...DEFAULT_SETTINGS };
-  for (const key of ['highlightSameDigit', 'highlightPeers', 'showMistakes', 'autoRemoveNotes', 'soundEnabled', 'hapticsEnabled', 'seenIntro'] as const) {
+  for (const key of ['highlightSameDigit', 'highlightPeers', 'showMistakes', 'autoRemoveNotes', 'soundEnabled', 'hapticsEnabled', 'seenIntro', 'reminderEnabled'] as const) {
     if (typeof v[key] === 'boolean') settings[key] = v[key] as boolean;
   }
   if (THEMES.includes(v.theme as Settings['theme'])) settings.theme = v.theme as Settings['theme'];
@@ -189,6 +201,23 @@ export function parseAchievements(v: unknown): Record<string, number> | null {
     }
   }
   return out;
+}
+
+/** Weeks (as the `YYYY-MM-DD` of their Monday) whose five-puzzle challenge was finished. */
+export interface WeeklyState {
+  done: string[];
+}
+
+const MAX_WEEKS_KEPT = 520;
+
+export function parseWeekly(v: unknown): WeeklyState | null {
+  if (!isObj(v) || !Array.isArray(v.done)) return null;
+  const done = new Set<string>();
+  for (const key of v.done) {
+    if (done.size >= MAX_WEEKS_KEPT) break;
+    if (typeof key === 'string' && DATE_KEY_RE.test(key)) done.add(key);
+  }
+  return { done: [...done] };
 }
 
 export function parseLast(v: unknown): LastPlayed | null {
@@ -302,6 +331,16 @@ export function loadAchievements(): Record<string, number> {
 
 export function saveAchievements(unlocked: Readonly<Record<string, number>>): boolean {
   return writeJSON(KEYS.achievements, unlocked);
+}
+
+export const DEFAULT_WEEKLY: WeeklyState = { done: [] };
+
+export function loadWeekly(): WeeklyState {
+  return readJSON<WeeklyState>(KEYS.weekly, { done: [] }, parseWeekly);
+}
+
+export function saveWeekly(weekly: WeeklyState): boolean {
+  return writeJSON(KEYS.weekly, weekly);
 }
 
 export function loadLast(): LastPlayed | null {

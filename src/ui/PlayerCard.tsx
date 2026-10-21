@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react';
 import { playerLevel, totalXp } from '../game/xp';
-import type { SavedGame } from '../storage/schema';
+import { loadWeekly, type SavedGame } from '../storage/schema';
 
 interface PlayerCardProps {
   games: readonly SavedGame[];
@@ -11,7 +11,7 @@ interface PlayerCardProps {
 
 /** The player's level, title and progress to the next level. Experience is derived from the saved games. */
 export function PlayerCard({ games, onClick, className = '', style }: PlayerCardProps): JSX.Element {
-  const xp = useMemo(() => totalXp(games), [games]);
+  const xp = useMemo(() => totalXp(games, loadWeekly().done.length), [games]);
   const { level, title, into, span } = playerLevel(xp);
   const pct = (into / span) * 100;
 

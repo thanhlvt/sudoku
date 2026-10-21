@@ -2,6 +2,8 @@ import { ArrowRight, ChevronRight, Flame, GraduationCap, Share2, Snowflake, Spar
 import { useEffect, useRef } from 'react';
 import type { Level } from '../core/types';
 import type { AchievementDef } from '../game/achievements';
+import { MODE_INFO } from '../game/modes';
+import type { GameMode } from '../storage/schema';
 import { AchievementIcon } from './AchievementIcon';
 import { Confetti } from './Confetti';
 import { formatTime } from './Timer';
@@ -19,6 +21,10 @@ export interface CompletionReward {
   streakMilestone: number | null;
   freezeUsed: boolean;
   freezeEarned: boolean;
+  /** The challenge mode this solve was played under, which pays +50% XP. */
+  mode: GameMode | null;
+  /** Progress of this week's challenge, when the puzzle is one of its five. */
+  weekly: { done: number; total: number; bonusXp: number | null } | null;
 }
 
 interface CompletionScreenProps {
@@ -38,6 +44,8 @@ interface CompletionScreenProps {
   shareNote: string | null;
   onShare: () => void;
   hasNext: boolean;
+  /** Label for the main button; defaults to "Màn tiếp theo". */
+  nextLabel?: string;
   onNext: () => void;
   onReplay: () => void;
   onList: () => void;
@@ -64,6 +72,7 @@ export function CompletionScreen({
   shareNote,
   onShare,
   hasNext,
+  nextLabel = 'Màn tiếp theo',
   onNext,
   onReplay,
   onList,
@@ -140,6 +149,21 @@ export function CompletionScreen({
                 <span className="rounded-full bg-primary px-2.5 py-0.5 text-sm font-black text-white">Lên cấp {reward.levelUp}!</span>
               )}
             </li>
+            {reward.mode && (
+              <li className="text-center text-sm font-extrabold text-accent">
+                Chế độ {MODE_INFO[reward.mode].label}: thưởng thêm 50% XP
+              </li>
+            )}
+            {reward.weekly && (
+              <li className="flex items-center justify-center gap-2 text-base font-extrabold text-primary-dark dark:text-violet-300">
+                Chuỗi tuần {reward.weekly.done}/{reward.weekly.total}
+                {reward.weekly.bonusXp !== null && (
+                  <span className="rounded-full bg-primary px-2.5 py-0.5 text-sm font-black text-white">
+                    Hoàn thành! +{reward.weekly.bonusXp} XP
+                  </span>
+                )}
+              </li>
+            )}
             {reward.paletteUnlocked && (
               <li className="text-center text-sm font-extrabold text-accent">Mở khoá màu bàn cờ “{reward.paletteUnlocked}” trong Cài đặt</li>
             )}
@@ -214,7 +238,7 @@ export function CompletionScreen({
           onClick={hasNext ? onNext : onList}
           className="btn btn-primary cta-ring cta-shine mt-4 min-h-16 w-full text-xl"
         >
-          {hasNext ? 'Màn tiếp theo' : 'Danh sách màn'}
+          {hasNext ? nextLabel : 'Danh sách màn'}
           <ArrowRight size={24} strokeWidth={3} aria-hidden="true" />
         </button>
         <div className={`mt-3 grid gap-3 ${hasNext ? 'grid-cols-3' : 'grid-cols-2'}`}>

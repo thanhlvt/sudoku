@@ -1,17 +1,19 @@
-import { ChevronLeft, Lightbulb, Link2, Pause, Play, Printer, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Hourglass, Lightbulb, Link2, Pause, Play, Printer, RotateCcw, Target } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PuzzleRecord, Step } from '../core/types';
 import { completeDaily } from '../game/daily';
+import { MODE_INFO } from '../game/modes';
 import { PALETTES } from '../game/palettes';
-import { starsFor } from '../game/progress';
+import { pickFreshIndex, starsFor } from '../game/progress';
 import { levelFromPuzzleId, puzzleIdOf } from '../game/puzzleBank';
 import { buildResultText } from '../game/shareText';
 import { isTechniqueId, techniqueLabel } from '../game/techniqueInfo';
 import { completedUnitCells } from '../game/unitComplete';
+import { WEEKLY_BONUS_XP, weeklyProgress, type WeeklyWeek } from '../game/weekly';
 import { playerLevel, totalXp, xpForSolve } from '../game/xp';
 import { isNative } from '../native';
 import { puzzleUrl, shareContent } from '../share';
-import { listGames, type DailyState, type Settings, type Stats } from '../storage/schema';
+import { listGames, loadWeekly, saveWeekly, type DailyState, type GameMode, type Settings, type Stats } from '../storage/schema';
 import { Board } from './Board';
 import { CompletionScreen, type CompletionReward } from './CompletionScreen';
 import { Hearts } from './Hearts';
@@ -39,6 +41,10 @@ interface PlaySessionProps {
   today: string;
   daily: DailyState;
   updateDaily: (updater: (prev: DailyState) => DailyState) => void;
+  /** Challenge rules to start this puzzle under (from the link). Ignored when a saved game exists. */
+  mode?: GameMode;
+  /** This week's challenge puzzles, so finishing one counts towards it. */
+  weekly: WeeklyWeek | null;
 }
 
 const EMPTY_CELLS: readonly number[] = [];
@@ -61,6 +67,8 @@ export function PlaySession({
   today,
   daily,
   updateDaily,
+  mode,
+  weekly,
 }: PlaySessionProps): JSX.Element {
   const level = levelFromPuzzleId(puzzle.id);
   const theme = LEVEL_THEME[level];
@@ -75,11 +83,16 @@ export function PlaySession({
   const [shareNote, setShareNote] = useState<string | null>(null);
   const { check: checkAchievements } = useAchievements();
 
-  const { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset } = useGameSession({
+  const { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset, clearMode } = useGameSession({
     puzzle,
     autoRemoveNotes: settings.autoRemoveNotes,
     paused,
+    mode,
   });
+
+  // A lost challenge attempt (time up, or a mistake under "no mistakes") locks the board until the player chooses.
+  const failure = session.failure();
+  const failureRef = useRef(failure);
 
   const cue = useFeedback(settings);
   const cueRef = useRef(cue);
@@ -117,9 +130,20 @@ export function PlaySession({
     setRecordAtCompletion(isNewRecord);
 
     // Everything below reads storage, which the writes above and the session's own save have already updated.
-    const xp = xpForSolve(level, session.mistakes);
-    const xpAfter = totalXp(listGames());
-    const before = playerLevel(Math.max(0, xpAfter - xp)).level;
+    const xp = xpForSolve(level, session.mistakes, session.mode);
+
+    // This week's challenge: credit the puzzle, and pay out once when the fifth is solved.
+    let weeklyReward: CompletionReward['weekly'] = null;
+    if (weekly && weekly.ids.includes(puzzle.id)) {
+      const done = weeklyProgress(weekly.key, weekly.ids.map((id) => ({ id })), listGames()).filter(Boolean).length;
+      const record = loadWeekly();
+      const finishedNow = done === weekly.ids.length && !record.done.includes(weekly.key);
+      if (finishedNow) saveWeekly({ done: [...record.done, weekly.key] });
+      weeklyReward = { done, total: weekly.ids.length, bonusXp: finishedNow ? WEEKLY_BONUS_XP : null };
+    }
+
+    const xpAfter = totalXp(listGames(), loadWeekly().done.length);
+    const before = playerLevel(Math.max(0, xpAfter - xp - (weeklyReward?.bonusXp ?? 0))).level;
     const after = playerLevel(xpAfter).level;
     const palette = after > before ? PALETTES.find((p) => p.unlockLevel > before && p.unlockLevel <= after) : undefined;
     setReward({
@@ -130,6 +154,8 @@ export function PlaySession({
       streakMilestone: dailyResult?.milestone ?? null,
       freezeUsed: dailyResult?.freezeUsed ?? false,
       freezeEarned: dailyResult?.freezeEarned ?? false,
+      mode: session.mode ?? null,
+      weekly: weeklyReward,
     });
     // Keyed on the status only: just the transition to "completed" may award anything.
   }, [session.status]);
@@ -146,6 +172,11 @@ export function PlaySession({
     }, COMPLETION_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [session.status]);
+
+  useEffect(() => {
+    if (failure === 'time-up' && failureRef.current !== 'time-up') cueRef.current('error');
+    failureRef.current = failure;
+  }, [failure]);
 
   const waveTimerRef = useRef<number | null>(null);
   useEffect(
@@ -175,7 +206,7 @@ export function PlaySession({
   // `quick` (a held digit key / Shift) flips the note mode for this one entry.
   const handleDigit = useCallback(
     (digit: number, quick = false) => {
-      if (selected === null || paused || showCompletion || session.isGiven(selected)) return;
+      if (selected === null || paused || showCompletion || failure || session.isGiven(selected)) return;
       if (noteMode !== quick) {
         if (session.board[selected] !== 0) return;
         toggleNote(selected, digit);
@@ -190,48 +221,48 @@ export function PlaySession({
         cue(session.mistakes > mistakesBefore ? 'error' : completedUnit ? 'unit' : 'place');
       }
     },
-    [selected, noteMode, paused, showCompletion, session, toggleNote, eraseCell, setDigit, rippleUnitsThrough, cue],
+    [selected, noteMode, paused, showCompletion, failure, session, toggleNote, eraseCell, setDigit, rippleUnitsThrough, cue],
   );
 
   const handleErase = useCallback(() => {
-    if (selected === null || paused || showCompletion) return;
+    if (selected === null || paused || showCompletion || failure) return;
     if (session.isGiven(selected) || session.board[selected] === 0) return;
     eraseCell(selected);
     cue('erase');
-  }, [selected, paused, showCompletion, session, eraseCell, cue]);
+  }, [selected, paused, showCompletion, failure, session, eraseCell, cue]);
 
   const handleUndo = useCallback(() => {
-    if (paused || showCompletion || !session.canUndo()) return;
+    if (paused || showCompletion || failure || !session.canUndo()) return;
     undo();
     cue('undo');
-  }, [paused, showCompletion, session, undo, cue]);
+  }, [paused, showCompletion, failure, session, undo, cue]);
 
   const handleRedo = useCallback(() => {
-    if (paused || showCompletion || !session.canRedo()) return;
+    if (paused || showCompletion || failure || !session.canRedo()) return;
     redo();
     cue('undo');
-  }, [paused, showCompletion, session, redo, cue]);
+  }, [paused, showCompletion, failure, session, redo, cue]);
 
   const handleFillNotes = useCallback(() => {
-    if (paused || showCompletion) return;
+    if (paused || showCompletion || failure) return;
     if (fillNotes()) cue('hint');
-  }, [paused, showCompletion, fillNotes, cue]);
+  }, [paused, showCompletion, failure, fillNotes, cue]);
 
-  const canErase = selected !== null && !paused && !session.isGiven(selected) && session.board[selected] !== 0;
+  const canErase = selected !== null && !paused && !failure && !session.isGiven(selected) && session.board[selected] !== 0;
 
   const handleHint = useCallback(() => {
-    if (paused || showCompletion) return;
+    if (paused || showCompletion || failure) return;
     const applying = session.hasPendingHint();
     const step = hint();
     setHintPreview(step);
     if (!step) return;
     if (applying) cue(rippleUnitsThrough(step.placements.map((p) => p.idx)) ? 'unit' : 'place');
     else cue('hint');
-  }, [paused, showCompletion, session, hint, rippleUnitsThrough, cue]);
+  }, [paused, showCompletion, failure, session, hint, rippleUnitsThrough, cue]);
 
   const handleSelect = useCallback((idx: number) => {
-    if (!paused) setSelected(idx);
-  }, [paused]);
+    if (!paused && !failure) setSelected(idx);
+  }, [paused, failure]);
 
   const handleReset = useCallback(() => {
     reset();
@@ -254,7 +285,7 @@ export function PlaySession({
     function onKeyDown(e: KeyboardEvent): void {
       const target = e.target;
       if (target instanceof HTMLElement && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-      if (showCompletion) return;
+      if (showCompletion || failure) return;
 
       // A held key auto-repeats; for toggling actions that would flip a cell back and forth dozens of times
       // a second. Moving, erasing and undoing are fine to repeat.
@@ -333,7 +364,7 @@ export function PlaySession({
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selected, paused, showCompletion, handleDigit, handleErase, handleUndo, handleRedo, handleFillNotes, handleHint]);
+  }, [selected, paused, showCompletion, failure, handleDigit, handleErase, handleUndo, handleRedo, handleFillNotes, handleHint]);
 
   // How many more of each digit the board still needs (shown on the number pad).
   const remaining = useMemo(() => {
@@ -380,10 +411,33 @@ export function PlaySession({
       : null;
   const canSharePuzzle = !isNative || puzzleUrl(puzzle.id) !== null;
 
+  const goBack = (): void => (session.mode ? onNavigate('#/modes', true) : onBack());
+
+  // Where "next" leads: the week's next unfinished puzzle, another fresh puzzle in the same challenge mode, or the
+  // level's following puzzle.
+  const next = ((): { label?: string; hasNext: boolean; go: () => void } => {
+    if (!showCompletion) return { hasNext, go: () => {} }; // reads storage: only needed once the result is up
+    if (weekly && weekly.ids.includes(puzzle.id)) {
+      const games = listGames();
+      const done = weeklyProgress(weekly.key, weekly.ids.map((id) => ({ id })), games);
+      const nextId = weekly.ids.find((_, i) => !done[i]);
+      if (nextId) return { label: 'Màn tuần tiếp theo', hasNext: true, go: () => onNavigate(`#/play/${nextId}`, true) };
+    }
+    if (session.mode) {
+      const mode = session.mode;
+      const fresh = pickFreshIndex(level, levelCount, new Map(listGames().map((g) => [g.puzzleId, g])));
+      return {
+        hasNext: fresh !== null,
+        go: () => onNavigate(fresh === null ? '#/modes' : `#/play/${puzzleIdOf(level, fresh)}/${mode}`, true),
+      };
+    }
+    return { hasNext, go: () => onNavigate(`#/play/${puzzleIdOf(level, puzzle.index + 1)}`, true) };
+  })();
+
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 pb-6 pt-4 [@media(max-height:700px)]:gap-2.5 [@media(max-height:700px)]:pb-4 [@media(max-height:700px)]:pt-3">
       <header className="grid grid-cols-[3rem_1fr_3rem] items-center">
-        <button type="button" onClick={onBack} aria-label="Quay lại" className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
+        <button type="button" onClick={goBack} aria-label="Quay lại" className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
           <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" className="text-accent" />
         </button>
         <div className="flex flex-col items-center gap-1">
@@ -406,9 +460,20 @@ export function PlaySession({
         </button>
       </header>
 
+      {session.mode && (
+        <p className="-mb-1 flex items-center justify-center gap-2 text-sm font-extrabold text-primary-dark dark:text-violet-300">
+          {session.mode === 'time' ? (
+            <Hourglass size={16} strokeWidth={3} aria-hidden="true" />
+          ) : (
+            <Target size={16} strokeWidth={3} aria-hidden="true" />
+          )}
+          {MODE_INFO[session.mode].label}
+        </p>
+      )}
+
       <div className="flex items-center justify-between">
         <Hearts mistakes={session.mistakes} />
-        <Timer elapsedMs={session.elapsedMs} paused={paused} />
+        <Timer elapsedMs={session.elapsedMs} paused={paused} limitMs={session.timeLimitMs} />
       </div>
 
       <div className="card relative p-3">
@@ -424,6 +489,42 @@ export function PlaySession({
           hintCells={shownHint?.cells ?? EMPTY_CELLS}
           wave={wave}
         />
+        {failure && !paused && !showCompletion && (
+          <div
+            role="dialog"
+            aria-label={failure === 'time-up' ? 'Hết giờ' : 'Đã điền sai'}
+            className="absolute inset-0 z-20 flex animate-fade-in flex-col items-center justify-center gap-2 rounded-[1.5rem] bg-card p-4 text-center"
+          >
+            <span className="flex h-12 w-12 animate-pop-in items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
+              {failure === 'time-up' ? (
+                <Hourglass size={26} strokeWidth={2.75} aria-hidden="true" />
+              ) : (
+                <Target size={26} strokeWidth={2.75} aria-hidden="true" />
+              )}
+            </span>
+            <h2 className="text-2xl font-black leading-tight">{failure === 'time-up' ? 'Hết giờ!' : 'Sai mất rồi!'}</h2>
+            <p className="mb-1 text-sm font-bold leading-snug text-accent">
+              {failure === 'time-up'
+                ? 'Đồng hồ đếm ngược đã về 0.'
+                : 'Chế độ Không sai kết thúc ngay khi điền sai một số.'}
+            </p>
+            <button
+              type="button"
+              autoFocus
+              onClick={handleReset}
+              className="btn btn-primary cta-ring min-h-12 w-full max-w-xs text-lg"
+            >
+              <RotateCcw size={20} strokeWidth={3} aria-hidden="true" />
+              Thử lại
+            </button>
+            <button type="button" onClick={clearMode} className="btn btn-soft min-h-11 w-full max-w-xs text-sm">
+              Chơi tiếp như bình thường
+            </button>
+            <button type="button" onClick={goBack} className="btn btn-soft min-h-11 w-full max-w-xs text-sm">
+              Chọn chế độ khác
+            </button>
+          </div>
+        )}
         {paused && (
           <div
             role="dialog"
@@ -517,8 +618,9 @@ export function PlaySession({
           technique={technique}
           shareNote={shareNote}
           onShare={() => void handleShareResult()}
-          hasNext={hasNext}
-          onNext={() => onNavigate(`#/play/${puzzleIdOf(level, puzzle.index + 1)}`, true)}
+          hasNext={next.hasNext}
+          nextLabel={next.label}
+          onNext={next.go}
           onReplay={handleReset}
           onList={() => onNavigate(`#/level/${level}`, true)}
         />

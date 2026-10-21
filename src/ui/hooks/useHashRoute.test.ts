@@ -14,7 +14,16 @@ describe('parseHash', () => {
     expect(parseHash('#/calendar')).toEqual({ name: 'calendar' });
     expect(parseHash('#/stats')).toEqual({ name: 'stats' });
     expect(parseHash('#/learn')).toEqual({ name: 'learn' });
+    expect(parseHash('#/modes')).toEqual({ name: 'modes' });
     expect(parseHash('#/learn/x-wing')).toEqual({ name: 'technique', id: 'x-wing' });
+  });
+
+  it('reads a challenge mode from the play link and ignores an unknown one', () => {
+    expect(parseHash('#/play/easy-003/perfect')).toEqual({ name: 'play', puzzleId: 'easy-003', mode: 'perfect' });
+    expect(parseHash('#/play/easy-003/time')).toEqual({ name: 'play', puzzleId: 'easy-003', mode: 'time' });
+    expect(parseHash('#/play/easy-003/godmode')).toEqual({ name: 'play', puzzleId: 'easy-003' });
+    expect(parseHash('#/play/easy-003/__proto__')).toEqual({ name: 'play', puzzleId: 'easy-003' });
+    expect(parseHash('#/play/easy-003')).toEqual({ name: 'play', puzzleId: 'easy-003' });
   });
 
   it('only accepts a technique the game knows', () => {

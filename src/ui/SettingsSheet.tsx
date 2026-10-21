@@ -1,6 +1,7 @@
 import { Download, HelpCircle, Lock, Trash2, Upload } from 'lucide-react';
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hapticsSupported, playCue, preloadSounds } from '../feedback';
+import { remindersSupported, reminderPermission, requestReminderPermission, type ReminderPermission } from '../notifications';
 import { PALETTES, isPaletteUnlocked } from '../game/palettes';
 import { isNative } from '../native';
 import { downloadTextFile, shareContent } from '../share';
@@ -17,7 +18,14 @@ interface SettingsSheetProps {
   onShowIntro: () => void;
 }
 
-type ToggleKey = 'highlightSameDigit' | 'highlightPeers' | 'showMistakes' | 'autoRemoveNotes' | 'soundEnabled' | 'hapticsEnabled';
+type ToggleKey =
+  | 'highlightSameDigit'
+  | 'highlightPeers'
+  | 'showMistakes'
+  | 'autoRemoveNotes'
+  | 'soundEnabled'
+  | 'hapticsEnabled'
+  | 'reminderEnabled';
 
 const TOGGLES: { key: ToggleKey; label: string; hint: string; show?: boolean }[] = [
   { key: 'showMistakes', label: 'Báo số sai', hint: 'Tô đỏ ô điền sai và trừ tim' },
@@ -26,6 +34,7 @@ const TOGGLES: { key: ToggleKey; label: string; hint: string; show?: boolean }[]
   { key: 'autoRemoveNotes', label: 'Tự xóa ghi chú', hint: 'Điền số xong thì gỡ số đó khỏi ghi chú lân cận' },
   { key: 'soundEnabled', label: 'Âm thanh', hint: 'Tiếng khi điền số, báo sai, xong hàng và hoàn thành màn' },
   { key: 'hapticsEnabled', label: 'Rung', hint: 'Rung nhẹ khi điền số và khi điền sai', show: hapticsSupported },
+  { key: 'reminderEnabled', label: 'Nhắc làm thử thách', hint: 'Thông báo lúc 20:00 nếu bạn chưa làm thử thách hôm nay', show: remindersSupported },
 ];
 
 const THEMES: { value: Settings['theme']; label: string }[] = [
@@ -54,8 +63,30 @@ function Switch({ on }: { on: boolean }): JSX.Element {
 export function SettingsSheet({ settings, onChange, onClose, playerLevel, onShowIntro }: SettingsSheetProps): JSX.Element {
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<string | null>(null);
+  /** Whether the OS lets us show notifications (Android): the switch alone cannot make a blocked reminder appear. */
+  const [permission, setPermission] = useState<ReminderPermission>('unsupported');
+
+  useEffect(() => {
+    if (remindersSupported) void reminderPermission().then(setPermission);
+  }, []);
+
+  async function toggleReminder(): Promise<void> {
+    if (settings.reminderEnabled) {
+      onChange({ reminderEnabled: false });
+      return;
+    }
+    // Turning it on is the moment to ask for the system permission.
+    const result = await requestReminderPermission();
+    setPermission(result);
+    if (result === 'granted') onChange({ reminderEnabled: true });
+    else setMessage('Cần cho phép thông báo cho Sudoku trong cài đặt của máy để nhận nhắc nhở.');
+  }
 
   function toggle(key: ToggleKey): void {
+    if (key === 'reminderEnabled') {
+      void toggleReminder();
+      return;
+    }
     const next = !settings[key];
     onChange({ [key]: next });
     // Let the player hear / feel what they just switched on.
@@ -136,6 +167,11 @@ export function SettingsSheet({ settings, onChange, onClose, playerLevel, onShow
             <span>
               <span className="block text-base font-extrabold">{label}</span>
               <span className="block text-sm font-semibold text-accent">{hint}</span>
+              {key === 'reminderEnabled' && settings.reminderEnabled && permission === 'denied' && (
+                <span className="mt-0.5 block text-sm font-extrabold text-rose-600 dark:text-rose-300">
+                  Thông báo đang bị tắt trong cài đặt của máy.
+                </span>
+              )}
             </span>
             <Switch on={settings[key]} />
           </button>

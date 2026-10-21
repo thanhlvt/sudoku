@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SavedGame } from '../storage/schema';
 import { isPaletteUnlocked } from './palettes';
-import { playerLevel, totalXp, xpForSolve, xpToReach } from './xp';
+import { playerLevel, totalXp, weeklyXp, xpForSolve, xpToReach } from './xp';
 
 function game(id: string, mistakes = 0, status: SavedGame['status'] = 'completed'): SavedGame {
   return {
@@ -23,6 +23,20 @@ describe('xp', () => {
     expect(xpForSolve('expert', 1)).toBe(120);
     expect(xpForSolve('expert', 2)).toBe(90);
     expect(xpForSolve('expert', 9)).toBe(90);
+  });
+
+  it('pays 1.5x for a puzzle solved under a challenge mode', () => {
+    expect(xpForSolve('hard', 0, 'perfect')).toBe(120);
+    expect(xpForSolve('easy', 0, 'time')).toBe(30);
+    expect(xpForSolve('hard', 0)).toBe(80);
+  });
+
+  it('adds the weekly bonus and counts mode solves at the higher rate', () => {
+    expect(weeklyXp(2)).toBe(600);
+    expect(weeklyXp(-1)).toBe(0);
+    const timed = { ...game('easy-001'), mode: 'time' as const };
+    expect(totalXp([timed])).toBe(30);
+    expect(totalXp([timed], 1)).toBe(330);
   });
 
   it('sums one share per completed puzzle and ignores the rest', () => {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -29,5 +30,9 @@
         </provider>
     </application>
 
-    <!-- No permissions: the game ships its puzzles inside the APK and never touches the network. -->
+    <!-- The game ships its puzzles inside the APK and never touches the network, so there is no INTERNET permission.
+         Declared (merged in from the Capacitor plugins): VIBRATE (haptics), POST_NOTIFICATIONS (daily reminder),
+         RECEIVE_BOOT_COMPLETED + WAKE_LOCK (re-arm reminders after a reboot). -->
+    <!-- Reminders use inexact alarms. Exact alarms are a restricted permission on Google Play and are not needed. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 </manifest>

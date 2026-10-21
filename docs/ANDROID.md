@@ -3,7 +3,7 @@
 App Android là bản đóng gói của web app bằng Capacitor (`dist/` được nhúng vào WebView).
 Không có code native tự viết; tương tác native nằm trong `src/native.ts` (nút Back), `src/feedback.ts` (rung qua `@capacitor/haptics`) và `src/share.ts` (chia sẻ qua `@capacitor/share`). Thêm plugin Capacitor mới thì phải chạy `npx cap sync android` để nó vào `capacitor.settings.gradle`.
 
-- `applicationId`: `com.thanhlvt.sudoku` (`capacitor.config.ts` + `android/app/build.gradle`).
+- `applicationId`: `com.happabitlabs.sudoku` (`capacitor.config.ts` + `android/app/build.gradle`).
   **Không đổi được sau khi đã publish lên Play.**
 - `versionCode` / `versionName`: sửa trong `android/app/build.gradle`. Mỗi lần upload bản mới
   `versionCode` phải tăng.

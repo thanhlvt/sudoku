@@ -1,4 +1,4 @@
-package com.thanhlvt.sudoku;
+package com.happabitlabs.sudoku;
 
 import com.getcapacitor.BridgeActivity;
 

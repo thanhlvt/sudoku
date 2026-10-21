@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.thanhlvt.sudoku"
+    namespace = "com.happabitlabs.sudoku"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.thanhlvt.sudoku"
+        applicationId "com.happabitlabs.sudoku"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

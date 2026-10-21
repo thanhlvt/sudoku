@@ -1,23 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
+import { isLevel, isPuzzleId } from '../../core/levels';
 import type { Level } from '../../core/types';
+import { isGameMode } from '../../game/modes';
+import { isTechniqueId } from '../../game/techniqueInfo';
+import type { GameMode } from '../../storage/schema';
 
-export type Route = { name: 'home' } | { name: 'level'; level: Level } | { name: 'play'; puzzleId: string };
+export type Route =
+  | { name: 'home' }
+  | { name: 'level'; level: Level }
+  | { name: 'play'; puzzleId: string; mode?: GameMode }
+  | { name: 'modes' }
+  | { name: 'achievements' }
+  | { name: 'calendar' }
+  | { name: 'stats' }
+  | { name: 'learn' }
+  | { name: 'technique'; id: string };
 
-const LEVELS: readonly Level[] = ['beginner', 'easy', 'medium', 'hard', 'expert'];
-
-function isLevel(s: string): s is Level {
-  return (LEVELS as readonly string[]).includes(s);
-}
-
-function parseHash(hash: string): Route {
+/** The hash is attacker-controllable (anyone can send a link), so only well-formed targets become routes. */
+export function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, '');
   const parts = path.split('/').filter(Boolean);
   if (parts.length === 0) return { name: 'home' };
-  if (parts[0] === 'level' && parts[1] && isLevel(parts[1])) {
+  if (parts[0] === 'level' && isLevel(parts[1])) {
     return { name: 'level', level: parts[1] };
   }
-  if (parts[0] === 'play' && parts[1]) {
-    return { name: 'play', puzzleId: parts[1] };
+  if (parts[0] === 'play' && isPuzzleId(parts[1])) {
+    // `#/play/<id>/<mode>` starts the puzzle under challenge rules; an unknown mode is just ignored.
+    return isGameMode(parts[2]) ? { name: 'play', puzzleId: parts[1], mode: parts[2] } : { name: 'play', puzzleId: parts[1] };
+  }
+  if (parts.length === 1) {
+    if (parts[0] === 'achievements') return { name: 'achievements' };
+    if (parts[0] === 'calendar') return { name: 'calendar' };
+    if (parts[0] === 'stats') return { name: 'stats' };
+    if (parts[0] === 'modes') return { name: 'modes' };
+    if (parts[0] === 'learn') return { name: 'learn' };
+  }
+  if (parts[0] === 'learn' && isTechniqueId(parts[1])) {
+    return { name: 'technique', id: parts[1] };
   }
   return { name: 'home' };
 }

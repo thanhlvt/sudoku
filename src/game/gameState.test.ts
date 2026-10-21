@@ -120,6 +120,110 @@ describe('undo', () => {
   });
 });
 
+describe('redo', () => {
+  it('re-applies an undone move, including auto-removed notes', () => {
+    const session = makeSession(true);
+    session.toggleNote(3, 4);
+    session.setDigit(2, 4); // strips note 4 from idx3
+    session.undo();
+    expect(session.board[2]).toBe(0);
+    expect(session.notes[3]! & (1 << 3)).not.toBe(0);
+    expect(session.canRedo()).toBe(true);
+    session.redo();
+    expect(session.board[2]).toBe(4);
+    expect(session.notes[3]! & (1 << 3)).toBe(0);
+    expect(session.canRedo()).toBe(false);
+    expect(session.canUndo()).toBe(true);
+  });
+
+  it('does nothing when there is nothing to redo', () => {
+    const session = makeSession();
+    expect(session.canRedo()).toBe(false);
+    session.redo();
+    expect(session.board[2]).toBe(0);
+  });
+
+  it('is dropped by any new edit', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.undo();
+    session.toggleNote(2, 1);
+    expect(session.canRedo()).toBe(false);
+  });
+
+  it('does not charge a mistake again', () => {
+    const session = makeSession();
+    session.setDigit(2, 1); // wrong
+    session.undo();
+    session.redo();
+    expect(session.mistakes).toBe(1);
+  });
+
+  it('completes the puzzle again when the completing move is redone', () => {
+    const session = makeSession();
+    for (let i = 0; i < 81; i++) {
+      if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    }
+    session.undo();
+    expect(session.status).toBe('in-progress');
+    session.redo();
+    expect(session.status).toBe('completed');
+  });
+
+  it('is cleared by reset', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.undo();
+    session.reset();
+    expect(session.canRedo()).toBe(false);
+  });
+});
+
+describe('fillNotes', () => {
+  it('writes the remaining candidates into every empty cell', () => {
+    const session = makeSession();
+    expect(session.fillNotes()).toBe(true);
+    // idx2 is empty: its row has 5,3,7 + col has 8 + box has 5,3,6,9,8 ... candidates must include the solution digit 4.
+    expect(session.notes[2]! & (1 << 3)).not.toBe(0);
+    // A digit already in the row cannot be a candidate (idx2 is in row 0, which holds a 5).
+    expect(session.notes[2]! & (1 << 4)).toBe(0);
+    // Given cells keep empty notes.
+    expect(session.notes[0]).toBe(0);
+    // Every empty cell's notes contain its solution digit (basic elimination never removes it).
+    for (let i = 0; i < 81; i++) {
+      if (session.isGiven(i)) continue;
+      expect(session.notes[i]! & (1 << (SOLUTION.charCodeAt(i) - 49))).not.toBe(0);
+    }
+  });
+
+  it('replaces notes the player had written, as one undo step', () => {
+    const session = makeSession();
+    session.toggleNote(2, 9);
+    session.fillNotes();
+    expect(session.notes[2]! & (1 << 8)).toBe(0); // 9 is in idx2's box, so it is not a candidate
+    session.undo();
+    expect(session.notes[2]).toBe(1 << 8);
+    expect(session.notes[3]).toBe(0);
+    session.redo();
+    expect(session.notes[3]).not.toBe(0);
+  });
+
+  it('reports false and records nothing when the notes already match', () => {
+    const session = makeSession();
+    session.fillNotes();
+    expect(session.fillNotes()).toBe(false);
+    session.undo();
+    expect(session.canUndo()).toBe(false);
+  });
+
+  it('leaves cells that hold a digit without notes', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.fillNotes();
+    expect(session.notes[2]).toBe(0);
+  });
+});
+
 describe('completion', () => {
   it('marks the session completed once the board matches the solution', () => {
     const session = makeSession();
@@ -182,7 +286,74 @@ describe('hint', () => {
   });
 });
 
+describe('hint with mistakes on the board', () => {
+  it('never places a wrong digit or charges a mistake, whichever cell the player got wrong', () => {
+    const empties = Array.from({ length: 81 }, (_, i) => i).filter((i) => PUZZLE[i] === '.');
+    for (const idx of empties) {
+      const session = makeSession();
+      const solutionDigit = SOLUTION.charCodeAt(idx) - 48;
+      session.setDigit(idx, (solutionDigit % 9) + 1); // a wrong digit
+      const mistakesBefore = session.mistakes;
+
+      session.hint(); // preview
+      const step = session.hint(); // apply
+
+      expect(session.mistakes).toBe(mistakesBefore);
+      for (const { idx: at, digit } of step?.placements ?? []) {
+        expect(digit).toBe(SOLUTION.charCodeAt(at) - 48);
+      }
+    }
+  });
+});
+
+describe('pending hint', () => {
+  it('is discarded when the board or notes change, so the next hint is a fresh preview', () => {
+    const edits: [string, (s: GameSession) => void][] = [
+      ['setDigit', (s) => s.setDigit(3, 6)],
+      ['eraseCell', (s) => s.eraseCell(2)],
+      ['toggleNote', (s) => s.toggleNote(3, 7)],
+      ['undo', (s) => s.undo()],
+    ];
+    for (const [name, edit] of edits) {
+      const session = makeSession();
+      session.setDigit(2, 4); // gives eraseCell and undo something to act on
+      session.hint();
+      expect(session.hasPendingHint(), name).toBe(true);
+      edit(session);
+      expect(session.hasPendingHint(), name).toBe(false);
+      expect(session.hintsUsed, name).toBe(0);
+    }
+  });
+
+  it('does not apply a stale step on the second request', () => {
+    const session = makeSession();
+    session.hint();
+    session.toggleNote(2, 1);
+    session.hint(); // must preview again, not apply
+    expect(session.hintsUsed).toBe(0);
+    expect(session.hasPendingHint()).toBe(true);
+  });
+});
+
+describe('undo stack', () => {
+  it('keeps only the most recent moves', () => {
+    const session = makeSession();
+    for (let i = 0; i < 1200; i++) session.toggleNote(2, 1 + (i % 9));
+    let undone = 0;
+    while (session.canUndo()) {
+      session.undo();
+      undone++;
+    }
+    expect(undone).toBe(500);
+  });
+});
+
 describe('notes encode/decode', () => {
+  it('drops bits above the nine digit bits', () => {
+    const decoded = decodeNotes('fff' + '000'.repeat(80));
+    expect(decoded[0]).toBe(0x1ff);
+  });
+
   it('round-trips through the hex string format', () => {
     const notes = new Uint16Array(81);
     notes[0] = 0b111111111;
@@ -208,6 +379,24 @@ describe('save/restore', () => {
     expect(restored.elapsedMs).toBe(session.elapsedMs);
   });
 
+  it('does not believe a "completed" save whose board is not actually solved', () => {
+    const saved = { ...makeSession().toSaved(1000), status: 'completed' as const, completedAt: 1000 };
+    const restored = GameSession.fromSaved({ puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true }, saved);
+    expect(restored.status).toBe('in-progress');
+  });
+
+  it('keeps a "completed" save whose board matches the solution', () => {
+    const session = makeSession();
+    for (let i = 0; i < 81; i++) {
+      if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    }
+    const restored = GameSession.fromSaved(
+      { puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true },
+      session.toSaved(1000),
+    );
+    expect(restored.status).toBe('completed');
+  });
+
   it('matchesGivens detects a stale save whose givens no longer line up', () => {
     const session = makeSession();
     const saved = session.toSaved(1000);
@@ -215,5 +404,157 @@ describe('save/restore', () => {
 
     const otherPuzzle = '9' + PUZZLE.slice(1); // idx0 given changed from 5 to 9
     expect(GameSession.matchesGivens(otherPuzzle, saved)).toBe(false);
+  });
+});
+
+function makeModeSession(mode: 'time' | 'perfect'): GameSession {
+  return new GameSession({ puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true, mode });
+}
+
+describe('time attack', () => {
+  const LIMIT = 5 * 60_000; // easy
+
+  it('exposes the level countdown and counts down to it, never past', () => {
+    const session = makeModeSession('time');
+    expect(session.timeLimitMs).toBe(LIMIT);
+    expect(session.failure()).toBeNull();
+    session.tick(LIMIT - 1000);
+    expect(session.failure()).toBeNull();
+    session.tick(5000);
+    expect(session.elapsedMs).toBe(LIMIT);
+    expect(session.failure()).toBe('time-up');
+  });
+
+  it('locks the board once time is up', () => {
+    const session = makeModeSession('time');
+    session.tick(LIMIT);
+    session.setDigit(2, 4);
+    session.toggleNote(2, 1);
+    expect(session.board[2]).toBe(0);
+    expect(session.notes[2]).toBe(0);
+    expect(session.fillNotes()).toBe(false);
+    expect(session.hint()).toBeNull();
+    session.tick(1000);
+    expect(session.elapsedMs).toBe(LIMIT);
+  });
+
+  it('is not failed by a mistake', () => {
+    const session = makeModeSession('time');
+    session.setDigit(2, 1);
+    expect(session.mistakes).toBe(1);
+    expect(session.failure()).toBeNull();
+  });
+
+  it('has no limit in a normal game', () => {
+    const session = makeSession();
+    expect(session.timeLimitMs).toBeNull();
+    session.tick(60 * 60_000);
+    expect(session.failure()).toBeNull();
+  });
+
+  it('can be finished in time', () => {
+    const session = makeModeSession('time');
+    for (let i = 0; i < 81; i++) if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    expect(session.status).toBe('completed');
+    expect(session.failure()).toBeNull();
+  });
+});
+
+describe('no-mistakes mode', () => {
+  it('fails on the first wrong digit and locks the board', () => {
+    const session = makeModeSession('perfect');
+    session.setDigit(2, 4); // right
+    expect(session.failure()).toBeNull();
+    session.setDigit(3, 1); // solution is 6: wrong
+    expect(session.failure()).toBe('mistake');
+    session.setDigit(5, 9);
+    expect(session.board[5]).toBe(0);
+    session.undo();
+    expect(session.board[3]).toBe(1); // undo is locked too
+  });
+
+  it('allows a hint-free perfect run to finish', () => {
+    const session = makeModeSession('perfect');
+    for (let i = 0; i < 81; i++) if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    expect(session.status).toBe('completed');
+    expect(session.failure()).toBeNull();
+  });
+
+  it('can be retried with the mode kept, or carried on as a normal game', () => {
+    const retry = makeModeSession('perfect');
+    retry.setDigit(3, 1);
+    retry.reset();
+    expect(retry.mode).toBe('perfect');
+    expect(retry.failure()).toBeNull();
+
+    const carryOn = makeModeSession('perfect');
+    carryOn.setDigit(3, 1);
+    carryOn.clearMode();
+    expect(carryOn.failure()).toBeNull();
+    carryOn.setDigit(5, 9);
+    expect(carryOn.board[5]).toBe(9);
+  });
+});
+
+describe('mode persistence', () => {
+  it('saves and restores the mode, so a failed attempt reopens failed', () => {
+    const session = makeModeSession('perfect');
+    session.setDigit(3, 1);
+    const saved = session.toSaved(1);
+    expect(saved.mode).toBe('perfect');
+    const restored = GameSession.fromSaved(
+      { puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true },
+      saved,
+    );
+    expect(restored.mode).toBe('perfect');
+    expect(restored.failure()).toBe('mistake');
+  });
+
+  it('a restored game keeps its own mode whatever mode was requested for a new one', () => {
+    const saved = makeSession().toSaved(1); // normal game
+    const restored = GameSession.fromSaved(
+      { puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true, mode: 'perfect' },
+      saved,
+    );
+    expect(restored.mode).toBeUndefined();
+  });
+
+  it('omits the mode from a normal game', () => {
+    expect('mode' in JSON.parse(JSON.stringify(makeSession().toSaved(1)))).toBe(false);
+  });
+});
+
+describe('completion time', () => {
+  function solve(session: GameSession): void {
+    for (let i = 0; i < 81; i++) if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+  }
+
+  it('is stamped by the first save after completion and then kept, even when saved again later', () => {
+    const session = makeSession();
+    expect(session.toSaved(100).completedAt).toBeUndefined();
+    solve(session);
+    expect(session.toSaved(200).completedAt).toBe(200);
+    expect(session.toSaved(999).completedAt).toBe(200);
+  });
+
+  it('survives a save/restore round trip', () => {
+    const session = makeSession();
+    solve(session);
+    const saved = session.toSaved(200);
+    const restored = GameSession.fromSaved(
+      { puzzleId: 'easy-001', puzzle: PUZZLE, solution: SOLUTION, autoRemoveNotes: true },
+      saved,
+    );
+    expect(restored.toSaved(5000).completedAt).toBe(200);
+  });
+
+  it('is cleared by undoing the last move and re-stamped on the next completion', () => {
+    const session = makeSession();
+    solve(session);
+    session.toSaved(200);
+    session.undo();
+    expect(session.toSaved(300).completedAt).toBeUndefined();
+    session.redo();
+    expect(session.toSaved(400).completedAt).toBe(400);
   });
 });

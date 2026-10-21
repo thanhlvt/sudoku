@@ -16,6 +16,8 @@ vòng lặp CTA) và không bao giờ chạy lặp quanh bàn cờ khi người 
 Đọc `/mnt/skills/public/frontend-design/SKILL.md` khi chọn palette và typography, nhưng ưu tiên
 các ràng buộc dưới đây khi có xung đột.
 
+> Ngoài ba màn chính dưới đây còn có các màn phụ — Thành tựu, Lịch thử thách, Thống kê, Học kỹ thuật (+ bài học một kỹ thuật) và `IntroSheet` hướng dẫn lần đầu. Mô tả đầy đủ ở `docs/UI_DESIGN.md` §5.6–5.10; dùng `ScreenHeader` cho màn phụ mới.
+
 ## Ba màn hình (+ màn tổng kết)
 
 1. **Home** — chuỗi ngày + cài đặt, thẻ "Chơi tiếp", "Thử thách hôm nay", 3 ô thống kê (đã giải / sao /
@@ -58,7 +60,8 @@ mù màu và cho màn hình chói.
   `U` undo, `H` gợi ý, `Space` tạm dừng.
 - Mobile: bàn phím số cố định dưới màn hình, nút to tối thiểu 44×44px, có nút toggle ghi chú
   ngay cạnh. Không dùng `<input>` để tránh bàn phím hệ thống bật lên.
-- Long-press hoặc giữ `Shift` khi bấm số = nhập ghi chú nhanh.
+- Long-press (≥ 380 ms) hoặc giữ `Shift` khi bấm số = nhập theo chế độ ngược với hiện tại, một lần (ghi chú nhanh).
+- Phím tắt: `R`/`Ctrl+Y` làm lại, `Ctrl+Z` hoàn tác, `F` điền mọi ghi chú. Âm thanh/rung: xem `docs/UI_DESIGN.md` §9.1 — mọi tín hiệu phát qua `useFeedback`/`playCue`, không gọi `Audio` trực tiếp trong component.
 - Mỗi số trên bàn phím hiện số ô còn lại của số đó (9 − đã điền); khi hết thì làm mờ nút.
 
 ## Luật chơi trong UI
@@ -77,7 +80,10 @@ mù màu và cho màn hình chói.
 - Hoàn thành: bàn đầy và khớp `solution` → dừng đồng hồ, ghi `completed`, cập nhật stats,
   hiện tổng kết (thời gian, lỗi, gợi ý, có phải kỷ lục mới không) + nút "Màn tiếp theo".
 - Thử thách hôm nay: `dailyPuzzle(ngày)` chọn màn xác định theo ngày (`src/game/daily.ts`); hoàn thành đúng màn
-  đó thì `recordDailyCompletion` tăng chuỗi. Chuỗi còn sống nếu hôm qua hoặc hôm nay đã xong.
+  đó thì `completeDaily` tăng chuỗi. Chuỗi còn sống nếu hôm qua hoặc hôm nay đã xong, hoặc (còn đóng băng) hôm kia.
+  Cứ 7 ngày liên tiếp nhận 1 đóng băng (tối đa 2); đóng băng bù đúng một ngày lỡ. Làm bù ngày cũ từ Lịch không tính chuỗi.
+- Chế độ thử thách (`#/play/<id>/time|perfect`, chọn ở `#/modes`): đua thời gian (đếm ngược theo cấp) và không sai (sai một số là thua). Thua ⇒ khoá bàn + lớp phủ 3 lựa chọn; thất bại dẫn xuất từ số liệu ván (`GameSession.failure()`), không có cờ lưu riêng. Chuỗi tuần = 5 màn tăng dần trong tuần, chỉ tính ván xong *trong tuần*.
+- Phần thưởng khi vừa hoàn thành (XP, lên cấp, thành tựu mới, mốc chuỗi) tính **một lần** ở effect hoàn thành của `PlaySession`; mở lại màn đã xong không có phần thưởng.
 
 ## Undo
 
@@ -93,7 +99,7 @@ interface Move {
 }
 ```
 
-Undo một `Move` phải hoàn tác luôn `autoNoteChanges`. Không có redo (hiếm ai dùng trong Sudoku).
+Undo một `Move` phải hoàn tác luôn `autoNoteChanges`. Có redo (`GameSession.redo`): nước vừa undo đi sang redo stack, mọi nước mới xoá stack này. Undo/redo không hoàn/tính lại `mistakes` và `hintsUsed`. Nước `fill-notes` (nút "Ghi hết") có `idx: -1` và chỉ mang `autoNoteChanges`.
 
 ## Accessibility
 

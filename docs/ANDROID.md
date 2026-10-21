@@ -1,12 +1,21 @@
 # Android / Google Play
 
 App Android là bản đóng gói của web app bằng Capacitor (`dist/` được nhúng vào WebView).
-Không có code native tự viết; mọi tương tác native nằm trong `src/native.ts`.
+Không có code native tự viết; tương tác native nằm trong `src/native.ts` (nút Back), `src/feedback.ts` (rung qua `@capacitor/haptics`) và `src/share.ts` (chia sẻ qua `@capacitor/share`). Thêm plugin Capacitor mới thì phải chạy `npx cap sync android` để nó vào `capacitor.settings.gradle`.
 
 - `applicationId`: `com.thanhlvt.sudoku` (`capacitor.config.ts` + `android/app/build.gradle`).
   **Không đổi được sau khi đã publish lên Play.**
 - `versionCode` / `versionName`: sửa trong `android/app/build.gradle`. Mỗi lần upload bản mới
   `versionCode` phải tăng.
+- `AndroidManifest.xml`: `allowBackup="false"` (tiến độ nằm trong `localStorage` của WebView; backup tự động có thể khôi phục lại dữ liệu hỏng
+  sau khi cài lại) và **không tự khai báo quyền nào** — puzzle và âm thanh nằm sẵn trong APK, app không dùng mạng. Các quyền sau được gộp vào từ plugin: `VIBRATE` (`@capacitor/haptics`, quyền thường), và từ `@capacitor/local-notifications`: `POST_NOTIFICATIONS` (Android 13+, **hỏi người dùng lúc chạy**), `RECEIVE_BOOT_COMPLETED` + `WAKE_LOCK` (đặt lại nhắc nhở sau khi khởi động máy). `SCHEDULE_EXACT_ALARM` mà plugin khai báo bị **gỡ** bằng `tools:node="remove"` (nhắc nhở dùng alarm không chính xác; quyền alarm chính xác bị Google Play hạn chế). Khi điền Data safety trên Play Console: app không thu thập hay gửi dữ liệu. Nếu sau này thêm tính năng gọi ra
+  mạng thì phải thêm lại `INTERNET`. *Chưa thử trên thiết bị thật sau khi bỏ quyền này; kiểm tra bản debug trước khi phát hành.*
+- **Nhắc làm thử thách hằng ngày**: `@capacitor/local-notifications`, đặt lịch 7 ngày tới lúc 20:00 (`src/game/reminders.ts` + `src/notifications.ts`), lập lại mỗi khi mở app / xong thử thách / đổi công tắc. Biểu tượng thanh trạng thái: `res/drawable/ic_stat_sudoku.xml` (cấu hình ở `capacitor.config.ts`). Xin quyền **sau khi xong màn đầu tiên** hoặc khi người chơi bật công tắc. Công tắc "Nhắc làm thử thách" chỉ hiện ở bản Android. *Chưa thử trên thiết bị thật* (đặc biệt: hộp thoại quyền Android 13+, giờ nhắc trễ do alarm không chính xác, nhắc sau khi khởi động lại máy).
+- Chia sẻ kết quả / sao lưu dùng `@capacitor/share` (bảng chia sẻ của Android; không cần quyền). Link tới màn chơi chỉ được gắn khi build với `VITE_PUBLIC_URL=https://…/` (địa chỉ bản web); không đặt thì chỉ chia sẻ văn bản.
+- Bản Android **không** đăng ký service worker và `dist/sw.js` bị xoá khỏi bản build `--mode capacitor` (APK đã chứa mọi file). `public/manifest.webmanifest` và `icons/` vẫn đi theo nhưng vô hại.
+- *Chưa thử trên thiết bị thật*: bảng chia sẻ, rung, và chọn file khi "Khôi phục" (WebView). Build debug đã chạy được.
+- `android:sync` build web bằng `vite build --mode capacitor`, tức là **không** chèn Content-Security-Policy (bản web thì có, xem `vite.config.ts`).
+  Lý do: Capacitor có thể chèn script bridge vào trang, và `script-src 'self'` sẽ chặn nó.
 
 ## Lệnh
 

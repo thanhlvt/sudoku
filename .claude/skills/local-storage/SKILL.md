@@ -20,7 +20,9 @@ Mọi khoá bắt đầu bằng `sudoku:v1:`. Số `v1` là **schema version**, 
 | `sudoku:v1:stats` | thống kê theo cấp độ |
 | `sudoku:v1:game:<puzzleId>` | ván đang chơi hoặc đã xong của màn đó |
 | `sudoku:v1:last` | `{ puzzleId, at }` để nút "Chơi tiếp" |
-| `sudoku:v1:daily` | `{ streak, longest, lastDate }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy |
+| `sudoku:v1:daily` | `{ streak, longest, lastDate, freezes }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy, `freezes` = đóng băng chuỗi đang giữ (0–2) |
+| `sudoku:v1:weekly` | `{ done: string[] }` — các tuần (ngày thứ Hai, `YYYY-MM-DD`) đã hoàn thành chuỗi thử thách tuần |
+| `sudoku:v1:achievements` | `Record<id, unlockedAtMs>` — chỉ lưu *thời điểm mở khoá*; tiến độ thành tựu luôn tính lại từ games/stats/daily |
 
 Một khoá riêng cho mỗi ván (thay vì gộp hết vào một object khổng lồ) giúp ghi nhanh và giới hạn
 thiệt hại khi một bản ghi hỏng.
@@ -36,7 +38,8 @@ interface SavedGame {
   mistakes: number;
   hintsUsed: number;
   status: 'in-progress' | 'completed';
-  completedAt?: number;
+  completedAt?: number;          // đóng dấu một lần khi xong, KHÔNG đổi khi lưu lại (chuỗi tuần dựa vào nó)
+  mode?: 'time' | 'perfect';     // chế độ thử thách của lượt chơi; vắng = ván thường
   updatedAt: number;
 }
 
@@ -46,7 +49,11 @@ interface Settings {
   showMistakes: boolean;         // default true
   autoRemoveNotes: boolean;      // default true
   theme: 'system' | 'light' | 'dark';
-  soundEnabled: boolean;         // default false
+  soundEnabled: boolean;         // default true
+  hapticsEnabled: boolean;       // default true
+  boardPalette: 'violet' | 'ocean' | 'forest' | 'sunset';   // default 'violet'; ngoài 'violet' mở khoá theo cấp người chơi
+  seenIntro: boolean;            // default false; hướng dẫn lần đầu đã hiện
+  reminderEnabled: boolean;      // default true; nhắc làm thử thách hằng ngày (chỉ có tác dụng trên Android)
 }
 
 interface LevelStats {
@@ -77,9 +84,13 @@ isAvailable(): boolean
 Yêu cầu:
 
 - Bọc mọi truy cập trong `try/catch`. Safari chế độ riêng tư ném lỗi ngay khi `setItem`.
-- `readJSON` gặp JSON hỏng hoặc sai kiểu → xoá khoá đó, trả `fallback`, không ném lỗi.
+- `readJSON` gặp JSON hỏng hoặc sai kiểu → xoá khoá đó, trả `fallback`, không ném lỗi. "Sai kiểu"
+  được kiểm bằng tham số `validate` (`readJSON(key, fallback, validate)`): mỗi `load*` trong
+  `schema.ts` phải truyền validator `parse*` tương ứng. Dữ liệu trong storage là không đáng tin
+  (sửa tay, app khác cùng origin, bản build cũ) — **thêm trường vào kiểu nào thì sửa validator đó**.
 - Nếu `isAvailable()` false → chạy ở chế độ memory-only, hiện banner nhẹ báo "tiến độ sẽ không
-  được lưu". Game vẫn chơi được bình thường.
+  được lưu" (`StorageBanner`, dựa trên `getStorageHealth()`; cũng hiện khi ghi bị từ chối do hết
+  dung lượng). Game vẫn chơi được bình thường.
 - Quota vượt (`QuotaExceededError`) → dọn các ván `completed` cũ nhất trước, thử lại một lần,
   rồi mới báo lỗi.
 

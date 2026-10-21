@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for the daily-challenge reminder: a 3x3 board. Status-bar icons are drawn as a white mask. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,3h5v5h-5zM9.5,3h5v5h-5zM16,3h5v5h-5zM3,9.5h5v5h-5zM16,9.5h5v5h-5zM3,16h5v5h-5zM9.5,16h5v5h-5zM16,16h5v5h-5z" />
+</vector>

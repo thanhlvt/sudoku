@@ -1,10 +1,13 @@
-import { PEERS, cloneGrid, gridToString, isComplete, parseGrid } from '../core/board';
+import { PEERS, cloneGrid, computeCandidates, gridToString, isComplete, parseGrid } from '../core/board';
 import { solveLogically } from '../core/logicalSolver';
 import type { Grid, Step } from '../core/types';
 import type { SavedGame } from '../storage/schema';
+import { TIME_LIMIT_MS, modeFailure, type GameMode, type ModeFailure } from './modes';
+import { levelFromPuzzleId } from './puzzleBank';
 
 export interface Move {
-  type: 'set' | 'erase' | 'note';
+  type: 'set' | 'erase' | 'note' | 'fill-notes';
+  /** The cell the move acts on; `-1` for `fill-notes`, which only has `autoNoteChanges`. */
   idx: number;
   before: { value: number; notes: number };
   after: { value: number; notes: number };
@@ -16,6 +19,8 @@ export interface GameOptions {
   puzzle: string;
   solution: string;
   autoRemoveNotes: boolean;
+  /** Challenge rules for a new game. A restored game keeps the mode it was saved with. */
+  mode?: GameMode;
 }
 
 export function encodeNotes(notes: Uint16Array): string {
@@ -29,10 +34,14 @@ export function encodeNotes(notes: Uint16Array): string {
 export function decodeNotes(encoded: string): Uint16Array {
   const notes = new Uint16Array(81);
   for (let i = 0; i < 81; i++) {
-    notes[i] = parseInt(encoded.slice(i * 3, i * 3 + 3), 16) || 0;
+    // Only the low 9 bits (digits 1-9) mean anything; stray high bits from a bad save are dropped.
+    notes[i] = (parseInt(encoded.slice(i * 3, i * 3 + 3), 16) || 0) & 0x1ff;
   }
   return notes;
 }
+
+/** Older moves are forgotten past this, so holding a key (or a very long ván) cannot grow memory without bound. */
+const MAX_UNDO_MOVES = 500;
 
 export class GameSession {
   readonly puzzleId: string;
@@ -45,8 +54,12 @@ export class GameSession {
   hintsUsed: number;
   status: 'in-progress' | 'completed';
   autoRemoveNotes: boolean;
+  mode: GameMode | undefined;
+  /** When the puzzle was solved (ms since epoch). Set by the first save after completion, then kept. */
+  private completedAt: number | undefined;
 
   private undoStack: Move[] = [];
+  private redoStack: Move[] = [];
   private pendingHintStep: Step | null = null;
 
   constructor(opts: GameOptions) {
@@ -60,6 +73,7 @@ export class GameSession {
     this.hintsUsed = 0;
     this.status = 'in-progress';
     this.autoRemoveNotes = opts.autoRemoveNotes;
+    this.mode = opts.mode;
   }
 
   static fromSaved(opts: GameOptions, saved: SavedGame): GameSession {
@@ -69,7 +83,10 @@ export class GameSession {
     session.elapsedMs = saved.elapsedMs;
     session.mistakes = saved.mistakes;
     session.hintsUsed = saved.hintsUsed;
-    session.status = saved.status;
+    session.mode = saved.mode;
+    session.completedAt = saved.completedAt;
+    // A save claiming "completed" is only believed if the board really is solved.
+    session.status = saved.status === 'completed' && session.checkCompletion() ? 'completed' : 'in-progress';
     return session;
   }
 
@@ -87,14 +104,40 @@ export class GameSession {
     return this.givens[idx] !== 0;
   }
 
+  /** Time-attack countdown for this puzzle, or null when the game has no time limit. */
+  get timeLimitMs(): number | null {
+    return this.mode === 'time' ? TIME_LIMIT_MS[levelFromPuzzleId(this.puzzleId)] : null;
+  }
+
+  /**
+   * Set once a challenge attempt is lost (time ran out, or a mistake under "no mistakes"). The board is locked
+   * until the player retries or carries on as a normal game (`clearMode`).
+   */
+  failure(): ModeFailure | null {
+    return modeFailure(this.mode, {
+      completed: this.status === 'completed',
+      elapsedMs: this.elapsedMs,
+      mistakes: this.mistakes,
+      level: levelFromPuzzleId(this.puzzleId),
+    });
+  }
+
+  /** Drops the challenge rules and keeps playing the same board as a normal game. */
+  clearMode(): void {
+    this.mode = undefined;
+  }
+
   tick(deltaMs: number): void {
-    if (this.status !== 'completed') this.elapsedMs += deltaMs;
+    if (this.status === 'completed' || this.failure() !== null) return;
+    const limit = this.timeLimitMs;
+    this.elapsedMs = limit === null ? this.elapsedMs + deltaMs : Math.min(limit, this.elapsedMs + deltaMs);
   }
 
   setDigit(idx: number, digit: number): void {
     if (digit < 1 || digit > 9) return;
-    if (this.status === 'completed' || this.isGiven(idx)) return;
+    if (this.status === 'completed' || this.isGiven(idx) || this.failure() !== null) return;
 
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.board[idx] = digit;
     const after = { value: digit, notes: this.notes[idx]! };
@@ -114,7 +157,7 @@ export class GameSession {
       this.mistakes++;
     }
 
-    this.undoStack.push({
+    this.pushMove({
       type: 'set',
       idx,
       before,
@@ -128,23 +171,62 @@ export class GameSession {
   }
 
   eraseCell(idx: number): void {
-    if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] === 0) return;
+    if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] === 0 || this.failure() !== null) return;
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.board[idx] = 0;
     const after = { value: 0, notes: this.notes[idx]! };
-    this.undoStack.push({ type: 'erase', idx, before, after });
+    this.pushMove({ type: 'erase', idx, before, after });
   }
 
   toggleNote(idx: number, digit: number): void {
-    if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] !== 0) return;
+    if (digit < 1 || digit > 9) return;
+    if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] !== 0 || this.failure() !== null) return;
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.notes[idx]! ^= 1 << (digit - 1);
     const after = { value: this.board[idx]!, notes: this.notes[idx]! };
-    this.undoStack.push({ type: 'note', idx, before, after });
+    this.pushMove({ type: 'note', idx, before, after });
+  }
+
+  /**
+   * Writes every empty cell's candidates (what the digits already on the board still allow) into its notes,
+   * replacing whatever notes were there. One undo step. Returns false when nothing would change.
+   */
+  fillNotes(): boolean {
+    if (this.status === 'completed' || this.failure() !== null) return false;
+    const candidates = computeCandidates(this.board);
+    const changes: { idx: number; before: number; after: number }[] = [];
+    for (let i = 0; i < 81; i++) {
+      if (this.board[i] !== 0 || this.isGiven(i)) continue;
+      if (this.notes[i] !== candidates[i]) changes.push({ idx: i, before: this.notes[i]!, after: candidates[i]! });
+    }
+    if (changes.length === 0) return false;
+    this.pendingHintStep = null;
+    for (const change of changes) this.notes[change.idx] = change.after;
+    this.pushMove({
+      type: 'fill-notes',
+      idx: -1,
+      before: { value: 0, notes: 0 },
+      after: { value: 0, notes: 0 },
+      autoNoteChanges: changes,
+    });
+    return true;
+  }
+
+  private pushMove(move: Move): void {
+    // A new edit makes the undone moves unreachable.
+    this.redoStack = [];
+    this.undoStack.push(move);
+    if (this.undoStack.length > MAX_UNDO_MOVES) this.undoStack.shift();
   }
 
   canUndo(): boolean {
     return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
   }
 
   /** Clears all player input and counters, returning the session to a fresh in-progress state. */
@@ -156,21 +238,50 @@ export class GameSession {
     this.hintsUsed = 0;
     this.status = 'in-progress';
     this.undoStack = [];
+    this.redoStack = [];
     this.pendingHintStep = null;
   }
 
   undo(): void {
+    if (this.failure() !== null) return;
     const move = this.undoStack.pop();
     if (!move) return;
 
-    this.board[move.idx] = move.before.value;
-    this.notes[move.idx] = move.before.notes;
+    this.pendingHintStep = null;
+    if (move.idx >= 0) {
+      this.board[move.idx] = move.before.value;
+      this.notes[move.idx] = move.before.notes;
+    }
     if (move.autoNoteChanges) {
       for (const change of move.autoNoteChanges) {
         this.notes[change.idx] = change.before;
       }
     }
     if (this.status === 'completed') this.status = 'in-progress';
+    this.redoStack.push(move);
+  }
+
+  /**
+   * Re-applies the move most recently undone. Counters are not touched in either direction: a wrong digit
+   * costs a heart once, when it is first entered, however often it is undone and redone.
+   */
+  redo(): void {
+    if (this.failure() !== null) return;
+    const move = this.redoStack.pop();
+    if (!move) return;
+
+    this.pendingHintStep = null;
+    if (move.idx >= 0) {
+      this.board[move.idx] = move.after.value;
+      this.notes[move.idx] = move.after.notes;
+    }
+    if (move.autoNoteChanges) {
+      for (const change of move.autoNoteChanges) {
+        this.notes[change.idx] = change.after;
+      }
+    }
+    this.undoStack.push(move);
+    if (this.checkCompletion()) this.status = 'completed';
   }
 
   /**
@@ -178,9 +289,9 @@ export class GameSession {
    * Second call (with the same pending step still queued) applies it and counts as a hint used.
    */
   hint(): Step | null {
-    if (this.status === 'completed') return null;
+    if (this.status === 'completed' || this.failure() !== null) return null;
     if (!this.pendingHintStep) {
-      const result = solveLogically(this.board);
+      const result = solveLogically(this.boardWithoutMistakes());
       this.pendingHintStep = result.steps[0] ?? null;
       return this.pendingHintStep;
     }
@@ -191,8 +302,25 @@ export class GameSession {
     return step;
   }
 
+  /** True while a previewed hint is waiting to be applied. Any edit to the board or notes discards it. */
+  hasPendingHint(): boolean {
+    return this.pendingHintStep !== null;
+  }
+
   clearPendingHint(): void {
     this.pendingHintStep = null;
+  }
+
+  /**
+   * The board with the player's wrong digits taken out. The logical solver assumes every filled cell is right;
+   * feeding it a mistake can yield a step that places a wrong digit (and costs the player a heart).
+   */
+  private boardWithoutMistakes(): Grid {
+    const clean = cloneGrid(this.board);
+    for (let i = 0; i < 81; i++) {
+      if (this.givens[i] === 0 && clean[i] !== 0 && clean[i] !== this.solution[i]) clean[i] = 0;
+    }
+    return clean;
   }
 
   private applyStep(step: Step): void {
@@ -216,6 +344,10 @@ export class GameSession {
   }
 
   toSaved(now: number): SavedGame {
+    // Saving a finished game again (reopening it, leaving the screen) must not move its completion time:
+    // the weekly challenge decides from it which week the solve belongs to.
+    if (this.status === 'completed') this.completedAt ??= now;
+    else this.completedAt = undefined;
     return {
       puzzleId: this.puzzleId,
       board: gridToString(this.board, '.'),
@@ -224,7 +356,8 @@ export class GameSession {
       mistakes: this.mistakes,
       hintsUsed: this.hintsUsed,
       status: this.status,
-      completedAt: this.status === 'completed' ? now : undefined,
+      completedAt: this.completedAt,
+      mode: this.mode,
       updatedAt: now,
     };
   }

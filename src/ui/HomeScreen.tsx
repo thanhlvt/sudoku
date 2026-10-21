@@ -1,21 +1,46 @@
-import { Check, Clock, Flame, Heart, Play, Settings as SettingsIcon, Star } from 'lucide-react';
-import { useMemo, useState, type CSSProperties } from 'react';
+import {
+  BarChart3,
+  CalendarDays,
+  Check,
+  Clock,
+  Flame,
+  GraduationCap,
+  Heart,
+  Play,
+  Settings as SettingsIcon,
+  Star,
+  Timer as TimerIcon,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Level, Manifest } from '../core/types';
+import { ACHIEVEMENTS } from '../game/achievements';
 import { currentStreak, isDailyDone } from '../game/daily';
 import { heartsLeft, pickNextIndex, summarizeByLevel } from '../game/progress';
 import { levelFromPuzzleId, puzzleIdOf } from '../game/puzzleBank';
-import type { DailyState, Settings, Stats } from '../storage/schema';
+import { weeklyProgress, type WeeklyWeek } from '../game/weekly';
+import { playerLevel, totalXp } from '../game/xp';
+import { loadWeekly, type DailyState, type Settings, type Stats } from '../storage/schema';
+import { IntroSheet } from './IntroSheet';
+import { PlayerCard } from './PlayerCard';
 import { SettingsSheet } from './SettingsSheet';
 import { formatTime } from './Timer';
 import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { useAchievements } from './hooks/useAchievements';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
 interface HomeScreenProps {
   manifest: Manifest | null;
+  /** The manifest could not be loaded (offline, bad deploy); show a retry instead of waiting forever. */
+  loadFailed: boolean;
+  onRetry: () => void;
   stats: Stats;
   daily: DailyState;
   today: string;
   dailyId: string | null;
+  /** This week's challenge puzzles, for the progress shown on the challenge card. */
+  weekly: WeeklyWeek | null;
   settings: Settings;
   onSettingsChange: (patch: Partial<Settings>) => void;
   onNavigate: (hash: string) => void;
@@ -40,10 +65,13 @@ function Logo(): JSX.Element {
 
 export function HomeScreen({
   manifest,
+  loadFailed,
+  onRetry,
   stats,
   daily,
   today,
   dailyId,
+  weekly,
   settings,
   onSettingsChange,
   onNavigate,
@@ -51,6 +79,32 @@ export function HomeScreen({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { games, byId, last } = useSavedProgress();
   const summary = useMemo(() => summarizeByLevel(games), [games]);
+  const level = useMemo(() => playerLevel(totalXp(games, loadWeekly().done.length)).level, [games]);
+  const weekDone = useMemo(
+    () => (weekly ? weeklyProgress(weekly.key, weekly.ids.map((id) => ({ id })), games).filter(Boolean).length : 0),
+    [weekly, games],
+  );
+
+  // The how-to-play intro greets a brand-new player once; someone who already has saved games does not need it.
+  const [introOpen, setIntroOpen] = useState(() => !settings.seenIntro && games.length === 0);
+  function closeIntro(): void {
+    setIntroOpen(false);
+    if (!settings.seenIntro) onSettingsChange({ seenIntro: true });
+  }
+
+  // Records achievements earned before this screen was opened (and keeps the count below honest).
+  const { unlocked, check } = useAchievements();
+  useEffect(() => {
+    check();
+  }, [check]);
+  const unlockedCount = ACHIEVEMENTS.filter((a) => Object.hasOwn(unlocked, a.id)).length;
+
+  const links: { icon: LucideIcon; label: string; hash: string; chip: string; badge?: string }[] = [
+    { icon: Trophy, label: 'Thành tựu', hash: '#/achievements', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', badge: `${unlockedCount}/${ACHIEVEMENTS.length}` },
+    { icon: CalendarDays, label: 'Lịch', hash: '#/calendar', chip: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' },
+    { icon: GraduationCap, label: 'Học', hash: '#/learn', chip: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' },
+    { icon: BarChart3, label: 'Thống kê', hash: '#/stats', chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300' },
+  ];
 
   const streak = currentStreak(daily, today);
   const dailyDone = isDailyDone(daily, today);
@@ -185,6 +239,47 @@ export function HomeScreen({
         </section>
       )}
 
+      <button
+        type="button"
+        onClick={() => onNavigate('#/modes')}
+        className="btn btn-white animate-screen-in !h-auto w-full justify-start gap-4 !rounded-3xl !px-4 !py-4 text-left"
+        style={stagger(3)}
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
+          <TimerIcon size={26} strokeWidth={2.75} aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-lg font-black leading-tight">Chế độ thử thách</span>
+          <span className="block text-sm font-bold text-accent">
+            Đua thời gian · Không sai · Chuỗi tuần{weekly ? ` ${weekDone}/5` : ''}
+          </span>
+        </span>
+      </button>
+
+      <PlayerCard games={games} onClick={() => onNavigate('#/achievements')} className="animate-screen-in" style={stagger(3)} />
+
+      <nav className="grid grid-cols-4 gap-3" aria-label="Khám phá">
+        {links.map(({ icon: Icon, label, hash, chip, badge }, i) => (
+          <button
+            key={hash}
+            type="button"
+            onClick={() => onNavigate(hash)}
+            className="btn btn-white animate-screen-in relative min-h-[5.25rem] flex-col !gap-1.5 !rounded-2xl !px-1 py-3 text-sm"
+            style={stagger(3 + i)}
+          >
+            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${chip}`}>
+              <Icon size={20} strokeWidth={2.75} aria-hidden="true" />
+            </span>
+            <span className="leading-none">{label}</span>
+            {badge && (
+              <span className="absolute -right-1 -top-2 rounded-full bg-primary px-1.5 py-0.5 text-[0.65rem] font-black leading-none text-white">
+                {badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
+
       <section className="grid grid-cols-3 gap-3" aria-label="Thống kê">
         {[
           { icon: Check, chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', value: String(totalSolved), label: 'Đã giải' },
@@ -240,12 +335,32 @@ export function HomeScreen({
             </button>
           );
         })}
-        {!manifest && <p className="py-6 text-center text-base font-bold text-accent">Đang tải danh sách cấp độ...</p>}
+        {!manifest && !loadFailed && (
+          <p className="py-6 text-center text-base font-bold text-accent">Đang tải danh sách cấp độ...</p>
+        )}
+        {!manifest && loadFailed && (
+          <div role="alert" className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-base font-bold text-accent">Không tải được danh sách cấp độ. Hãy kiểm tra kết nối mạng.</p>
+            <button type="button" onClick={onRetry} className="btn btn-primary min-h-12 px-6">
+              Thử lại
+            </button>
+          </div>
+        )}
       </div>
 
       {settingsOpen && (
-        <SettingsSheet settings={settings} onChange={onSettingsChange} onClose={() => setSettingsOpen(false)} />
+        <SettingsSheet
+          settings={settings}
+          onChange={onSettingsChange}
+          onClose={() => setSettingsOpen(false)}
+          playerLevel={level}
+          onShowIntro={() => {
+            setSettingsOpen(false);
+            setIntroOpen(true);
+          }}
+        />
       )}
+      {introOpen && <IntroSheet onClose={closeIntro} />}
     </main>
   );
 }

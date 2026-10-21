@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GameSession } from '../../game/gameState';
-import { loadGame, saveGame, saveLast } from '../../storage/schema';
+import { GameSession, type GameOptions } from '../../game/gameState';
+import { deleteGame, loadGame, saveGame, saveLast } from '../../storage/schema';
 import type { PuzzleRecord, Step } from '../../core/types';
+import type { GameMode } from '../../storage/schema';
 
 interface UseGameSessionOptions {
   puzzle: PuzzleRecord;
   autoRemoveNotes: boolean;
   paused: boolean;
+  /** Challenge rules to start a *new* game under; a saved game keeps its own. */
+  mode?: GameMode;
 }
 
 export interface GameSessionApi {
@@ -18,22 +21,47 @@ export interface GameSessionApi {
   eraseCell: (idx: number) => void;
   toggleNote: (idx: number, digit: number) => void;
   undo: () => void;
+  redo: () => void;
+  /** Fills every empty cell's notes with its candidates. Returns false when nothing changed. */
+  fillNotes: () => boolean;
   hint: () => Step | null;
   reset: () => void;
+  /** Drops the challenge rules and carries on with the same board as a normal game. */
+  clearMode: () => void;
 }
 
 const DEBOUNCE_MS = 500;
 
-export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessionOptions): GameSessionApi {
+/**
+ * Resume the saved game when there is a usable one; otherwise start fresh. This runs during render, so it must
+ * never throw -- a bad save would blank the whole app on every visit to this puzzle. A save that cannot be
+ * restored is deleted so it cannot trip the next visit either.
+ */
+function createSession(opts: GameOptions): GameSession {
+  const saved = loadGame(opts.puzzleId);
+  if (saved) {
+    try {
+      if (GameSession.matchesGivens(opts.puzzle, saved)) return GameSession.fromSaved(opts, saved);
+    } catch {
+      deleteGame(opts.puzzleId);
+    }
+  }
+  return new GameSession(opts);
+}
+
+export function useGameSession({ puzzle, autoRemoveNotes, paused, mode }: UseGameSessionOptions): GameSessionApi {
   const sessionRef = useRef<GameSession | null>(null);
   const [version, setVersion] = useState(0);
   const rerender = useCallback(() => setVersion((n) => n + 1), []);
 
   if (!sessionRef.current || sessionRef.current.puzzleId !== puzzle.id) {
-    const opts = { puzzleId: puzzle.id, puzzle: puzzle.puzzle, solution: puzzle.solution, autoRemoveNotes };
-    const saved = loadGame(puzzle.id);
-    sessionRef.current =
-      saved && GameSession.matchesGivens(puzzle.puzzle, saved) ? GameSession.fromSaved(opts, saved) : new GameSession(opts);
+    sessionRef.current = createSession({
+      puzzleId: puzzle.id,
+      puzzle: puzzle.puzzle,
+      solution: puzzle.solution,
+      autoRemoveNotes,
+      mode,
+    });
   }
   const session = sessionRef.current;
   session.autoRemoveNotes = autoRemoveNotes;
@@ -70,8 +98,10 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     };
   }, [persist]);
 
+  // A lost challenge attempt (time up, or a mistake under "no mistakes") stops the clock.
+  const failed = session.failure() !== null;
   useEffect(() => {
-    if (session.status === 'completed' || paused) return;
+    if (session.status === 'completed' || paused || failed) return;
     const interval = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
         session.tick(1000);
@@ -79,7 +109,7 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
       }
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [session, session.status, paused, rerender]);
+  }, [session, session.status, paused, failed, rerender]);
 
   const setDigit = useCallback(
     (idx: number, digit: number) => {
@@ -114,6 +144,21 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     persist(false);
   }, [session, persist, rerender]);
 
+  const redo = useCallback(() => {
+    session.redo();
+    rerender();
+    persist(session.status === 'completed');
+  }, [session, persist, rerender]);
+
+  const fillNotes = useCallback(() => {
+    const changed = session.fillNotes();
+    if (changed) {
+      rerender();
+      persist(false);
+    }
+    return changed;
+  }, [session, persist, rerender]);
+
   const hint = useCallback(() => {
     const step = session.hint();
     rerender();
@@ -127,5 +172,11 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     persist(true);
   }, [session, persist, rerender]);
 
-  return { session, version, setDigit, eraseCell, toggleNote, undo, hint, reset };
+  const clearMode = useCallback(() => {
+    session.clearMode();
+    rerender();
+    persist(true);
+  }, [session, persist, rerender]);
+
+  return { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset, clearMode };
 }

@@ -51,6 +51,8 @@ Nguồn duy nhất: `src/index.css` (biến CSS) + `tailwind.config.js` (ánh x�
 | `--b-wrong-ink` | `text-board-wrong-ink` | `#B91C1C` | `#FCA5A5` | chữ + viền ô sai |
 | `--b-user` | `text-board-user` | `#6D28D9` | `#C4B5FD` | số người chơi nhập (given dùng `text-ink`) |
 
+**Bảng màu bàn cờ** (`data-palette` trên `<html>`, từ `settings.boardPalette`): `violet` (mặc định, bảng trên), `ocean`, `forest`, `sunset` — mở khoá ở cấp người chơi 1/3/6/10. Mỗi bảng chỉ ghi đè bốn token `--b-peer/--b-same/--b-sel/--b-user`, riêng cho sáng và tối, ở cuối khối token của `index.css` (độ ưu tiên: `:root[data-palette]` < bản tối `…:not([data-theme='light'])` < `[data-theme='dark']`). Thêm bảng mới = thêm 3 khối CSS + một dòng trong `game/palettes.ts` + tên vào `PALETTE_IDS` (schema).
+
 ### 2.3 Màu cố định (giống nhau ở cả hai theme)
 
 | Nhóm | Giá trị |
@@ -168,7 +170,7 @@ Nghĩa: tối đa bằng bề rộng cột; khi màn thấp thì co lại theo c
 
 | Phần tử | Kích thước |
 |---|---|
-| Công cụ (Hoàn tác/Xóa/Ghi chú/Gợi ý) | 60×60 |
+| Công cụ (Hoàn tác/Làm lại/Xóa/Ghi chú/Ghi hết/Gợi ý) | 52×52 (6 nút/hàng; nhãn `whitespace-nowrap`, thu còn 0.7rem ở < 360 px) |
 | Nút Back / Tạm dừng ở header Play | 48×48 |
 | Nút Cài đặt / chuỗi ngày ở Home | 44 (cao) |
 | Phím số | cao 64, rộng ≈ 35 (ở 390 px) — **hẹp hơn 44 px theo thiết kế gốc** |
@@ -194,6 +196,8 @@ Nghĩa: tối đa bằng bề rộng cột; khi màn thấp thì co lại theo c
 │ │[TH10]  Thử thách hôm nay   [Chơi]│ │  Daily card (cam)
 │ │[ 21 ]  Hoàn thành để giữ chuỗi…  │ │
 │ └──────────────────────────────────┘ │
+│ [Cấp 4] Tân binh  ▬▬▬▬──── 266/400XP│  PlayerCard (bấm ⇒ Thành tựu)
+│ [🏆 14/19] [📅 Lịch] [🎓 Học] [📊 Thống kê] │  4 lối tắt
 │ [✓ n Đã giải] [★ n Sao] [⏱ Kỷ lục]  │  3 thẻ thống kê
 │ Chọn độ khó                          │
 │ ┌ [1] Mới bắt đầu          3/100 ──┐ │  5 hàng cấp độ + thanh tiến độ
@@ -208,10 +212,13 @@ Nghĩa: tối đa bằng bề rộng cột; khi màn thấp thì co lại theo c
 | Cài đặt | — | mở `SettingsSheet` |
 | ResumeCard | `last` + `byId` + `manifest` | nhãn: "Chơi tiếp" / "Màn tiếp theo" / "Bắt đầu chơi"; chip thời gian + tim chỉ khi có `SavedGame`; ẩn khi chưa có `manifest` |
 | Daily card | `dailyId`, `isDailyDone` | chưa xong: nút "Chơi" (`cta-ring`); xong: dấu tick xanh (`animate-pop-in`); ẩn khi chưa có `manifest` |
+| PlayerCard | `totalXp(games)` → `playerLevel` | thanh XP tối thiểu `.75rem` khi >0 |
+| Lối tắt | `useAchievements` (đếm đạt/tổng) | huy hiệu đạt/tổng ở ô Thành tựu |
 | Thống kê | `summarizeByLevel(listGames())`, `stats` | kỷ lục `--:--` khi chưa có |
 | Hàng cấp | `manifest.levels`, `summary[level]` | thanh xanh lá, chiều rộng `max(pct%, .75rem)` khi >0, `animate-bar-grow` |
 
-Entrance: header → resume → daily → 3 thẻ → 5 hàng cấp, trễ `i×60 ms` (`stagger(i)`).
+Entrance: header → resume → daily → PlayerCard → lối tắt → 3 thẻ → 5 hàng cấp, trễ `i×60 ms` (`stagger(i)`).
+Lần đầu mở app (chưa `seenIntro`, chưa có ván) hiện `IntroSheet` 4 trang phủ lên Home.
 
 ### 5.2 Danh sách màn (`#/level/:level`) — `ui/LevelListScreen.tsx`
 
@@ -253,7 +260,7 @@ Mỗi ô có `aria-label` "Màn N, <trạng thái>". Chuyển tab ⇒ lưới `k
 │ └──────────────────────────────────┘ │
 │ [💡 bong bóng gợi ý + "Áp dụng"]     │  chỉ khi có hintPreview
 │            (khoảng trống co giãn)    │
-│ [↶ Hoàn tác][⌫ Xóa][✎ Ghi chú][💡 Gợi ý]│  Toolbar (badge = số gợi ý đã dùng)
+│ [↶][↷][⌫][✎][✨][💡]                 │  Toolbar 6 nút: Hoàn tác, Làm lại, Xóa, Ghi chú, Ghi hết, Gợi ý (badge = số gợi ý đã dùng)
 │ [1][2][3][4][5][6][7][8][9]          │  NumberPad (dưới mỗi số: còn lại)
 └──────────────────────────────────────┘
 ```
@@ -275,19 +282,53 @@ Chồng lớp (từ dưới lên): nội dung → overlay Tạm dừng (`z-20`, 
 │   Mới bắt đầu · Màn 5 · 2/3 sao             │
 │ [KỶ LỤC MỚI]                                │
 │ [00:12 Thời gian][1 Lỗi][0 Gợi ý]           │
+│ ✨ +40 XP  [Lên cấp 4!]                     │  phần thưởng (chỉ khi vừa hoàn thành)
+│ [🔥 Chuỗi 7 ngày liên tiếp!]                │  mốc chuỗi / đóng băng
+│ [🏅 THÀNH TỰU MỚI  Bước đầu tiên]           │  mỗi thành tựu một dòng
+│ [🎓 Kỹ thuật: X-Wing  › ]                   │  bấm ⇒ bài học
 │ Không mắc lỗi nào để nhận đủ 3 sao ☆        │   (hoặc "Hoàn hảo!…" khi 3 sao / "Chuỗi thử thách n ngày")
 │ [        Màn tiếp theo →        ]           │  cta-ring + cta-shine
-│ [ Chơi lại ]      [ Danh sách màn ]         │
+│ [ Chơi lại ] [ Danh sách ] [ ⤴ Chia sẻ ]    │
 ╰──────────────────────────────────────────────╯
 ```
 
 Biến thể: hết màn của cấp (`hasNext = false`) ⇒ nút chính thành "Danh sách màn" và bỏ nút phụ trùng. Màn thử thách hôm nay ⇒ dòng thông điệp thành "Chuỗi thử thách n ngày" (cờ lửa). Mở lại màn đã xong ⇒ hiện thẳng màn này.
-Thời điểm: hiện sau 750 ms kể từ lúc hoàn thành.
+Thời điểm: hiện sau 750 ms kể từ lúc hoàn thành (kèm tiếng `win`).
+Khối dưới giới hạn `max-h-[80dvh]` và cuộn được, phần trên (sao + cúp) co lại thay vì đẩy tràn ở màn thấp. Mở lại màn đã xong ⇒ không có khối phần thưởng. "Chia sẻ" mở bảng chia sẻ của hệ thống, hoặc sao chép vào clipboard (hiện "Đã sao chép kết quả").
 
 ### 5.5 Bảng Cài đặt — `ui/SettingsSheet.tsx` (bottom sheet)
 
-4 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú; nhóm radio Giao diện (Theo máy/Sáng/Tối);
+7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối);
+nhóm radio **Màu bàn cờ** (4 bảng, bảng chưa mở khoá bị `disabled` kèm ổ khoá + cấp cần); nhóm **Dữ liệu**: "Hướng dẫn chơi", "Sao lưu" (web: tải file `sudoku-backup-<ngày>.json`; Android: bảng chia sẻ), "Khôi phục" (chọn file, `confirm` rồi thay thế toàn bộ tiến độ và `reload`);
 nút "Xóa toàn bộ tiến độ" (có `confirm`, rồi `location.reload()`). Mở từ Home.
+
+### 5.6 Thành tựu (`#/achievements`) — `ui/AchievementsScreen.tsx`
+
+`PlayerCard`, rồi hai nhóm: **Đã mở khoá** (ô vàng + biểu tượng, ngày mở khoá) và **Chưa mở khoá** (ổ khoá + thanh tiến độ `giá trị/mục tiêu` khi mục tiêu > 1). Tiêu đề hiện `đạt/tổng`. Mở màn này gọi `check()` để ghi hồi tố.
+
+### 5.7 Lịch thử thách (`#/calendar`) — `ui/CalendarScreen.tsx`
+
+3 thẻ (chuỗi hiện tại / dài nhất / đóng băng `n/2`), mũi tên đổi tháng (lùi tối đa 12 tháng, không tiến quá tháng này), lưới tuần bắt đầu thứ Hai. Ô: **đã xong** = nền xanh + dấu tick; **chưa làm** = nút trắng + chấm màu cấp của ngày đó; **hôm nay** = viền cam; **tương lai** = mờ, không bấm được. Bấm một ngày ⇒ `#/play/<màn của ngày đó>` (chơi bù; chỉ hôm nay mới tính chuỗi).
+
+### 5.8 Học kỹ thuật (`#/learn`, `#/learn/:id`) — `LearnScreen`, `TechniqueScreen`, `ExampleBoard`
+
+Danh sách 21 kỹ thuật (số thứ tự hoặc dấu tick xanh nếu đã thành thạo, nhóm, số màn luyện `99+`). Bài học: tóm tắt, "Cách nhận biết" (các bước đánh số + mẹo), **Ví dụ thật** và "Luyện tập". `ExampleBoard` là bàn 9×9 chỉ đọc: ô tham gia nền `board-hint` kèm các ứng viên, số bị loại gạch đỏ, số được đặt màu xanh lá; dưới bàn là `Step.explain`. Màn luyện: tối đa 6 màn, nút "Luyện tập ngay" đi tới màn chưa xong đầu tiên. Trong màn chơi, bong bóng gợi ý có thêm tên kỹ thuật, và màn Hoàn thành có nút "Kỹ thuật: …" dẫn về bài học.
+
+### 5.9 Thống kê (`#/stats`) — `ui/StatsScreen.tsx`
+
+6 thẻ tổng (màn đã giải, tổng sao, thời gian chơi `Ng Mp`, số màn không sai & không gợi ý, lần sai, gợi ý) và mỗi cấp một thẻ: số màn/sao, nhanh nhất, trung bình, hoàn hảo, thanh so sánh thời gian trung bình giữa các cấp.
+
+### 5.11 Chế độ thử thách (`#/modes`) — `ui/ModesScreen.tsx`
+
+Ba khối. **Chuỗi thử thách tuần**: khoảng ngày (`Tuần 19/10 – 25/10`), huy hiệu `n/5`, 5 nút bước (số thứ tự + chấm màu cấp; xong = nền xanh + tick; bấm để chơi bước đó), nút "Bắt đầu chuỗi tuần / Làm màn tiếp theo" (hoặc dải xanh "Bạn đã hoàn thành tuần này"), dòng thưởng 300 XP và số tuần đã xong.
+**Đua thời gian** và **Không sai**: biểu tượng, luật một dòng, "Thưởng thêm 50% XP", `Thắng n`, và 5 nút cấp (màu cấp; Đua thời gian ghi giới hạn `03:00…20:00`, Không sai ghi "Chơi"). Bấm một cấp ⇒ `pickFreshIndex` ⇒ `#/play/<màn mới>/<chế độ>`; hết màn mới ở cấp đó thì báo "Bạn đã chơi hết…".
+Home có thẻ rộng "Chế độ thử thách" (kèm `Chuỗi tuần n/5`) trước thẻ người chơi.
+
+**Trong màn chơi**: chip chế độ dưới tiêu đề (đồng hồ ⏳ / mục tiêu 🎯 + tên); `Timer` của Đua thời gian **đếm ngược** (nhãn aria "Còn lại mm:ss", đỏ khi ≤ 60 s). Thua ⇒ lớp phủ cùng chỗ với lớp Tạm dừng (`Hết giờ!` / `Sai mất rồi!`) với 3 nút: "Thử lại", "Chơi tiếp như bình thường", "Chọn chế độ khác"; bàn bị khoá, đồng hồ dừng. Màn Hoàn thành thêm dòng "Chế độ …: thưởng thêm 50% XP" và "Chuỗi tuần n/5" (+ "Hoàn thành! +300 XP"); nút chính đổi thành "Màn tuần tiếp theo" khi còn bước tuần chưa xong.
+
+### 5.10 Hướng dẫn lần đầu — `ui/IntroSheet.tsx`
+
+`Sheet` 4 trang (Luật chơi, Ghi chú, Không cần đoán, Quay lại mỗi ngày), chấm trang, nút "Bỏ qua/Quay lại" và "Tiếp/Bắt đầu chơi".
 
 ---
 
@@ -296,25 +337,32 @@ nút "Xóa toàn bộ tiến độ" (có `confirm`, rồi `location.reload()`). 
 | Component (file) | Vai trò | Props chính | Dùng bởi | State riêng |
 |---|---|---|---|---|
 | `App` | khung + route + sở hữu state toàn cục | — | `main.tsx` | `manifest`, `levelBank` |
-| `HomeScreen` | màn Home | `manifest, stats, daily, today, dailyId, settings, onSettingsChange, onNavigate` | App | `settingsOpen` |
+| `HomeScreen` | màn Home | `manifest, stats, daily, today, dailyId, settings, onSettingsChange, onNavigate` | App | `settingsOpen`, `introOpen` |
+| `AchievementsScreen` / `CalendarScreen` / `StatsScreen` / `LearnScreen` / `TechniqueScreen` | các màn phụ (§5.6–5.9) | `onBack` + dữ liệu riêng | App | tháng đang xem (Lịch) |
+| `ScreenHeader` | nút Back + tiêu đề chung của các màn phụ | `title, onBack, right?` | các màn phụ | — |
+| `ModesScreen` | chuỗi tuần + hai chế độ (§5.11) | `manifest, weekly, onNavigate, onBack` | App | thông báo "hết màn mới" |
+| `PlayerCard` | cấp + XP | `games, onClick?` | Home, Thành tựu | — |
+| `AchievementIcon` | ánh xạ tên biểu tượng → lucide | `name, size` | Thành tựu, Hoàn thành | — |
+| `ExampleBoard` | bàn ví dụ chỉ đọc | `example` | TechniqueScreen | — |
+| `IntroSheet` | hướng dẫn 4 trang | `onClose` | Home | `page` |
 | `LevelListScreen` | danh sách màn | `level, bank, onNavigate, onBack` | App | `pageOverride` |
 | `PlayScreen` | tải puzzle rồi giao cho session | `puzzleId, onNavigate, settings, stats, updateStats, dailyId, today, daily, updateDaily` | App | `loaded`, `error` |
-| `PlaySession` | điều phối một ván: phím, gợi ý, sóng, hoàn thành | + `puzzle, levelCount, onBack` | PlayScreen | `selected, noteMode, paused, hintPreview, wave, showCompletion, recordAtCompletion` |
+| `PlaySession` | điều phối một ván: phím, gợi ý, sóng, hoàn thành, thất bại của chế độ | + `puzzle, levelCount, onBack, mode?, weekly` | PlayScreen | `selected, noteMode, paused, hintPreview, wave, showCompletion, recordAtCompletion` |
 | `Board` | lưới 9×9, tính `highlights` | `givens, board, solution, notes, version, selected, onSelect, settings, hintCells, wave` | PlaySession | — (`useMemo`) |
 | `Cell` (`memo`) | một ô | `idx, value, notes, isGiven, isWrong, highlight, waveDelay, onSelect` | Board | `mounted` ref |
-| `Toolbar` | 4 công cụ | `noteMode, onToggleNoteMode, onUndo, canUndo, onErase, canErase, onHint, hintPending, hintsUsed` | PlaySession | — |
-| `NumberPad` | 9 phím + bộ đếm | `noteMode, remaining[], onDigit` | PlaySession | — |
+| `Toolbar` | 6 công cụ | `noteMode, onToggleNoteMode, onUndo, canUndo, onRedo, canRedo, onErase, canErase, onFillNotes, onHint, hintPending, hintsUsed` | PlaySession | — |
+| `NumberPad` | 9 phím + bộ đếm, nhấn giữ = ghi chú nhanh | `noteMode, remaining[], onDigit(digit, quick?)` | PlaySession | timer nhấn giữ trong từng `DigitButton` |
 | `Hearts` | 3 tim từ `mistakes` | `mistakes` | PlaySession | `lostIdx` (animation) |
-| `Timer` | chip đồng hồ + `formatTime` | `elapsedMs, paused` | PlaySession | — |
+| `Timer` | chip đồng hồ (đếm xuôi, hoặc đếm ngược khi có `limitMs`) + `formatTime` | `elapsedMs, paused, limitMs?` | PlaySession, ModesScreen (chỉ `formatTime`) | — |
 | `Stars` | hàng sao | `count, total, size, filledClass, emptyClass, animated` | LevelList (ô xong) | — |
-| `CompletionScreen` | tổng kết | `level, puzzleNumber, stars, elapsedMs, mistakes, hintsUsed, isNewRecord, dailyStreak, hasNext, onNext, onReplay, onList` | PlaySession | — |
+| `CompletionScreen` | tổng kết + phần thưởng | `level, puzzleNumber, stars, elapsedMs, mistakes, hintsUsed, isNewRecord, dailyStreak, reward, technique, shareNote, onShare, hasNext, onNext, onReplay, onList` | PlaySession | — |
 | `Confetti` | giấy kim tuyến CSS | `count` | CompletionScreen | — |
 | `Sheet` | bottom sheet chung (Esc/nền để đóng) | `title, onClose, children` | SettingsSheet | — |
-| `SettingsSheet` | bảng cài đặt | `settings, onChange, onClose` | HomeScreen | — |
+| `SettingsSheet` | bảng cài đặt | `settings, onChange, onClose, playerLevel, onShowIntro` | HomeScreen | `message` (sao lưu) |
 | `PrintablePuzzle` | bản in (ẩn trên màn hình, chỉ hiện khi `print`) | `puzzleId, level, puzzleNumber, givens, solution?` | PlaySession | — |
 | `levelLabels.ts` | `LEVEL_LABELS`, `LEVEL_THEME` | — | Home, LevelList, PlaySession, Completion | — |
 
-Hooks UI (`ui/hooks`): `useHashRoute`, `useSettings`, `useStats`, `useDaily`, `useSavedProgress`, `useGameSession` — chi tiết ở FUNCTION_DESIGN §9.
+Hooks UI (`ui/hooks`): `useHashRoute`, `useSettings`, `useStats`, `useDaily`, `useSavedProgress`, `useGameSession`, `useFeedback`, `useAchievements`, `useAllBanks`, `useReminders` — chi tiết ở FUNCTION_DESIGN §9.
 
 ### 6.1 Cây component & luồng prop
 
@@ -323,7 +371,10 @@ flowchart TB
   App --> Home[HomeScreen]
   App --> LL[LevelListScreen]
   App --> PS[PlayScreen]
+  App --> Sub[Thành tựu / Lịch / Thống kê / Học / Bài học]
   Home --> SS[SettingsSheet] --> Sheet
+  Home --> Intro[IntroSheet] --> Sheet
+  Home --> PC[PlayerCard]
   LL --> Stars
   PS --> PSes[PlaySession]
   PSes --> Hearts
@@ -369,6 +420,8 @@ Mỗi ô tự vẽ `border-right`/`border-bottom`: ranh giới box (cột/hàng 
 ### 7.3 Phím số
 
 `remaining[d] = 9 − số ô đang có chữ số d` (tính **cả số sai**, nên không lộ thông tin đúng/sai khi `showMistakes` tắt). `remaining ≤ 0` ⇒ nút `disabled` + `scale-90 opacity-30`. Ở chế độ ghi chú, chữ số phím chuyển sang xanh trời.
+
+**Ghi chú nhanh**: nhấn giữ một phím số ≥ 380 ms (hoặc giữ `Shift` khi gõ số) nhập số đó theo chế độ **ngược** với chế độ hiện tại, chỉ cho lần đó. Sau lần nhấn giữ, sự kiện `click` đi kèm khi nhả tay bị bỏ qua (`heldRef` trong `NumberPad`). `onContextMenu` bị chặn để menu chuột phải của trình duyệt không bật lên khi nhấn giữ.
 
 ### 7.4 Bong bóng gợi ý
 
@@ -429,13 +482,38 @@ Hằng số trong code: `COMPLETION_DELAY_MS = 750`, `WAVE_DURATION_MS = 1100` (
 | Điền lại đúng số đang có | = xoá ô | — |
 | Xoá | nút Xóa | `0` / `Backspace` / `Delete` |
 | Ghi chú bật/tắt | nút Ghi chú | `N` |
-| Hoàn tác | nút | `U` |
+| Ghi chú nhanh (ngược chế độ hiện tại) | nhấn giữ phím số | `Shift` + `1`–`9` |
+| Hoàn tác | nút | `U` / `Ctrl+Z` |
+| Làm lại (redo) | nút | `R` / `Ctrl+Y` / `Ctrl+Shift+Z` |
+| Ghi hết (điền mọi ghi chú) | nút | `F` |
 | Gợi ý / áp dụng | nút | `H` |
 | Tạm dừng/tiếp tục | nút ⏸ | `Space` |
 | Đóng Sheet | chạm nền, nút × | `Esc` |
 
 Khi hiện màn Hoàn thành, phím bị chặn (trừ thao tác bằng nút); khi tạm dừng chỉ `Space` còn tác dụng. Phím bị bỏ qua nếu focus đang ở `input/textarea`.
 Không dùng `<input>` cho bàn cờ ⇒ bàn phím hệ thống không bật lên trên điện thoại.
+Phím có `Ctrl`/`Meta`/`Alt` chỉ xử lý `Ctrl+Z/Y`; còn lại bỏ qua (để `Ctrl+R`… vẫn là của trình duyệt).
+
+### 9.1 Âm thanh & rung
+
+Mọi tín hiệu đi qua `PlaySession` → `useFeedback(settings)` → `playCue(cue, {sound, haptics})` (`src/feedback.ts`). Bảng sự kiện:
+
+| Cue | Khi nào | Âm (`public/sounds/<tên>.mp3`) | Rung |
+|---|---|---|---|
+| `place` | điền số đúng | `place` | nhẹ |
+| `error` | điền số sai | `error` | 3 nhịp |
+| `unit` | điền số làm xong hàng/cột/ô | `unit` | vừa |
+| `note` | bật/tắt ghi chú | `note` | nhẹ |
+| `erase` | xoá số | `erase` | nhẹ |
+| `undo` | hoàn tác / làm lại | `undo` | nhẹ |
+| `hint` | hiện gợi ý, "Ghi hết" | `hint` | nhẹ |
+| `win` | sau 750 ms khi hoàn thành màn (không phát khi mở lại màn đã xong) | `win` | thành công |
+
+Mỗi lần điền chỉ phát **một** cue (ưu tiên `error` > `unit` > `place`). Thao tác không có hiệu lực (ô given, ghi chú vào ô đã có số) thì im lặng.
+
+**Thay âm thanh**: ghi đè file `.mp3` cùng tên trong `public/sounds/` (mono, ngắn, ≲ 2 s). Đừng chạy lại `npm run sounds` sau khi đã thay — script sẽ ghi đè bản tự tạo lên. Thêm âm mới: thêm tên vào `SoundName` + `CUES` trong `feedback.ts`, file mp3 tương ứng, và (nếu dùng script) một hàm trong `scripts/make-sounds.mjs`.
+
+Kỹ thuật: Web Audio (`AudioBufferSourceNode`) để phát tức thì; file được `fetch` sớm (`preloadSounds`, gọi ở `App` khi `soundEnabled`) và giải mã ở lần chạm/phím đầu tiên của trang (trình duyệt chặn âm thanh trước thao tác người dùng). Rung: Capacitor Haptics trên Android, `navigator.vibrate` trên web (iOS Safari không hỗ trợ). Mọi lỗi đều bị nuốt — âm thanh không bao giờ được làm hỏng ván chơi. CSP không cần đổi (`media-src` rơi về `default-src 'self'`).
 
 ---
 
@@ -473,6 +551,8 @@ Không dùng `<input>` cho bàn cờ ⇒ bàn phím hệ thống không bật l�
 | Màn đã hoàn thành khi mở lại | hiện thẳng tổng kết | tránh vừa mở đã trống bàn / tính lại thống kê |
 | Theme tối | thêm | PDF chỉ có sáng; app trước đó đã hỗ trợ tối |
 | Bảng Cài đặt | thêm | PDF có icon bánh răng nhưng không có màn |
+| Thanh công cụ 6 nút (52 px) | thêm Làm lại, Ghi hết | giữ một hàng ở 360 px; vẫn ≥ 44 px chạm |
+| Thành tựu/XP/lịch/học/thống kê | thêm | giữ chân người chơi; tất cả dẫn xuất từ dữ liệu sẵn có |
 | Back ở Play | về danh sách màn của cấp (replace) | phân cấp Home › Cấp › Màn |
 | Phím số ≈ 35 px rộng | giữ theo PDF | 9 phím trên một hàng; bù bằng chiều cao 64 px |
 
@@ -516,8 +596,9 @@ Không dùng `<input>` cho bàn cờ ⇒ bàn phím hệ thống không bật l�
 
 ## 15. Giới hạn hiện tại
 
-- Chưa có test tự động cho component React; kiểm bằng chụp màn hình thủ công (§14).
-- Chưa có focus trap trong các lớp phủ; chưa đo tương phản; chưa có âm thanh/rung.
+- Test component React mới có cho `PlaySession` (nhập liệu, redo, ghi hết, nhấn giữ — `PlaySession.test.tsx`); bố cục/animation vẫn kiểm bằng chụp màn hình thủ công (§14). Âm thanh thật chưa kiểm tự động (chỉ nghe thử bằng tai).
+- Chưa có focus trap trong các lớp phủ (kể cả `IntroSheet`); chưa đo tương phản (các bảng màu mới cũng chưa đo).
 - Phím số hẹp (≈ 35 px) dưới ngưỡng 44 px khuyến nghị — đã chấp nhận theo thiết kế.
-- Chỉ có tiếng Việt (chuỗi viết thẳng trong component, chưa tách i18n).
+- Chỉ có tiếng Việt (chuỗi viết thẳng trong component, chưa tách i18n); nội dung 21 bài học nằm trong `game/techniqueInfo.ts`.
+- Bản PWA chưa có thông báo "có bản mới"; chưa kiểm cài đặt/offline trên iOS Safari.
 - Một số chuỗi trạng thái lặp ở nhiều nơi (nhãn cấp, "x/3 sao") — sửa một nơi nhớ tìm các nơi còn lại bằng `Grep`.

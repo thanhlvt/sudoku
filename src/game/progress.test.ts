@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SavedGame } from '../storage/schema';
-import { heartsLeft, pickNextIndex, starsFor, summarizeByLevel } from './progress';
+import { heartsLeft, pickFreshIndex, pickNextIndex, starsFor, summarizeByLevel } from './progress';
 
 function game(puzzleId: string, status: SavedGame['status'], mistakes = 0, updatedAt = 1): SavedGame {
   return { puzzleId, board: '', notes: '', elapsedMs: 0, mistakes, hintsUsed: 0, status, updatedAt };
@@ -30,6 +30,21 @@ describe('summarizeByLevel', () => {
   });
 });
 
+describe('summarizeByLevel with hostile ids', () => {
+  it('ignores prototype keys instead of mutating Object.prototype', () => {
+    summarizeByLevel([
+      game('__proto__-001', 'completed'),
+      game('constructor-001', 'completed'),
+      game('toString-001', 'completed'),
+      game('beginner-001', 'completed'),
+    ]);
+    const probe = {} as { completed?: number; stars?: number };
+    expect(probe.completed).toBeUndefined();
+    expect(probe.stars).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'completed')).toBe(false);
+  });
+});
+
 describe('pickNextIndex', () => {
   const byId = (...games: SavedGame[]): Map<string, SavedGame> => new Map(games.map((g) => [g.puzzleId, g]));
 
@@ -53,5 +68,28 @@ describe('pickNextIndex', () => {
   it('wraps to the first puzzle when the whole level is completed', () => {
     const games = byId(game('easy-001', 'completed'), game('easy-002', 'completed'));
     expect(pickNextIndex('easy', 2, games)).toBe(0);
+  });
+});
+
+describe('pickFreshIndex', () => {
+  it('returns the first puzzle that has no saved game at all', () => {
+    const games = new Map([
+      ['easy-001', game('easy-001', 'completed')],
+      ['easy-002', game('easy-002', 'in-progress')],
+    ]);
+    expect(pickFreshIndex('easy', 5, games)).toBe(2);
+  });
+
+  it('starts at the beginning for an untouched level, and ignores other levels', () => {
+    const games = new Map([['hard-001', game('hard-001', 'completed')]]);
+    expect(pickFreshIndex('easy', 5, games)).toBe(0);
+  });
+
+  it('is null when every puzzle has been touched', () => {
+    const games = new Map([
+      ['easy-001', game('easy-001', 'completed')],
+      ['easy-002', game('easy-002', 'in-progress')],
+    ]);
+    expect(pickFreshIndex('easy', 2, games)).toBeNull();
   });
 });

@@ -29,12 +29,25 @@ export function summarizeByLevel(games: readonly SavedGame[]): Record<Level, Lev
   };
   for (const game of games) {
     if (game.status !== 'completed') continue;
-    const summary = out[levelFromPuzzleId(game.puzzleId)];
-    if (!summary) continue;
+    // Own-property check: an id like `__proto__-001` must not resolve to Object.prototype and get mutated.
+    const level = levelFromPuzzleId(game.puzzleId);
+    if (!Object.hasOwn(out, level)) continue;
+    const summary = out[level];
     summary.completed++;
     summary.stars += starsFor(game.mistakes);
   }
   return out;
+}
+
+/**
+ * A puzzle of `level` with no saved game at all, for starting a challenge mode (which only applies to a fresh
+ * puzzle). Null when every puzzle has been touched.
+ */
+export function pickFreshIndex(level: Level, count: number, games: ReadonlyMap<string, SavedGame>): number | null {
+  for (let i = 0; i < count; i++) {
+    if (!games.has(puzzleIdOf(level, i))) return i;
+  }
+  return null;
 }
 
 /**

@@ -17,7 +17,7 @@ export const enHome: Record<keyof typeof viHome, Message> = {
   'home.modes.title': 'Challenge modes',
   'home.modes.subtitle': 'Time attack · No mistakes · Weekly streak',
   'home.modes.subtitleWeekly': 'Time attack · No mistakes · Weekly streak {done}/5',
-  'home.link.achievements': 'Achievements',
+  'home.link.achievements': 'Awards',
   'home.link.calendar': 'Calendar',
   'home.link.learn': 'Learn',
   'home.link.stats': 'Stats',

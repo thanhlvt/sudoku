@@ -1,6 +1,6 @@
 import { bitToDigit, popcount } from '../board';
 import type { Technique } from '../types';
-import { describeCell } from './helpers';
+import { cellRef } from './helpers';
 
 export const nakedSingle: Technique = {
   name: 'naked-single',
@@ -17,7 +17,7 @@ export const nakedSingle: Technique = {
           placements: [{ idx, digit }],
           eliminations: [],
           cells: [idx],
-          explain: `Ô ${describeCell(idx)} chỉ còn duy nhất 1 số có thể điền: ${digit}.`,
+          explain: { code: 'naked-single', args: { cell: cellRef(idx), digit } },
         };
       }
     }

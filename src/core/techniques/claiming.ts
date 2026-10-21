@@ -1,6 +1,6 @@
 import { BOXES, COLS, ROWS, boxOf } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCells, describeUnit, emptyCellsOf } from './helpers';
+import { cellRefs, emptyCellsOf, unitRef } from './helpers';
 
 export const claiming: Technique = {
   name: 'claiming',
@@ -26,9 +26,7 @@ export const claiming: Technique = {
             placements: [],
             eliminations: targets.map((idx) => ({ idx, digit: d })),
             cells: [...holders, ...targets],
-            explain: `Trong ${describeUnit(line)}, số ${d} chỉ còn nằm trong ${describeUnit(
-              box,
-            )}, nên bị loại khỏi các ô còn lại của ${describeUnit(box)} (${describeCells(targets)}).`,
+            explain: { code: 'claiming', args: { line: unitRef(line), box: unitRef(box), digit: d, targets: cellRefs(targets) } },
           };
         }
       }

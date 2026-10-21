@@ -1,5 +1,5 @@
 import { COLS, ROWS, UNITS, boxOf, candidateDigits, colOf, popcount, rowOf } from '../board';
-import type { Candidates, Grid, Step, Technique, Unit } from '../types';
+import type { Candidates, CellRef, Grid, Step, Technique, Unit, UnitRef } from '../types';
 
 export function combinations<T>(items: readonly T[], k: number): T[][] {
   const result: T[][] = [];
@@ -43,18 +43,18 @@ export function isColUnit(unit: Unit): boolean {
   return unit.every((i) => colOf(i) === c0);
 }
 
-export function describeUnit(unit: Unit): string {
-  if (isRowUnit(unit)) return `hàng ${rowOf(unit[0]!) + 1}`;
-  if (isColUnit(unit)) return `cột ${colOf(unit[0]!) + 1}`;
-  return `khối ${boxOf(unit[0]!) + 1}`;
+export function unitRef(unit: Unit): UnitRef {
+  if (isRowUnit(unit)) return { kind: 'row', n: rowOf(unit[0]!) + 1 };
+  if (isColUnit(unit)) return { kind: 'col', n: colOf(unit[0]!) + 1 };
+  return { kind: 'box', n: boxOf(unit[0]!) + 1 };
 }
 
-export function describeCell(idx: number): string {
-  return `hàng ${rowOf(idx) + 1}, cột ${colOf(idx) + 1}`;
+export function cellRef(idx: number): CellRef {
+  return { row: rowOf(idx) + 1, col: colOf(idx) + 1 };
 }
 
-export function describeCells(idxs: readonly number[]): string {
-  return idxs.map(describeCell).join('; ');
+export function cellRefs(idxs: readonly number[]): CellRef[] {
+  return idxs.map(cellRef);
 }
 
 /**
@@ -113,8 +113,6 @@ export function findHiddenSubsetInUnit(
   return null;
 }
 
-const SUBSET_NAMES = ['', '', 'cặp', 'bộ ba', 'bộ bốn'];
-
 export function nakedSubsetTechnique(name: string, cost: number, k: number): Technique {
   return {
     name,
@@ -132,16 +130,16 @@ export function nakedSubsetTechnique(name: string, cost: number, k: number): Tec
           }
         }
         if (eliminations.length === 0) continue;
-        const digits = candidateDigits(mask).join(', ');
         return {
           technique: name,
           cost,
           placements: [],
           eliminations,
           cells: [...cells, ...eliminations.map((e) => e.idx)],
-          explain: `Trong ${describeUnit(unit)}, ${cells.length} ô (${describeCells(
-            cells,
-          )}) chỉ có thể chứa các số {${digits}} — đây là một ${SUBSET_NAMES[k]} ẩn giấu, nên các số đó bị loại khỏi những ô khác trong ${describeUnit(unit)}.`,
+          explain: {
+            code: 'naked-subset',
+            args: { unit: unitRef(unit), size: k, cells: cellRefs(cells), digits: candidateDigits(mask) },
+          },
         };
       }
       return null;
@@ -181,8 +179,6 @@ function findFishForDigit(
   return null;
 }
 
-const FISH_NAMES = ['', '', 'X-Wing', '', 'Swordfish', '', '', '', 'Jellyfish'];
-
 export function fishTechnique(name: string, cost: number, size: number): Technique {
   return {
     name,
@@ -213,16 +209,21 @@ export function fishTechnique(name: string, cost: number, size: number): Techniq
           }
           if (eliminations.length === 0) continue;
 
-          const baseLabels = baseIdxs.map((b) => describeUnit(baseUnits[b]!)).join(', ');
           return {
             technique: name,
             cost,
             placements: [],
             eliminations,
             cells: [...baseCellsSet, ...eliminations.map((e) => e.idx)],
-            explain: `${FISH_NAMES[size]}: số ${d} trong ${baseLabels} chỉ nằm ở đúng ${size} vị trí chung cột/hàng, nên bị loại khỏi các ô còn lại của những cột/hàng đó (${describeCells(
-              eliminations.map((e) => e.idx),
-            )}).`,
+            explain: {
+              code: 'fish',
+              args: {
+                size,
+                digit: d,
+                bases: baseIdxs.map((b) => unitRef(baseUnits[b]!)),
+                targets: cellRefs(eliminations.map((e) => e.idx)),
+              },
+            },
           };
         }
       }
@@ -247,16 +248,16 @@ export function hiddenSubsetTechnique(name: string, cost: number, k: number): Te
           }
         }
         if (eliminations.length === 0) continue;
-        const digits = candidateDigits(digitMask).join(', ');
         return {
           technique: name,
           cost,
           placements: [],
           eliminations,
           cells,
-          explain: `Trong ${describeUnit(unit)}, các số {${digits}} chỉ còn nằm được ở ${cells.length} ô (${describeCells(
-            cells,
-          )}) — đây là một ${SUBSET_NAMES[k]} ẩn, nên mọi số khác bị loại khỏi các ô đó.`,
+          explain: {
+            code: 'hidden-subset',
+            args: { unit: unitRef(unit), size: k, cells: cellRefs(cells), digits: candidateDigits(digitMask) },
+          },
         };
       }
       return null;

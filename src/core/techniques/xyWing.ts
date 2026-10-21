@@ -1,6 +1,6 @@
 import { PEERS, bitToDigit, candidateDigits, popcount } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCell, describeCells } from './helpers';
+import { cellRef, cellRefs } from './helpers';
 
 export const xyWing: Technique = {
   name: 'xy-wing',
@@ -41,11 +41,17 @@ export const xyWing: Technique = {
               placements: [],
               eliminations,
               cells: [pivot, p1, p2, ...eliminations.map((e) => e.idx)],
-              explain: `XY-Wing quanh ô trục ${describeCell(pivot)} (${candidateDigits(pm).join(
-                ',',
-              )}) và hai càng ${describeCell(p1)}, ${describeCell(p2)}: số ${z} bị loại khỏi ${describeCells(
-                eliminations.map((e) => e.idx),
-              )}.`,
+              explain: {
+                code: 'xy-wing',
+                args: {
+                  pivot: cellRef(pivot),
+                  digits: candidateDigits(pm),
+                  claw1: cellRef(p1),
+                  claw2: cellRef(p2),
+                  z,
+                  targets: cellRefs(eliminations.map((e) => e.idx)),
+                },
+              },
             };
           }
         }

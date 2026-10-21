@@ -4,6 +4,7 @@ import type { PuzzleRecord } from '../core/types';
 import { levelFromPuzzleId, loadLevel } from '../game/puzzleBank';
 import type { WeeklyWeek } from '../game/weekly';
 import type { DailyState, GameMode, Settings, Stats } from '../storage/schema';
+import { useI18n } from '../i18n/useI18n';
 import { PlaySession } from './PlaySession';
 
 interface PlayScreenProps {
@@ -28,23 +29,29 @@ interface Loaded {
 }
 
 export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): JSX.Element {
+  const { t } = useI18n();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setLoaded(null);
-    setError(null);
+    setError(false);
     loadLevel(levelFromPuzzleId(puzzleId))
       .then((bank) => {
         if (cancelled) return;
         const puzzle = bank.puzzles.find((p) => p.id === puzzleId);
         if (puzzle) setLoaded({ puzzle, levelCount: bank.puzzles.length });
-        else setError(`Puzzle not found: ${puzzleId}`);
+        else {
+          console.error(`Puzzle not found: ${puzzleId}`);
+          setError(true);
+        }
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+        if (cancelled) return;
+        console.error(e);
+        setError(true);
       });
     return () => {
       cancelled = true;
@@ -57,19 +64,19 @@ export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): 
   if (error) {
     return (
       <main className="flex flex-1 flex-col gap-4 p-5">
-        <button type="button" onClick={() => onNavigate('#/', true)} aria-label="Quay lại" className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
+        <button type="button" onClick={() => onNavigate('#/', true)} aria-label={t('common.back')} className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
           <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" className="text-accent" />
         </button>
-        <p className="text-lg font-bold">Không tải được màn chơi: {error}</p>
+        <p className="text-lg font-bold">{t('play.loadFailed')}</p>
         <button type="button" onClick={() => setAttempt((n) => n + 1)} className="btn btn-primary min-h-12 self-start px-6">
-          Thử lại
+          {t('common.retry')}
         </button>
       </main>
     );
   }
 
   if (!loaded) {
-    return <div className="flex flex-1 items-center justify-center p-5 text-lg font-bold text-accent">Đang tải...</div>;
+    return <div className="flex flex-1 items-center justify-center p-5 text-lg font-bold text-accent">{t('common.loading')}</div>;
   }
 
   return (

@@ -1,4 +1,5 @@
-/** When and what to remind the player of. Pure: the clock and the player's state are passed in. */
+/** When and what to remind the player of. Pure: the clock, the player's state and the translator are passed in. */
+import type { MessageKey, Translate } from '../i18n';
 
 /** Local hour of the evening reminder. */
 export const REMINDER_HOUR = 20;
@@ -23,27 +24,35 @@ export interface ReminderState {
   streak: number;
 }
 
-const GENERIC: readonly { title: string; body: string }[] = [
-  { title: 'Thử thách hôm nay đang chờ bạn', body: 'Một màn Sudoku mới, giải bằng suy luận, chỉ vài phút thôi.' },
-  { title: 'Đến giờ luyện trí não', body: 'Hoàn thành thử thách hằng ngày để mở thành tựu mới.' },
-  { title: 'Một màn Sudoku nhé?', body: 'Thử thách hôm nay đã sẵn sàng.' },
+const GENERIC: readonly { title: MessageKey; body: MessageKey }[] = [
+  { title: 'reminder.generic.1.title', body: 'reminder.generic.1.body' },
+  { title: 'reminder.generic.2.title', body: 'reminder.generic.2.body' },
+  { title: 'reminder.generic.3.title', body: 'reminder.generic.3.body' },
 ];
 
-function message(offset: number, firstOffset: number, streak: number, dailyDone: boolean): { title: string; body: string } {
+function message(
+  offset: number,
+  firstOffset: number,
+  streak: number,
+  dailyDone: boolean,
+  t: Translate,
+): { title: string; body: string } {
   // Only the first reminder can promise a streak: later ones would be after a missed day.
   if (offset === firstOffset && streak > 0) {
+    const params = { streak, next: streak + 1 };
     return dailyDone || offset > 0
-      ? { title: `Chuỗi ${streak} ngày đang chờ bạn`, body: `Làm thử thách hôm nay để kéo dài thành ${streak + 1} ngày.` }
-      : { title: `Giữ chuỗi ${streak} ngày!`, body: `Làm thử thách hôm nay để chuỗi thành ${streak + 1} ngày.` };
+      ? { title: t('reminder.waiting.title', params), body: t('reminder.waiting.body', params) }
+      : { title: t('reminder.keep.title', params), body: t('reminder.keep.body', params) };
   }
-  return GENERIC[offset % GENERIC.length]!;
+  const generic = GENERIC[offset % GENERIC.length]!;
+  return { title: t(generic.title), body: t(generic.body) };
 }
 
 /**
  * Reminders for the next `REMINDER_DAYS` days at `REMINDER_HOUR`. Today's is left out when the challenge is done
  * or the hour has passed, since a reminder for something already finished is just noise.
  */
-export function planReminders({ now, dailyDone, streak }: ReminderState): PlannedReminder[] {
+export function planReminders({ now, dailyDone, streak }: ReminderState, t: Translate): PlannedReminder[] {
   const plan: PlannedReminder[] = [];
   let firstOffset = -1;
   for (let offset = 0; offset < REMINDER_DAYS + 1 && plan.length < REMINDER_DAYS; offset++) {
@@ -51,7 +60,7 @@ export function planReminders({ now, dailyDone, streak }: ReminderState): Planne
     if (at.getTime() <= now.getTime()) continue;
     if (offset === 0 && dailyDone) continue;
     if (firstOffset < 0) firstOffset = offset;
-    plan.push({ id: REMINDER_ID_BASE + offset, at, ...message(offset, firstOffset, streak, dailyDone) });
+    plan.push({ id: REMINDER_ID_BASE + offset, at, ...message(offset, firstOffset, streak, dailyDone, t) });
   }
   return plan;
 }

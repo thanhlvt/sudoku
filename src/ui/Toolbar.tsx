@@ -1,4 +1,5 @@
 import { Eraser, Lightbulb, PencilLine, Redo2, Undo2, WandSparkles, type LucideIcon } from 'lucide-react';
+import { useI18n } from '../i18n/useI18n';
 
 interface ToolbarProps {
   noteMode: boolean;
@@ -72,15 +73,16 @@ export function Toolbar({
   hintPending,
   hintsUsed,
 }: ToolbarProps): JSX.Element {
+  const { t } = useI18n();
   return (
-    <div role="toolbar" aria-label="Công cụ" className="grid grid-cols-6 justify-items-center">
-      <Tool icon={Undo2} label="Hoàn tác" ariaLabel="Hoàn tác (U)" onClick={onUndo} disabled={!canUndo} iconClass="text-primary" />
-      <Tool icon={Redo2} label="Làm lại" ariaLabel="Làm lại (R)" onClick={onRedo} disabled={!canRedo} iconClass="text-primary" />
-      <Tool icon={Eraser} label="Xóa" ariaLabel="Xóa số (Backspace)" onClick={onErase} disabled={!canErase} iconClass="text-rose-500" />
+    <div role="toolbar" aria-label={t('toolbar.aria')} className="grid grid-cols-6 justify-items-center">
+      <Tool icon={Undo2} label={t('toolbar.undo')} ariaLabel={t('toolbar.undoAria')} onClick={onUndo} disabled={!canUndo} iconClass="text-primary" />
+      <Tool icon={Redo2} label={t('toolbar.redo')} ariaLabel={t('toolbar.redoAria')} onClick={onRedo} disabled={!canRedo} iconClass="text-primary" />
+      <Tool icon={Eraser} label={t('toolbar.erase')} ariaLabel={t('toolbar.eraseAria')} onClick={onErase} disabled={!canErase} iconClass="text-rose-500" />
       <Tool
         icon={PencilLine}
-        label="Ghi chú"
-        ariaLabel={noteMode ? 'Ghi chú: đang bật (N)' : 'Ghi chú: đang tắt (N)'}
+        label={t('toolbar.notes')}
+        ariaLabel={t(noteMode ? 'toolbar.notesOnAria' : 'toolbar.notesOffAria')}
         onClick={onToggleNoteMode}
         pressed={noteMode}
         tone={noteMode ? 'btn-sky' : 'btn-white'}
@@ -88,15 +90,15 @@ export function Toolbar({
       />
       <Tool
         icon={WandSparkles}
-        label="Ghi hết"
-        ariaLabel="Điền tất cả ghi chú (F)"
+        label={t('toolbar.fill')}
+        ariaLabel={t('toolbar.fillAria')}
         onClick={onFillNotes}
         iconClass="text-sky-600"
       />
       <Tool
         icon={Lightbulb}
-        label={hintPending ? 'Áp dụng' : 'Gợi ý'}
-        ariaLabel={hintPending ? 'Áp dụng gợi ý (H)' : 'Gợi ý (H)'}
+        label={t(hintPending ? 'toolbar.apply' : 'toolbar.hint')}
+        ariaLabel={t(hintPending ? 'toolbar.applyAria' : 'toolbar.hintAria')}
         onClick={onHint}
         tone="btn-amber"
         iconClass={hintPending ? 'animate-wiggle' : ''}

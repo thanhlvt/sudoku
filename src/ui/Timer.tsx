@@ -1,4 +1,5 @@
 import { Clock } from 'lucide-react';
+import { useI18n } from '../i18n/useI18n';
 
 export function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -18,16 +19,18 @@ interface TimerProps {
 const URGENT_MS = 60_000;
 
 export function Timer({ elapsedMs, paused, limitMs = null }: TimerProps): JSX.Element {
+  const { t } = useI18n();
   const counting = limitMs !== null;
   const shown = counting ? Math.max(0, limitMs - elapsedMs) : elapsedMs;
   const urgent = counting && shown <= URGENT_MS;
+  const label = t(counting ? 'timer.remaining' : 'timer.elapsed', { time: formatTime(shown) });
   return (
     <div
       className={`card flex items-center gap-2 !rounded-full px-4 py-2 text-xl font-extrabold tabular-nums ${
         urgent ? 'text-rose-600 dark:text-rose-300' : ''
       }`}
       aria-live="off"
-      aria-label={`${counting ? 'Còn lại' : 'Thời gian'} ${formatTime(shown)}${paused ? ', đang tạm dừng' : ''}`}
+      aria-label={paused ? t('timer.paused', { label }) : label}
     >
       <Clock
         size={22}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ComponentProps } from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -222,6 +222,46 @@ describe('PlaySession completion', () => {
     expect(screen.getByText('Đã sao chép kết quả')).toBeTruthy();
   });
 
+  it('shares a picture of the finished board when the browser can share files', async () => {
+    vi.useFakeTimers();
+    const canvasContext = new Proxy(
+      {},
+      {
+        get: (_, key) => (key === 'createLinearGradient' ? () => ({ addColorStop: () => {} }) : () => {}),
+        set: () => true,
+      },
+    );
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(canvasContext as unknown as CanvasRenderingContext2D);
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) =>
+      callback(new Blob(['png'], { type: 'image/png' })),
+    );
+    const share = vi.fn().mockResolvedValue(undefined);
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true });
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderPlay();
+    solveEverything();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Chia sẻ/ }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(share).toHaveBeenCalledTimes(1);
+    const files = share.mock.calls[0]![0].files as File[];
+    expect(files).toHaveLength(1);
+    expect(files[0]!.name).toBe(`sudoku-${puzzle.id}.png`);
+    expect(files[0]!.type).toBe('image/png');
+    expect(writeText).not.toHaveBeenCalled();
+    getContext.mockRestore();
+    toBlob.mockRestore();
+    Reflect.deleteProperty(navigator, 'canShare');
+    Reflect.deleteProperty(navigator, 'share');
+  });
+
   it('does not reward a puzzle that is merely reopened', () => {
     vi.useFakeTimers();
     renderPlay();
@@ -235,6 +275,35 @@ describe('PlaySession completion', () => {
       vi.advanceTimersByTime(1000);
     });
     expect(screen.queryByText('+10 XP')).toBeNull();
+  });
+});
+
+describe('PlaySession share puzzle', () => {
+  it('shares a picture of the puzzle from the pause screen', async () => {
+    const canvasContext = new Proxy(
+      {},
+      {
+        get: (_, key) => (key === 'createLinearGradient' ? () => ({ addColorStop: () => {} }) : () => {}),
+        set: () => true,
+      },
+    );
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(canvasContext as unknown as CanvasRenderingContext2D);
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) =>
+      callback(new Blob(['png'], { type: 'image/png' })),
+    );
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true });
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    renderPlay();
+    fireEvent.click(screen.getByRole('button', { name: /Tạm dừng/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Chia sẻ màn này/ }));
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    const files = share.mock.calls[0]![0].files as File[];
+    expect(files[0]!.name).toBe(`sudoku-${puzzle.id}-puzzle.png`);
+    getContext.mockRestore();
+    toBlob.mockRestore();
+    Reflect.deleteProperty(navigator, 'canShare');
+    Reflect.deleteProperty(navigator, 'share');
   });
 });
 

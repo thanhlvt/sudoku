@@ -1,8 +1,9 @@
-import { ChevronLeft, Hourglass, Lightbulb, Link2, Pause, Play, Printer, RotateCcw, Target } from 'lucide-react';
+import { ChevronLeft, Hourglass, Lightbulb, Share2, Pause, Play, Printer, RotateCcw, Target } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PuzzleRecord, Step } from '../core/types';
 import { completeDaily } from '../game/daily';
 import { MODE_INFO } from '../game/modes';
+import { explainText } from '../game/explain';
 import { PALETTES } from '../game/palettes';
 import { pickFreshIndex, starsFor } from '../game/progress';
 import { levelFromPuzzleId, puzzleIdOf } from '../game/puzzleBank';
@@ -11,8 +12,11 @@ import { isTechniqueId, techniqueLabel } from '../game/techniqueInfo';
 import { completedUnitCells } from '../game/unitComplete';
 import { WEEKLY_BONUS_XP, weeklyProgress, type WeeklyWeek } from '../game/weekly';
 import { playerLevel, totalXp, xpForSolve } from '../game/xp';
+import { formatDayMonth } from '../i18n/format';
+import { useI18n } from '../i18n/useI18n';
 import { isNative } from '../native';
-import { puzzleUrl, shareContent } from '../share';
+import { puzzleUrl, shareContent, shareFile } from '../share';
+import { renderPuzzleImage, renderResultImage } from '../shareImage';
 import { listGames, loadWeekly, saveWeekly, type DailyState, type GameMode, type Settings, type Stats } from '../storage/schema';
 import { Board } from './Board';
 import { CompletionScreen, type CompletionReward } from './CompletionScreen';
@@ -21,7 +25,7 @@ import { NumberPad } from './NumberPad';
 import { PrintablePuzzle } from './PrintablePuzzle';
 import { Timer } from './Timer';
 import { Toolbar } from './Toolbar';
-import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { LEVEL_THEME, levelLabel } from './levelLabels';
 import { useAchievements } from './hooks/useAchievements';
 import { useFeedback } from './hooks/useFeedback';
 import { useGameSession } from './hooks/useGameSession';
@@ -70,6 +74,7 @@ export function PlaySession({
   mode,
   weekly,
 }: PlaySessionProps): JSX.Element {
+  const { t, intlLocale } = useI18n();
   const level = levelFromPuzzleId(puzzle.id);
   const theme = LEVEL_THEME[level];
 
@@ -100,6 +105,7 @@ export function PlaySession({
 
   // The preview only counts while the session still holds that step: any edit to the board discards it.
   const shownHint = session.hasPendingHint() ? hintPreview : null;
+  const hintText = shownHint ? explainText(shownHint.explain, t) : '';
 
   // Reopening a finished puzzle shows its result right away instead of re-awarding it.
   const [showCompletion, setShowCompletion] = useState(session.status === 'completed');
@@ -149,7 +155,7 @@ export function PlaySession({
     setReward({
       xp,
       levelUp: after > before ? after : null,
-      paletteUnlocked: palette?.label ?? null,
+      paletteUnlocked: palette?.labelKey ?? null,
       achievements: checkAchievements(),
       streakMilestone: dailyResult?.milestone ?? null,
       freezeUsed: dailyResult?.freezeUsed ?? false,
@@ -276,10 +282,10 @@ export function PlaySession({
   }, [reset]);
 
   const handleResetClick = useCallback(() => {
-    if (window.confirm('Đặt lại ván này? Toàn bộ số đã điền, ghi chú và thời gian sẽ bị xóa.')) {
+    if (window.confirm(t('play.resetConfirm'))) {
       handleReset();
     }
-  }, [handleReset]);
+  }, [handleReset, t]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
@@ -381,35 +387,63 @@ export function PlaySession({
   const hasNext = number < levelCount;
 
   const handleShareResult = useCallback(async () => {
-    const text = buildResultText({
-      levelLabel: LEVEL_LABELS[level],
+    const result = {
+      levelLabel: levelLabel(level, t),
       puzzleNumber: number,
       stars: starsFor(session.mistakes),
       elapsedMs: session.elapsedMs,
       mistakes: session.mistakes,
       hintsUsed: session.hintsUsed,
       daily: puzzle.id === dailyId ? { date: today, streak: daily.streak } : undefined,
-      url: puzzleUrl(puzzle.id),
+    };
+    const formatDay = (key: string): string => formatDayMonth(key, intlLocale);
+    const url = puzzleUrl(puzzle.id);
+    let image: Blob;
+    try {
+      image = await renderResultImage({ ...result, givens: puzzle.puzzle, solution: puzzle.solution }, t, formatDay);
+    } catch {
+      // No canvas (very old WebView): share the result as text rather than not at all.
+      const text = buildResultText({ ...result, url }, t, formatDay);
+      const outcome = await shareContent({ title: t('play.shareTitle'), text });
+      setShareNote(outcome === 'copied' ? t('play.copiedResult') : outcome === 'failed' ? t('play.shareFailed') : null);
+      return;
+    }
+    const outcome = await shareFile({
+      title: t('play.shareTitle'),
+      filename: `sudoku-${puzzle.id}.png`,
+      blob: image,
+      text: url ?? undefined,
     });
-    const outcome = await shareContent({ title: 'Sudoku', text });
-    setShareNote(outcome === 'copied' ? 'Đã sao chép kết quả' : outcome === 'failed' ? 'Không chia sẻ được' : null);
-  }, [level, number, session, puzzle.id, dailyId, today, daily.streak]);
+    setShareNote(outcome === 'downloaded' ? t('play.savedImage') : outcome === 'failed' ? t('play.shareFailed') : null);
+  }, [level, number, session, puzzle.id, puzzle.puzzle, puzzle.solution, dailyId, today, daily.streak, t, intlLocale]);
 
   const handleSharePuzzle = useCallback(async () => {
-    const outcome = await shareContent({
-      title: 'Sudoku',
-      text: `Thử màn ${LEVEL_LABELS[level]} số ${number} trên Sudoku nhé!`,
-      url: puzzleUrl(puzzle.id),
+    const url = puzzleUrl(puzzle.id);
+    const invite = t('play.shareInvite', { level: levelLabel(level, t), n: number });
+    let image: Blob;
+    try {
+      image = await renderPuzzleImage({ levelLabel: levelLabel(level, t), puzzleNumber: number, givens: puzzle.puzzle }, t);
+    } catch {
+      // No canvas (very old WebView): fall back to the link.
+      const outcome = await shareContent({ title: t('play.shareTitle'), text: invite, url });
+      setShareNote(outcome === 'copied' ? t('play.copiedLink') : outcome === 'failed' ? t('play.shareFailed') : null);
+      return;
+    }
+    const outcome = await shareFile({
+      title: t('play.shareTitle'),
+      filename: `sudoku-${puzzle.id}-puzzle.png`,
+      blob: image,
+      text: url ? `${invite}
+${url}` : invite,
     });
-    setShareNote(outcome === 'copied' ? 'Đã sao chép liên kết' : outcome === 'failed' ? 'Không chia sẻ được' : null);
-  }, [level, number, puzzle.id]);
+    setShareNote(outcome === 'downloaded' ? t('play.savedImage') : outcome === 'failed' ? t('play.shareFailed') : null);
+  }, [level, number, puzzle.id, puzzle.puzzle, t]);
 
   const hardest = (puzzle.rating as { hardest?: unknown } | undefined)?.hardest;
   const technique =
     isTechniqueId(hardest)
-      ? { label: techniqueLabel(hardest), onLearn: () => onNavigate(`#/learn/${hardest}`) }
+      ? { label: techniqueLabel(hardest, t), onLearn: () => onNavigate(`#/learn/${hardest}`) }
       : null;
-  const canSharePuzzle = !isNative || puzzleUrl(puzzle.id) !== null;
 
   const goBack = (): void => (session.mode ? onNavigate('#/modes', true) : onBack());
 
@@ -421,7 +455,7 @@ export function PlaySession({
       const games = listGames();
       const done = weeklyProgress(weekly.key, weekly.ids.map((id) => ({ id })), games);
       const nextId = weekly.ids.find((_, i) => !done[i]);
-      if (nextId) return { label: 'Màn tuần tiếp theo', hasNext: true, go: () => onNavigate(`#/play/${nextId}`, true) };
+      if (nextId) return { label: t('play.nextWeekly'), hasNext: true, go: () => onNavigate(`#/play/${nextId}`, true) };
     }
     if (session.mode) {
       const mode = session.mode;
@@ -437,19 +471,19 @@ export function PlaySession({
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 pb-6 pt-4 [@media(max-height:700px)]:gap-2.5 [@media(max-height:700px)]:pb-4 [@media(max-height:700px)]:pt-3">
       <header className="grid grid-cols-[3rem_1fr_3rem] items-center">
-        <button type="button" onClick={goBack} aria-label="Quay lại" className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
+        <button type="button" onClick={goBack} aria-label={t('common.back')} className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
           <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" className="text-accent" />
         </button>
         <div className="flex flex-col items-center gap-1">
           <span className={`rounded-full px-4 py-1 text-xs font-black uppercase tracking-wide text-white ${theme.bg}`}>
-            {LEVEL_LABELS[level]}
+            {levelLabel(level, t)}
           </span>
-          <h1 className="text-2xl font-black leading-none">Màn {number}</h1>
+          <h1 className="text-2xl font-black leading-none">{t('common.puzzleNumber', { n: number })}</h1>
         </div>
         <button
           type="button"
           onClick={() => setPaused((p) => !p)}
-          aria-label={paused ? 'Tiếp tục (Space)' : 'Tạm dừng (Space)'}
+          aria-label={t(paused ? 'play.resumeAria' : 'play.pauseAria')}
           className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl"
         >
           {paused ? (
@@ -467,7 +501,7 @@ export function PlaySession({
           ) : (
             <Target size={16} strokeWidth={3} aria-hidden="true" />
           )}
-          {MODE_INFO[session.mode].label}
+          {t(MODE_INFO[session.mode].labelKey)}
         </p>
       )}
 
@@ -492,7 +526,7 @@ export function PlaySession({
         {failure && !paused && !showCompletion && (
           <div
             role="dialog"
-            aria-label={failure === 'time-up' ? 'Hết giờ' : 'Đã điền sai'}
+            aria-label={t(failure === 'time-up' ? 'play.timeUp.aria' : 'play.wrong.aria')}
             className="absolute inset-0 z-20 flex animate-fade-in flex-col items-center justify-center gap-2 rounded-[1.5rem] bg-card p-4 text-center"
           >
             <span className="flex h-12 w-12 animate-pop-in items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
@@ -502,11 +536,9 @@ export function PlaySession({
                 <Target size={26} strokeWidth={2.75} aria-hidden="true" />
               )}
             </span>
-            <h2 className="text-2xl font-black leading-tight">{failure === 'time-up' ? 'Hết giờ!' : 'Sai mất rồi!'}</h2>
+            <h2 className="text-2xl font-black leading-tight">{t(failure === 'time-up' ? 'play.timeUp.title' : 'play.wrong.title')}</h2>
             <p className="mb-1 text-sm font-bold leading-snug text-accent">
-              {failure === 'time-up'
-                ? 'Đồng hồ đếm ngược đã về 0.'
-                : 'Chế độ Không sai kết thúc ngay khi điền sai một số.'}
+              {t(failure === 'time-up' ? 'play.timeUp.body' : 'play.wrong.body')}
             </p>
             <button
               type="button"
@@ -515,26 +547,26 @@ export function PlaySession({
               className="btn btn-primary cta-ring min-h-12 w-full max-w-xs text-lg"
             >
               <RotateCcw size={20} strokeWidth={3} aria-hidden="true" />
-              Thử lại
+              {t('common.retry')}
             </button>
             <button type="button" onClick={clearMode} className="btn btn-soft min-h-11 w-full max-w-xs text-sm">
-              Chơi tiếp như bình thường
+              {t('play.continueNormal')}
             </button>
             <button type="button" onClick={goBack} className="btn btn-soft min-h-11 w-full max-w-xs text-sm">
-              Chọn chế độ khác
+              {t('play.chooseMode')}
             </button>
           </div>
         )}
         {paused && (
           <div
             role="dialog"
-            aria-label="Tạm dừng"
+            aria-label={t('play.paused')}
             className="absolute inset-0 z-20 flex animate-fade-in flex-col items-center justify-center gap-3 rounded-[1.5rem] bg-card p-6"
           >
             <span className="flex h-16 w-16 animate-pop-in items-center justify-center rounded-full bg-page">
               <Pause size={32} strokeWidth={0} className="fill-primary" aria-hidden="true" />
             </span>
-            <h2 className="mb-2 text-2xl font-black">Tạm dừng</h2>
+            <h2 className="mb-2 text-2xl font-black">{t('play.paused')}</h2>
             <button
               type="button"
               autoFocus
@@ -542,22 +574,20 @@ export function PlaySession({
               className="btn btn-primary cta-ring min-h-14 w-full max-w-xs text-lg"
             >
               <Play size={20} strokeWidth={0} className="fill-white" aria-hidden="true" />
-              Tiếp tục
+              {t('play.resume')}
             </button>
             <button type="button" onClick={handleResetClick} className="btn btn-soft min-h-12 w-full max-w-xs">
               <RotateCcw size={18} strokeWidth={3} aria-hidden="true" />
-              Đặt lại ván
+              {t('play.reset')}
             </button>
-            {canSharePuzzle && (
-              <button type="button" onClick={() => void handleSharePuzzle()} className="btn btn-soft min-h-12 w-full max-w-xs">
-                <Link2 size={18} strokeWidth={3} aria-hidden="true" />
-                Chia sẻ màn này
-              </button>
-            )}
+            <button type="button" onClick={() => void handleSharePuzzle()} className="btn btn-soft min-h-12 w-full max-w-xs">
+              <Share2 size={18} strokeWidth={3} aria-hidden="true" />
+              {t('play.sharePuzzle')}
+            </button>
             {!isNative && (
               <button type="button" onClick={() => window.print()} className="btn btn-soft min-h-12 w-full max-w-xs">
                 <Printer size={18} strokeWidth={3} aria-hidden="true" />
-                In câu đố
+                {t('play.print')}
               </button>
             )}
             {shareNote && (
@@ -571,15 +601,15 @@ export function PlaySession({
 
       {shownHint && (
         <div
-          key={shownHint.explain}
+          key={hintText}
           role="status"
           className="flex animate-screen-in items-start gap-3 rounded-2xl bg-amber-100 p-4 text-amber-950 shadow-[0_4px_0_0_#FCD34D] dark:bg-amber-900/40 dark:text-amber-50 dark:shadow-[0_4px_0_0_#92400E]"
         >
           <Lightbulb size={24} strokeWidth={2.75} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden="true" />
           <div>
-            <p className="mb-0.5 text-xs font-black uppercase tracking-wide opacity-70">{techniqueLabel(shownHint.technique)}</p>
-            <p className="text-base font-extrabold leading-snug">{shownHint.explain}</p>
-            <p className="mt-1 text-sm font-bold opacity-80">Bấm “Áp dụng” để điền theo gợi ý.</p>
+            <p className="mb-0.5 text-xs font-black uppercase tracking-wide opacity-70">{techniqueLabel(shownHint.technique, t)}</p>
+            <p className="text-base font-extrabold leading-snug">{hintText}</p>
+            <p className="mt-1 text-sm font-bold opacity-80">{t('play.hintApply')}</p>
           </div>
         </div>
       )}

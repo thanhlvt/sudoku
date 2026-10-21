@@ -1,8 +1,7 @@
 {
   "name": "Sudoku",
   "short_name": "Sudoku",
-  "description": "Sudoku rèn trí não mỗi ngày: màn nào cũng giải được bằng suy luận.",
-  "lang": "vi",
+  "description": "Sudoku, no guessing: every puzzle is solvable by logic. · Sudoku rèn trí não: màn nào cũng giải được bằng suy luận.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

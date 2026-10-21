@@ -1,7 +1,9 @@
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isNative } from './native';
 
-export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
+/** `downloaded`: there was no share sheet for files, so the file was saved to the downloads instead. */
+export type ShareOutcome = 'shared' | 'copied' | 'downloaded' | 'cancelled' | 'failed';
 
 export interface ShareContent {
   title: string;
@@ -51,10 +53,9 @@ export async function shareContent({ title, text, url }: ShareContent): Promise<
   }
 }
 
-/** Saves `text` as a file download (web). Returns false when the browser cannot do it. */
-export function downloadTextFile(filename: string, text: string, mime = 'application/json'): boolean {
+/** Saves `blob` as a file download (web). Returns false when the browser cannot do it. */
+export function downloadBlob(filename: string, blob: Blob): boolean {
   try {
-    const blob = new Blob([text], { type: mime });
     const href = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = href;
@@ -67,4 +68,48 @@ export function downloadTextFile(filename: string, text: string, mime = 'applica
   } catch {
     return false;
   }
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => resolve(String(reader.result).replace(/^data:[^,]*,/, ''));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export interface ShareFileContent {
+  title: string;
+  /** Name of the file the receiver sees, extension included. */
+  filename: string;
+  blob: Blob;
+  /** Sent along with the file when the receiving app takes a caption. */
+  text?: string;
+}
+
+/**
+ * Hands a file (an image, a backup) to the system share sheet. Android has no file system access from the
+ * WebView, so the file is written to the app cache first and shared by its URI. Browsers that cannot share
+ * files (most desktop ones) save it to the downloads folder instead.
+ */
+export async function shareFile({ title, filename, blob, text }: ShareFileContent): Promise<ShareOutcome> {
+  try {
+    if (isNative) {
+      const { uri } = await Filesystem.writeFile({ path: filename, data: await blobToBase64(blob), directory: Directory.Cache });
+      await Share.share({ title, text, files: [uri], dialogTitle: title });
+      return 'shared';
+    }
+    const file = new File([blob], filename, { type: blob.type });
+    if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+      await navigator.share({ title, text, files: [file] });
+      return 'shared';
+    }
+  } catch (error) {
+    if (isCancel(error)) return 'cancelled';
+    if (isNative) return 'failed';
+    // Blocked by policy or no share target: fall through to a download.
+  }
+  if (isNative) return 'failed';
+  return downloadBlob(filename, blob) ? 'downloaded' : 'failed';
 }

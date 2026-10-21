@@ -1,6 +1,6 @@
 import { boxOf, candidateDigits, popcount } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCell } from './helpers';
+import { cellRef, cellRefs } from './helpers';
 
 export const uniqueRectangle1: Technique = {
   name: 'unique-rectangle-1',
@@ -33,13 +33,10 @@ export const uniqueRectangle1: Technique = {
                 placements: [],
                 eliminations: candidateDigits(om0).map((digit) => ({ idx: oddIdx, digit })),
                 cells: idxs,
-                explain: `Hình chữ nhật ${idxs.map(describeCell).join(', ')} có 3 góc chỉ mang {${candidateDigits(
-                  om0,
-                ).join(',')}}; nếu góc còn lại (${describeCell(
-                  oddIdx,
-                )}) cũng chỉ mang 2 số đó thì bàn cờ có 2 nghiệm, nên các số đó bị loại khỏi ô ${describeCell(
-                  oddIdx,
-                )}.`,
+                explain: {
+                  code: 'unique-rectangle',
+                  args: { corners: cellRefs(idxs), digits: candidateDigits(om0), odd: cellRef(oddIdx) },
+                },
               };
             }
           }

@@ -1,4 +1,5 @@
 import { Star } from 'lucide-react';
+import { useI18n } from '../i18n/useI18n';
 
 interface StarsProps {
   count: number;
@@ -21,8 +22,9 @@ export function Stars({
   animated = false,
   className = '',
 }: StarsProps): JSX.Element {
+  const { t } = useI18n();
   return (
-    <span className={`inline-flex items-center gap-0.5 ${className}`} role="img" aria-label={`${count} trên ${total} sao`}>
+    <span className={`inline-flex items-center gap-0.5 ${className}`} role="img" aria-label={t('common.starsOf', { count, total })}>
       {Array.from({ length: total }, (_, i) => (
         <Star
           key={i}

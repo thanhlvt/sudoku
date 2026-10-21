@@ -154,7 +154,8 @@ Quy tắc phụ thuộc (một chiều, không vòng):
 ### 4.3 Kỹ thuật & logical solver
 
 `Technique { name, cost, find(grid, cands) → Step | null }`. `Step` = `{ technique, cost, placements[], eliminations[], cells[], explain }`.
-`explain` (tiếng Việt) là nội dung hiển thị khi gợi ý; `cells` là các ô được highlight.
+`explain` là **dữ liệu**, không phải câu chữ: `Explanation { code, args }` (`args` gồm số, `UnitRef` hàng/cột/khối, `CellRef` hàng-cột, danh sách của chúng) để core không biết ngôn ngữ nào.
+`game/explain.ts → explainText(explain, t)` dựng câu theo ngôn ngữ (khoá `explain.<code>` trong catalog). `cells` là các ô được highlight.
 
 Thứ tự thử (`TECHNIQUE_ORDER` trong `techniques/index.ts`) — kỹ thuật rẻ nhất thử trước:
 
@@ -279,7 +280,7 @@ chuỗi round-trip; `givens` ghi đúng số thực; **duy nhất nghiệm**; **
 SavedGame { puzzleId, board: 81 ký tự ('.' trống), notes: 243 ký tự hex, elapsedMs, mistakes, hintsUsed,
             status: 'in-progress'|'completed', completedAt?, mode?: 'time'|'perfect', updatedAt }
 Settings  { highlightSameDigit, highlightPeers, showMistakes, autoRemoveNotes, theme: 'system'|'light'|'dark', soundEnabled, hapticsEnabled,
-            boardPalette: 'violet'|'ocean'|'forest'|'sunset', seenIntro, reminderEnabled }
+            boardPalette: 'violet'|'ocean'|'forest'|'sunset', seenIntro, reminderEnabled, language: 'auto'|'vi'|'en' }
 LevelStats{ played, completed, bestMs|null, totalMs, perfectRuns }
 DailyState{ streak, longest, lastDate: 'YYYY-MM-DD' | null, freezes }   // ngày theo giờ máy; freezes = số đóng băng chuỗi đang giữ (0–2)
 ```
@@ -384,12 +385,12 @@ Trạng thái: `givens`, `solution`, `board`, `notes`, `elapsedMs`, `mistakes`, 
 
 ### 8.3b `achievements.ts`, `xp.ts`, `palettes.ts`, `calendar.ts`
 
-- **`achievements.ts`**: `ACHIEVEMENTS` (24 mục) — mỗi mục là `{ id, title, description, icon, target, progress(ctx) }` với `ctx = { games, stats, daily, weeklyDone }`. Không có khoá lưu riêng cho *tiến độ*;
+- **`achievements.ts`**: `ACHIEVEMENTS` (24 mục) — mỗi mục là `{ id, icon, target, progress(ctx) }` (tên/mô tả ở catalog: `ach.<id>.title|desc`, lấy bằng `achievementText(id, t)`) với `ctx = { games, stats, daily, weeklyDone }`. Không có khoá lưu riêng cho *tiến độ*;
   chỉ lưu *thời điểm mở khoá* (`achievements`) để (a) báo "Thành tựu mới" đúng một lần, (b) giữ thành tựu đã đạt kể cả khi dữ liệu nền co lại (chơi lại một màn xoá save của nó).
   `unlockNew(stored, ctx, now)` trả `{ unlocked, added }` (cùng tham chiếu `stored` nếu không có gì mới). `useAchievements.check()` đọc games/stats/daily **thẳng từ storage** (nên thấy kết quả ván vừa lưu) rồi ghi bản mới.
   Thêm thành tựu = thêm một phần tử vào `ACHIEVEMENTS` (id mới, chữ thường/số/gạch ngang); thành tựu mới tự được mở khoá hồi tố ở lần `check()` kế.
-- **`xp.ts`**: `xpForSolve(cấp, lỗi)` = `{10, 20, 40, 80, 150}[cấp] × {1, 0.8, 0.6}[sao]`. `playerLevel(xp)` → `{ level, title, into, span }`. Vì XP dẫn xuất từ các ván đã xong, chơi lại một màn không làm XP phình ra.
-- **`palettes.ts`**: 4 bảng màu bàn cờ, mở khoá theo cấp người chơi (1, 3, 6, 10). `Settings.boardPalette` → `data-palette` trên `<html>` (App), CSS ở `index.css`.
+- **`xp.ts`**: `xpForSolve(cấp, lỗi)` = `{10, 20, 40, 80, 150}[cấp] × {1, 0.8, 0.6}[sao]`. `playerLevel(xp)` → `{ level, titleKey, into, span }` (`titleKey` là khoá catalog). Vì XP dẫn xuất từ các ván đã xong, chơi lại một màn không làm XP phình ra.
+- **`palettes.ts`**: 4 bảng màu bàn cờ (`labelKey` là khoá catalog), mở khoá theo cấp người chơi (1, 3, 6, 10). `Settings.boardPalette` → `data-palette` trên `<html>` (App), CSS ở `index.css`.
 - **`calendar.ts`**: `monthWeeks(ym)` (tuần bắt đầu thứ Hai, ô ngoài tháng là `null`), `addMonths`, `compareMonths`. Lịch cho duyệt lùi `CALENDAR_MONTHS_BACK = 12` tháng.
 
 ### 8.3d Chế độ thử thách: `modes.ts`, `weekly.ts`, `reminders.ts`
@@ -404,11 +405,11 @@ Trạng thái: `givens`, `solution`, `board`, `notes`, `elapsedMs`, `mistakes`, 
 - **`GameSession.completedAt`**: nay được giữ cố định — lần lưu đầu tiên sau khi xong đóng dấu, các lần lưu sau (mở lại, rời màn) không đổi; hoàn tác nước cuối thì xoá. (Trước đây `toSaved(now)` đặt lại mỗi lần lưu, làm thời điểm hoàn thành trôi.) Chuỗi tuần dựa vào nó.
 - **`weekly.ts`**: chuỗi thử thách tuần = 5 màn `['easy','medium','medium','hard','expert']`, tuần tính **từ thứ Hai** theo giờ máy (`weekStartKey`, `weekEndKey`). `weeklyPuzzles(tuần, countOf)` xác định theo `fnv1a("weekly:<thứ Hai>:<i>")`, không trùng màn. Một bước **chỉ tính** khi ván `completed` có `completedAt` trong tuần (`weekRangeMs`, nửa mở), nên màn đã xong từ trước không làm sẵn chuỗi. Bước không bắt buộc theo thứ tự.
   Khi bước thứ 5 xong, `PlaySession` ghi tuần vào `weekly.done` **một lần** và thưởng `WEEKLY_BONUS_XP = 300` (cộng vào `totalXp` qua `weeksDone`); thành tựu `weekly-1`, `weekly-4`.
-- **`reminders.ts`**: `planReminders({ now, dailyDone, streak })` → tối đa 7 nhắc nhở lúc `REMINDER_HOUR = 20` giờ máy, id `7100 + số ngày`. Bỏ nhắc hôm nay nếu đã làm thử thách hoặc đã quá 20:00. Chỉ nhắc **đầu tiên** nhắc tới chuỗi (các nhắc sau sẽ rơi vào ngày đã lỡ).
+- **`reminders.ts`**: `planReminders({ now, dailyDone, streak }, t)` (chữ thông báo được dịch **lúc đặt lịch**, nên `useReminders` đặt lại lịch khi đổi ngôn ngữ) → tối đa 7 nhắc nhở lúc `REMINDER_HOUR = 20` giờ máy, id `7100 + số ngày`. Bỏ nhắc hôm nay nếu đã làm thử thách hoặc đã quá 20:00. Chỉ nhắc **đầu tiên** nhắc tới chuỗi (các nhắc sau sẽ rơi vào ngày đã lỡ).
 
 ### 8.3c Học kỹ thuật: `techniqueInfo.ts`, `practice.ts`, `techniqueExample.ts`
 
-- **`techniqueInfo.ts`**: `TECHNIQUE_INFO` — nhãn tiếng Việt, nhóm, tóm tắt, các bước nhận biết và mẹo cho đủ 21 kỹ thuật, **cùng thứ tự `TECHNIQUE_ORDER`** (có test khoá điều này). Thêm kỹ thuật vào core ⇒ phải thêm bài học ở đây.
+- **`techniqueInfo.ts`**: `TECHNIQUES` — id + nhóm của đủ 21 kỹ thuật, **cùng thứ tự `TECHNIQUE_ORDER`** (có test khoá điều này). Nhãn, tóm tắt, các bước (một chuỗi, mỗi bước một dòng) và mẹo nằm trong catalog (`tech.<id>.label|summary|steps|tip`, `tech.group.<nhóm>`); `techniqueInfo(id, t)` ghép lại. Thêm kỹ thuật vào core ⇒ phải thêm bài học ở **cả hai** catalog.
 - **`practice.ts`**: `practicePuzzles(kỹ thuật, banks)` xếp các màn cần kỹ thuật đó (màn mà nó là bước khó nhất trước, rồi theo `rating.score` tăng dần). Đọc `rating` **phòng thủ** vì `validateLevelBank` chỉ kiểm lưới. `masteredTechniques` xem bảng §6.2.
 - **`techniqueExample.ts`**: `findTechniqueExample(puzzle, kỹ thuật)` chạy lại logical solver (cùng `TECHNIQUE_ORDER`, dùng `applyStep` export từ `logicalSolver`) và dừng ở lần đầu kỹ thuật đó tiến hành ⇒ bàn thật + candidates + `Step` để vẽ `ExampleBoard`. Chạy theo yêu cầu (khi mở bài học), không trong render danh sách.
 - Hiện bank không có màn nào cần `naked-quad`, `hidden-quad`, `jellyfish` ⇒ bài học vẫn hiện, ví dụ/luyện tập báo "chưa có". `swordfish` chỉ có 1 màn.
@@ -587,7 +588,7 @@ Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất
 | Lịch thử thách | `calendar.ts` + `dailyPuzzle` | games | `CalendarScreen` |
 | Bảng màu bàn cờ | `palettes.ts`, `settings.boardPalette` | `settings` | `SettingsSheet`, `index.css` |
 | Học kỹ thuật | `techniqueInfo/practice/techniqueExample` | bank + games | `LearnScreen`, `TechniqueScreen`, `ExampleBoard`, bong bóng gợi ý, `CompletionScreen` |
-| Chia sẻ kết quả / liên kết màn | `shareText.ts`, `share.ts` | — | `CompletionScreen`, overlay tạm dừng |
+| Chia sẻ kết quả / màn chơi (đều là ảnh) | `shareImage.ts`, `shareText.ts` (dự phòng khi không có canvas, cả link màn), `share.ts` | — | `CompletionScreen`, overlay tạm dừng |
 | Sao lưu / khôi phục | `storage/backup.ts` | mọi khoá `sudoku:*` | `SettingsSheet` |
 | Hướng dẫn lần đầu | `IntroSheet`, `settings.seenIntro` | `settings` | Home |
 | Cài đặt offline (PWA) | `public/sw.js`, `manifest.webmanifest`, `main.tsx` | Cache Storage | — |
@@ -609,7 +610,10 @@ Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất
 | `count` trong bank | Tăng: an toàn. Giảm: `daily`/`pickNextIndex`/LevelList dùng `count` mới, `SavedGame` của màn bị cắt thành mồ côi (không lỗi, chỉ không hiển thị) |
 | Định dạng id (`puzzleIdOf`) | `SavedGame` key, `last`, route `#/play/…`, `daily`, `generator` (id trong JSON), `verify` — đổi đồng bộ cả offline lẫn runtime |
 | `SavedGame` thêm/đổi trường | Trường tuỳ chọn ⇒ an toàn; đổi ngữ nghĩa ⇒ bump `SCHEMA_VERSION`/`NAMESPACE` + viết bước trong `migrate`. `listGames` đọc mọi bản ghi — phải chịu được bản ghi cũ |
-| `Settings` thêm trường | Thêm vào `DEFAULT_SETTINGS` (tự gộp), thêm toggle trong `SettingsSheet`, và đọc ở nơi dùng |
+| `Settings` thêm trường | Thêm vào `DEFAULT_SETTINGS` (tự gộp), validator trong `parseSettings`, thêm toggle trong `SettingsSheet`, và đọc ở nơi dùng |
+| Đổi/thêm một chuỗi hiển thị | Sửa **cả** `src/i18n/messages/vi/*` và `en/*` (cùng khoá, cùng `{placeholder}`); `i18n.test.ts` đỏ nếu lệch |
+| Thêm ngôn ngữ | Xem §14 "Thêm một ngôn ngữ" |
+| Thêm kỹ thuật mới, `explain` mới | Thêm `ExplainCode` (core/types) + khoá `explain.<code>` ở mọi catalog + mẫu trong `explain.test.ts` |
 | Công thức `starsFor`/`MAX_HEARTS` | Áp dụng ngược cho màn đã xong; cập nhật chuỗi hiển thị ("x/3 sao", `Hearts`, text hướng dẫn ở `CompletionScreen`), `aria-label` |
 | `GameSession` đổi luật | Bất kỳ đổi nào về `mistakes`/completion ảnh hưởng `progress`, `CompletionScreen`, stats; chạy `gameState.test.ts` |
 | `useGameSession` nhịp lưu | Ảnh hưởng nguy cơ mất tiến độ; `useSavedProgress` giả định có lưu-khi-unmount |
@@ -642,7 +646,7 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
 15. Thành tựu tốc độ dựa trên `stats[cấp].bestMs`, mà `bestMs` cập nhật cả với ván có sai/gợi ý.
 16. Lịch tính "đã làm" theo *màn* của ngày đó. Hai ngày khác nhau có thể trùng màn (cùng `index`) — khi đó cả hai cùng được đánh dấu.
 17. Chia sẻ: bản web gắn link `origin + pathname + #/play/<id>`; bản Android chỉ gắn link khi build với biến `VITE_PUBLIC_URL` (APK chạy ở `https://localhost`, vô nghĩa với người khác).
-18. Sao lưu là file JSON thuần (không mã hoá, không chữ ký); khôi phục **thay thế** toàn bộ tiến độ trên máy. Trên Android bản sao lưu đi qua bảng chia sẻ dạng văn bản; việc chọn lại file bằng `<input type=file>` trong WebView **chưa thử trên thiết bị thật**.
+18. Sao lưu là file JSON thuần (không mã hoá, không chữ ký); khôi phục **thay thế** toàn bộ tiến độ trên máy. Trên web bản sao lưu được tải về thành file; trên Android file được ghi vào cache rồi đưa qua bảng chia sẻ (Drive, Tệp...). Việc chọn lại file bằng `<input type=file>` trong WebView **chưa thử trên thiết bị thật**.
 20. **Nhắc nhở chỉ có trên Android** (web không hẹn giờ được khi trang đóng): công tắc chỉ hiện trên bản Android. Giờ cố định 20:00 giờ máy, không có tuỳ chọn giờ. Nhắc dùng alarm **không chính xác** (có thể trễ vài phút) vì quyền alarm chính xác bị Google Play hạn chế (`SCHEDULE_EXACT_ALARM` bị gỡ khỏi manifest). Hộp thoại quyền (Android 13+) chỉ bật **sau khi giải xong màn đầu tiên** hoặc khi người chơi tự bật công tắc; bị từ chối thì không hỏi lại (công tắc báo thông báo đang bị tắt). Chưa thử trên thiết bị thật.
 21. Giới hạn thời gian của Đua thời gian là hằng số theo cấp, không tự điều chỉnh theo kỹ năng; Không sai **không** cấm gợi ý. Chuỗi tuần theo giờ máy (đổi múi giờ có thể lệch ranh giới tuần).
 19. Service worker (web) cache theo build (`__BUILD_ID__` được `vite.config.ts` đóng dấu); trang và JSON màn là network-first (hết 5 s thì dùng bản cache), file có hash/âm thanh/icon là cache-first. Chưa có thông báo "có bản mới".
@@ -687,9 +691,11 @@ Component bố cục/animation chưa có test (kiểm bằng chạy thật). To�
 
 **Thêm một tuỳ chọn cài đặt**: `Settings` + `DEFAULT_SETTINGS` (schema.ts) → toggle trong `SettingsSheet` (`TOGGLES`) → nơi tiêu thụ (`Board`/`PlaySession`) → test round-trip trong `schema.test.ts`.
 
+**Thêm một ngôn ngữ**: thêm mã vào `LOCALES` + `INTL_LOCALE` + `LOCALE_NAMES` (`i18n/locales.ts`) → thêm thư mục `messages/<mã>/` (cùng các file như `en/`, kiểu `Record<MessageKey, Message>`) và nối vào `CATALOGS` (`i18n/index.ts`) → `i18n.test.ts` chỉ ra khoá/placeholder còn thiếu. Số nhiều: dùng `{ one, other }` với tham số `count`. Ngày tháng: `i18n/format.ts`, không tự ghép chuỗi ngày.
+
 **Thêm thống kê hiển thị trên Home**: nếu suy ra được từ `SavedGame` ⇒ thêm vào `progress.ts` + test, **không** thêm khoá mới; nếu cần dữ liệu không suy ra được ⇒ thêm vào `Stats`/khoá mới + gộp mặc định.
 
-**Thêm cấp độ**: `Level` (types) + `TIERS` + `chooseSymmetry` + `MAX_ATTEMPTS` + `LEVELS` trong `tools/generate.ts` và `tools/verify.ts` + `useHashRoute.LEVELS` + `defaultStats` (schema.ts) + `summarizeByLevel` (progress.ts) + `LEVEL_LABELS`/`LEVEL_THEME` + màu `lvN` trong `tailwind.config.js`. (Danh sách cấp đang lặp ở nhiều nơi — dễ sót.)
+**Thêm cấp độ**: `Level` (types) + `TIERS` + `chooseSymmetry` + `MAX_ATTEMPTS` + `LEVELS` trong `tools/generate.ts` và `tools/verify.ts` + `useHashRoute.LEVELS` + `defaultStats` (schema.ts) + `summarizeByLevel` (progress.ts) + `level.<cấp>` ở catalog (`levelLabels.ts`) và `LEVEL_THEME` + màu `lvN` trong `tailwind.config.js`. (Danh sách cấp đang lặp ở nhiều nơi — dễ sót.)
 
 **Đổi luật tính sao**: chỉ sửa `progress.starsFor` (+ test + chuỗi hướng dẫn ở `CompletionScreen`); không cần migration.
 

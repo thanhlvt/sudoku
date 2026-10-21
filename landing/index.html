@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en" data-title-en="Sudoku – solve by logic, never by guessing" data-title-vi="Sudoku – giải bằng suy luận, không cần đoán mò">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="assets/site.js"></script>
+    <title>Sudoku – solve by logic, never by guessing</title>
+    <meta
+      name="description"
+      content="A free Sudoku game where every puzzle has exactly one solution and can be solved by pure logic. Five difficulty levels, daily challenges, lessons, and no ads. Works offline. · Sudoku miễn phí: mỗi màn đều giải được bằng suy luận, không quảng cáo, chơi offline."
+    />
+    <meta name="theme-color" content="#7c3aed" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="stylesheet" href="assets/style.css" />
+    <noscript><style>.phone{display:none}</style></noscript>
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://happabitlabs-sudoku.pages.dev/" />
+    <meta property="og:site_name" content="Sudoku" />
+    <meta property="og:title" content="Sudoku – solve by logic, never by guessing" />
+    <meta property="og:description" content="Every puzzle has exactly one solution and can be solved by pure logic. Free, no ads, works offline." />
+    <meta property="og:image" content="https://happabitlabs-sudoku.pages.dev/assets/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://happabitlabs-sudoku.pages.dev/" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MobileApplication",
+        "name": "Sudoku",
+        "url": "https://happabitlabs-sudoku.pages.dev/",
+        "author": { "@type": "Organization", "name": "Happabit Labs", "email": "thanhlesupport@gmail.com" },
+        "operatingSystem": "Android",
+        "applicationCategory": "GameApplication",
+        "inLanguage": ["en", "vi"],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Sudoku where every puzzle has exactly one solution and can be solved by pure logic."
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main"><span lang="en">Skip to content</span><span lang="vi">Bỏ qua tới nội dung</span></a>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="./">
+          <img src="assets/img/app-icon.png" width="36" height="36" alt="" />
+          Sudoku
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a class="nav-link" href="#features"><span lang="en">Features</span><span lang="vi">Tính năng</span></a>
+          <a class="nav-link" href="#screens"><span lang="en">Screenshots</span><span lang="vi">Hình ảnh</span></a>
+          <a class="nav-link" href="#faq">FAQ</a>
+          <div class="lang" role="group" aria-label="Language / Ngôn ngữ">
+            <button type="button" data-set-lang="en">EN</button>
+            <button type="button" data-set-lang="vi">VI</button>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <!-- ================= Hero ================= -->
+      <section class="hero" style="padding-top: 3.5rem">
+        <div class="wrap">
+          <div>
+            <span class="eyebrow">
+              <span lang="en">Free · No ads · Works offline</span>
+              <span lang="vi">Miễn phí · Không quảng cáo · Chơi offline</span>
+            </span>
+            <h1>
+              <span lang="en">Sudoku you solve by <em>logic</em>, never by guessing.</span>
+              <span lang="vi">Sudoku giải bằng <em>suy luận</em>, không cần đoán mò.</span>
+            </h1>
+            <p class="lead">
+              <span lang="en">
+                Every puzzle has exactly one solution and can be cracked with pure reasoning. Five difficulty levels, daily
+                challenges, and short lessons that teach you the techniques.
+              </span>
+              <span lang="vi">
+                Mỗi màn chỉ có đúng một lời giải và luôn giải được bằng logic thuần. Năm cấp độ, thử thách hằng ngày và những bài
+                học ngắn dạy bạn từng kỹ thuật.
+              </span>
+            </p>
+            <div class="cta">
+              <a class="btn" href="https://play.google.com/store/apps/details?id=com.happabitlabs.sudoku" rel="noopener">
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M4 2.8v18.4c0 .6.7 1 1.2.7l15.2-9.2c.5-.3.5-1 0-1.3L5.2 2.1C4.7 1.8 4 2.2 4 2.8Z" /></svg>
+                <span lang="en">Get it on Google Play</span>
+                <span lang="vi">Tải trên Google Play</span>
+              </a>
+              <a class="btn ghost" href="#screens"><span lang="en">See the screens</span><span lang="vi">Xem hình ảnh</span></a>
+            </div>
+            <ul class="badges">
+              <li><span lang="en">No account</span><span lang="vi">Không cần tài khoản</span></li>
+              <li><span lang="en">No tracking</span><span lang="vi">Không theo dõi</span></li>
+              <li><span lang="en">Vietnamese &amp; English</span><span lang="vi">Tiếng Việt &amp; English</span></li>
+            </ul>
+          </div>
+          <div class="hero-phones">
+            <div class="phone">
+              <img
+                data-shot="home"
+                width="780"
+                height="1688"
+                alt="Sudoku home screen with a resume card, today's challenge and difficulty levels"
+                data-alt-en="Sudoku home screen with a resume card, today's challenge and difficulty levels"
+                data-alt-vi="Màn hình chính của Sudoku với thẻ chơi tiếp, thử thách hôm nay và các cấp độ"
+              />
+            </div>
+            <div class="phone">
+              <img
+                data-shot="dark-hint"
+                width="780"
+                height="1688"
+                alt="A hint that highlights the cells and explains the Pointing technique, in dark mode"
+                data-alt-en="A hint that highlights the cells and explains the Pointing technique, in dark mode"
+                data-alt-vi="Gợi ý làm nổi các ô và giải thích kỹ thuật Số chỉ hướng, ở chế độ tối"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ================= Features ================= -->
+      <section id="features">
+        <div class="wrap">
+          <div class="section-head">
+            <h2><span lang="en">Made for people who like to think</span><span lang="vi">Dành cho người thích suy nghĩ</span></h2>
+            <p>
+              <span lang="en">No luck, no trial and error. Just the satisfying click of a deduction that works.</span>
+              <span lang="vi">Không may rủi, không thử và sai. Chỉ có cảm giác thỏa mãn khi một phép suy luận khớp.</span>
+            </p>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <div class="icon i-violet" aria-hidden="true">🧠</div>
+              <h3><span lang="en">Pure logic, verified</span><span lang="vi">Logic thuần, được kiểm chứng</span></h3>
+              <p>
+                <span lang="en">Every puzzle is checked to have exactly one solution and to be solvable with named human techniques.</span>
+                <span lang="vi">Mỗi màn đều được kiểm tra: đúng một lời giải và giải được bằng các kỹ thuật suy luận có tên gọi.</span>
+              </p>
+            </article>
+            <article class="card">
+              <div class="icon i-green" aria-hidden="true">🎯</div>
+              <h3><span lang="en">Five levels, 500 puzzles</span><span lang="vi">Năm cấp độ, 500 màn</span></h3>
+              <p>
+                <span lang="en">Difficulty comes from the hardest technique a puzzle needs, not from how many numbers are given.</span>
+                <span lang="vi">Độ khó được quyết định bởi kỹ thuật khó nhất mà màn cần, không phải bởi số ô cho sẵn.</span>
+              </p>
+            </article>
+            <article class="card">
+              <div class="icon i-amber" aria-hidden="true">💡</div>
+              <h3><span lang="en">Hints that teach</span><span lang="vi">Gợi ý biết dạy</span></h3>
+              <p>
+                <span lang="en">Stuck? The first tap highlights the cells and explains the technique in words. The second tap fills it in.</span>
+                <span lang="vi">Bí rồi? Chạm lần đầu để làm nổi các ô và giải thích kỹ thuật bằng lời; chạm lần hai mới điền giúp.</span>
+              </p>
+            </article>
+            <article class="card">
+              <div class="icon i-sky" aria-hidden="true">🎓</div>
+              <h3><span lang="en">21 technique lessons</span><span lang="vi">21 bài học kỹ thuật</span></h3>
+              <p>
+                <span lang="en">From Naked Single to X-Wing and XY-Wing, each with a real example from the puzzles and practice boards.</span>
+                <span lang="vi">Từ Số duy nhất đến X-Wing và XY-Wing, mỗi bài có ví dụ thật lấy từ chính các màn và màn luyện tập.</span>
+              </p>
+            </article>
+            <article class="card">
+              <div class="icon i-orange" aria-hidden="true">🔥</div>
+              <h3><span lang="en">Daily challenge &amp; streaks</span><span lang="vi">Thử thách hằng ngày &amp; chuỗi ngày</span></h3>
+              <p>
+                <span lang="en">A new puzzle every day, streak freezes for the day you miss, a calendar to catch up, and a weekly five-puzzle run.</span>
+                <span lang="vi">Mỗi ngày một màn mới, “đóng băng” giữ chuỗi khi lỡ một ngày, lịch để chơi bù và chuỗi năm màn mỗi tuần.</span>
+              </p>
+            </article>
+            <article class="card">
+              <div class="icon i-rose" aria-hidden="true">🏆</div>
+              <h3><span lang="en">Modes &amp; achievements</span><span lang="vi">Chế độ &amp; thành tựu</span></h3>
+              <p>
+                <span lang="en">Race the clock or play without a single mistake. Earn XP, level up, collect 24 achievements and unlock board colors.</span>
+                <span lang="vi">Đua với đồng hồ hoặc chơi không được sai. Nhận XP, lên cấp, sưu tầm 24 thành tựu và mở khoá màu bàn cờ.</span>
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+      <!-- ================= Levels ================= -->
+      <section style="padding-top: 0">
+        <div class="wrap">
+          <div class="section-head">
+            <h2><span lang="en">Climb the five levels</span><span lang="vi">Chinh phục năm cấp độ</span></h2>
+            <p>
+              <span lang="en">Each level adds new techniques to your toolbox.</span>
+              <span lang="vi">Mỗi cấp thêm những kỹ thuật mới vào hộp đồ nghề của bạn.</span>
+            </p>
+          </div>
+          <div class="levels">
+            <div class="level lv1">
+              <b>1</b>
+              <h3><span lang="en">Beginner</span><span lang="vi">Mới bắt đầu</span></h3>
+              <p><span lang="en">Naked and hidden singles</span><span lang="vi">Số đơn trần và số đơn ẩn</span></p>
+            </div>
+            <div class="level lv2">
+              <b>2</b>
+              <h3><span lang="en">Easy</span><span lang="vi">Dễ</span></h3>
+              <p><span lang="en">Plus singles along rows and columns</span><span lang="vi">Thêm số đơn theo hàng và cột</span></p>
+            </div>
+            <div class="level lv3">
+              <b>3</b>
+              <h3><span lang="en">Medium</span><span lang="vi">Trung bình</span></h3>
+              <p><span lang="en">Plus pointing, claiming and pairs</span><span lang="vi">Thêm số chỉ hướng, chiếm khối và cặp số</span></p>
+            </div>
+            <div class="level lv4">
+              <b>4</b>
+              <h3><span lang="en">Hard</span><span lang="vi">Khó</span></h3>
+              <p><span lang="en">Plus triples, quads and X-Wing</span><span lang="vi">Thêm bộ ba, bộ bốn và X-Wing</span></p>
+            </div>
+            <div class="level lv5">
+              <b>5</b>
+              <h3><span lang="en">Expert</span><span lang="vi">Chuyên gia</span></h3>
+              <p>
+                <span lang="en">Plus Swordfish, wings, coloring and unique rectangles</span>
+                <span lang="vi">Thêm Swordfish, các “cánh”, tô màu và hình chữ nhật duy nhất</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ================= Screenshots ================= -->
+      <section id="screens" class="gallery-band">
+        <div class="wrap">
+          <div class="section-head">
+            <h2><span lang="en">A look inside</span><span lang="vi">Nhìn vào bên trong</span></h2>
+            <p>
+              <span lang="en">Clean, colorful and easy on the eyes, in light and dark.</span>
+              <span lang="vi">Gọn gàng, nhiều màu sắc và dễ nhìn, ở cả chế độ sáng và tối.</span>
+            </p>
+          </div>
+        </div>
+        <div class="gallery" tabindex="0" role="region" aria-label="Screenshots / Hình ảnh">
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="hint"
+                width="780"
+                height="1688"
+                alt="Hint explaining the Pointing technique"
+                data-alt-en="A hint that highlights the cells and explains the Pointing technique"
+                data-alt-vi="Gợi ý làm nổi các ô và giải thích kỹ thuật Số chỉ hướng"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">Hints that explain</span><span lang="vi">Gợi ý có giải thích</span>
+              <small><span lang="en">See the why, not just the answer</span><span lang="vi">Hiểu vì sao, không chỉ biết đáp án</span></small>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="technique"
+                width="780"
+                height="1688"
+                alt="X-Wing lesson with a real example board"
+                data-alt-en="An X-Wing lesson with a worked example on a real board"
+                data-alt-vi="Bài học X-Wing với ví dụ thật trên một bàn cờ"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">Learn a technique</span><span lang="vi">Học một kỹ thuật</span>
+              <small><span lang="en">Real examples from real puzzles</span><span lang="vi">Ví dụ thật từ chính các màn</span></small>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="play"
+                width="780"
+                height="1688"
+                alt="A puzzle in progress with pencil notes"
+                data-alt-en="A puzzle in progress with pencil notes in the cells"
+                data-alt-vi="Một ván đang chơi với ghi chú trong các ô"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">Notes &amp; tools</span><span lang="vi">Ghi chú &amp; công cụ</span>
+              <small><span lang="en">Undo, redo, notes, hints</span><span lang="vi">Hoàn tác, ghi chú, gợi ý</span></small>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="complete"
+                width="780"
+                height="1688"
+                alt="Puzzle completed with three stars"
+                data-alt-en="The result screen after finishing a puzzle with three stars"
+                data-alt-vi="Màn hình kết quả sau khi hoàn thành một màn với ba sao"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">Earn stars &amp; XP</span><span lang="vi">Nhận sao &amp; XP</span>
+              <small><span lang="en">Fewer mistakes, more stars</span><span lang="vi">Ít lỗi hơn, nhiều sao hơn</span></small>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="modes"
+                width="780"
+                height="1688"
+                alt="Challenge modes: weekly streak, Time Attack and No Mistakes"
+                data-alt-en="Challenge modes: the weekly streak, Time Attack and No Mistakes"
+                data-alt-vi="Các chế độ thử thách: chuỗi tuần, Đua thời gian và Không sai"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">Challenge modes</span><span lang="vi">Chế độ thử thách</span>
+              <small><span lang="en">Time Attack · No Mistakes · Weekly</span><span lang="vi">Đua thời gian · Không sai · Chuỗi tuần</span></small>
+            </figcaption>
+          </figure>
+          <figure>
+            <div class="phone">
+              <img
+                loading="lazy"
+                data-shot="achievements"
+                width="780"
+                height="1688"
+                alt="Achievements list"
+                data-alt-en="The achievements list with level and XP"
+                data-alt-vi="Danh sách thành tựu với cấp độ và XP"
+              />
+            </div>
+            <figcaption>
+              <span lang="en">24 achievements</span><span lang="vi">24 thành tựu</span>
+              <small><span lang="en">Level up and unlock board colors</span><span lang="vi">Lên cấp và mở khoá màu bàn cờ</span></small>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+      <!-- ================= Privacy ================= -->
+      <section>
+        <div class="wrap split">
+          <div class="phones">
+            <div class="phone" style="width: min(100%, 16rem)">
+              <img
+                loading="lazy"
+                data-shot="dark-home"
+                width="780"
+                height="1688"
+                alt="Sudoku home screen in dark mode"
+                data-alt-en="Sudoku home screen in dark mode"
+                data-alt-vi="Màn hình chính của Sudoku ở chế độ tối"
+              />
+            </div>
+          </div>
+          <div>
+            <h2><span lang="en">Your game stays on your device</span><span lang="vi">Ván chơi của bạn ở lại trên máy bạn</span></h2>
+            <p>
+              <span lang="en">Sudoku has no accounts, no ads and no analytics. Your progress is saved locally and never leaves your phone.</span>
+              <span lang="vi">Sudoku không có tài khoản, không quảng cáo và không phân tích hành vi. Tiến độ được lưu ngay trên máy và không bao giờ rời khỏi điện thoại của bạn.</span>
+            </p>
+            <ul class="checks">
+              <li><span lang="en">Plays fully offline: all puzzles are inside the app</span><span lang="vi">Chơi hoàn toàn offline: mọi màn đều nằm sẵn trong app</span></li>
+              <li><span lang="en">The Android app doesn’t ask for internet access</span><span lang="vi">Ứng dụng Android không xin quyền truy cập internet</span></li>
+              <li><span lang="en">Back up or restore your progress to a file any time</span><span lang="vi">Sao lưu hoặc khôi phục tiến độ ra file bất cứ lúc nào</span></li>
+            </ul>
+            <p style="margin-top: 1.25rem">
+              <a href="privacy.html"><span lang="en">Read the privacy policy →</span><span lang="vi">Đọc chính sách quyền riêng tư →</span></a>
+            </p>
+          </div>
+        </div>
+      </section>
+      <!-- ================= FAQ ================= -->
+      <section id="faq" style="padding-top: 0">
+        <div class="wrap">
+          <div class="section-head">
+            <h2><span lang="en">Questions, answered</span><span lang="vi">Câu hỏi thường gặp</span></h2>
+          </div>
+          <div class="faq">
+            <details>
+              <summary><span lang="en">Is Sudoku really free?</span><span lang="vi">Sudoku có thật sự miễn phí?</span></summary>
+              <p>
+                <span lang="en">Yes. There are no ads and no in-app purchases.</span>
+                <span lang="vi">Có. Không có quảng cáo và không có mua hàng trong ứng dụng.</span>
+              </p>
+            </details>
+            <details>
+              <summary><span lang="en">Do I need an internet connection?</span><span lang="vi">Tôi có cần kết nối internet không?</span></summary>
+              <p>
+                <span lang="en">No. All 500 puzzles ship inside the app, so you can play anywhere, including on a plane.</span>
+                <span lang="vi">Không. Cả 500 màn đã nằm sẵn trong app, bạn chơi được ở bất cứ đâu, kể cả trên máy bay.</span>
+              </p>
+            </details>
+            <details>
+              <summary>
+                <span lang="en">What does “solvable by logic” mean?</span><span lang="vi">“Giải được bằng suy luận” nghĩa là gì?</span>
+              </summary>
+              <p>
+                <span lang="en">A computer solver checks every puzzle: it must have exactly one solution and be finished using only the named human techniques of its level, with no guessing or backtracking. Puzzles that need a guess are thrown away.</span>
+                <span lang="vi">Một bộ giải kiểm tra từng màn: phải có đúng một lời giải và hoàn thành chỉ bằng các kỹ thuật có tên của cấp độ đó, không đoán và không thử-sai. Màn nào buộc phải đoán sẽ bị loại.</span>
+              </p>
+            </details>
+            <details>
+              <summary><span lang="en">Where is my progress saved?</span><span lang="vi">Tiến độ của tôi được lưu ở đâu?</span></summary>
+              <p>
+                <span lang="en">On your device only. Use Settings → Back up to save a file and Restore to bring it to another device.</span>
+                <span lang="vi">Chỉ trên máy của bạn. Vào Cài đặt → Sao lưu để lưu thành file, và Khôi phục để đưa sang máy khác.</span>
+              </p>
+            </details>
+            <details>
+              <summary><span lang="en">Which languages and devices are supported?</span><span lang="vi">App hỗ trợ ngôn ngữ và thiết bị nào?</span></summary>
+              <p>
+                <span lang="en">Vietnamese and English; the app follows your phone’s language and you can change it in Settings. It is available for Android on Google Play.</span>
+                <span lang="vi">Tiếng Việt và English; app theo ngôn ngữ của điện thoại và bạn có thể đổi trong Cài đặt. App có trên Android qua Google Play.</span>
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+      <!-- ================= Final CTA ================= -->
+      <section style="padding-top: 0">
+        <div class="wrap">
+          <div class="final">
+            <h2><span lang="en">Ready for your first puzzle?</span><span lang="vi">Sẵn sàng cho màn đầu tiên?</span></h2>
+            <p>
+              <span lang="en">Train your brain a few minutes a day, one clean deduction at a time.</span>
+              <span lang="vi">Rèn trí não vài phút mỗi ngày, từng phép suy luận gọn gàng một.</span>
+            </p>
+            <div class="cta">
+              <a class="btn" href="https://play.google.com/store/apps/details?id=com.happabitlabs.sudoku" rel="noopener">
+                <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M4 2.8v18.4c0 .6.7 1 1.2.7l15.2-9.2c.5-.3.5-1 0-1.3L5.2 2.1C4.7 1.8 4 2.2 4 2.8Z" /></svg>
+                <span lang="en">Get it on Google Play</span>
+                <span lang="vi">Tải trên Google Play</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© 2026 Happabit Labs</span>
+        <nav aria-label="Footer">
+          <a href="privacy.html"><span lang="en">Privacy Policy</span><span lang="vi">Chính sách quyền riêng tư</span></a>
+          <a href="terms.html"><span lang="en">Terms of Use</span><span lang="vi">Điều khoản sử dụng</span></a>
+          <a href="mailto:thanhlesupport@gmail.com"><span lang="en">Contact</span><span lang="vi">Liên hệ</span></a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

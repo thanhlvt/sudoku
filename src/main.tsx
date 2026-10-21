@@ -2,8 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { setLanguage } from './i18n';
 import { isNative } from './native';
+import { loadSettings } from './storage/schema';
 import { ErrorBoundary } from './ui/ErrorBoundary';
+
+// Pick the language before the first paint so a fixed (non-device) choice never flashes the device language.
+setLanguage(loadSettings().language);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

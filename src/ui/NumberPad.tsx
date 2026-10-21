@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useI18n } from '../i18n/useI18n';
 
 interface NumberPadProps {
   noteMode: boolean;
@@ -19,6 +20,7 @@ interface DigitButtonProps {
 }
 
 function DigitButton({ digit, left, noteMode, onDigit }: DigitButtonProps): JSX.Element {
+  const { t } = useI18n();
   const done = left <= 0;
   const timerRef = useRef<number | null>(null);
   /** Set when a hold already entered the digit, so the click that follows the release is ignored. */
@@ -58,7 +60,7 @@ function DigitButton({ digit, left, noteMode, onDigit }: DigitButtonProps): JSX.
         onDigit(digit);
       }}
       disabled={done}
-      aria-label={`Số ${digit}${noteMode ? ', chế độ ghi chú' : ''}, còn ${Math.max(0, left)} ô`}
+      aria-label={t(noteMode ? 'pad.digitNote' : 'pad.digit', { digit, left: Math.max(0, left) })}
       className={`btn btn-white h-16 min-w-0 select-none flex-col !gap-1 !rounded-xl !px-0 transition-[transform,box-shadow,opacity,filter] ${
         done ? '!scale-90 !opacity-30' : ''
       }`}
@@ -70,8 +72,9 @@ function DigitButton({ digit, left, noteMode, onDigit }: DigitButtonProps): JSX.
 }
 
 export function NumberPad({ noteMode, remaining, onDigit }: NumberPadProps): JSX.Element {
+  const { t } = useI18n();
   return (
-    <div role="group" aria-label="Bàn phím số" className="grid w-full grid-cols-9 gap-1.5">
+    <div role="group" aria-label={t('pad.aria')} className="grid w-full grid-cols-9 gap-1.5">
       {DIGITS.map((d) => (
         <DigitButton key={d} digit={d} left={remaining[d] ?? 0} noteMode={noteMode} onDigit={onDigit} />
       ))}

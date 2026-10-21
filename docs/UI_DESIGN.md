@@ -294,12 +294,12 @@ Chồng lớp (từ dưới lên): nội dung → overlay Tạm dừng (`z-20`, 
 
 Biến thể: hết màn của cấp (`hasNext = false`) ⇒ nút chính thành "Danh sách màn" và bỏ nút phụ trùng. Màn thử thách hôm nay ⇒ dòng thông điệp thành "Chuỗi thử thách n ngày" (cờ lửa). Mở lại màn đã xong ⇒ hiện thẳng màn này.
 Thời điểm: hiện sau 750 ms kể từ lúc hoàn thành (kèm tiếng `win`).
-Khối dưới giới hạn `max-h-[80dvh]` và cuộn được, phần trên (sao + cúp) co lại thay vì đẩy tràn ở màn thấp. Mở lại màn đã xong ⇒ không có khối phần thưởng. "Chia sẻ" mở bảng chia sẻ của hệ thống, hoặc sao chép vào clipboard (hiện "Đã sao chép kết quả").
+Khối dưới giới hạn `max-h-[80dvh]` và cuộn được, phần trên (sao + cúp) co lại thay vì đẩy tràn ở màn thấp. Mở lại màn đã xong ⇒ không có khối phần thưởng. "Chia sẻ" vẽ ảnh kết quả bằng canvas (`shareImage.ts`: tiêu đề, cấp, sao, bàn cờ đã giải — số đề bài đậm, số người chơi tím —, thời gian/lỗi/gợi ý; luôn theme sáng) rồi mở bảng chia sẻ của hệ thống kèm file PNG; trình duyệt không chia sẻ được file thì tải ảnh về (hiện "Đã lưu ảnh kết quả"); không có canvas thì lùi về chia sẻ văn bản. Nút "Chia sẻ màn này" ở overlay tạm dừng cũng gửi ảnh (`renderPuzzleImage`: bàn cờ đề bài + lời mời, kèm link làm chú thích khi có `VITE_PUBLIC_URL`), hiện cả trên Android.
 
 ### 5.5 Bảng Cài đặt — `ui/SettingsSheet.tsx` (bottom sheet)
 
-7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối);
-nhóm radio **Màu bàn cờ** (4 bảng, bảng chưa mở khoá bị `disabled` kèm ổ khoá + cấp cần); nhóm **Dữ liệu**: "Hướng dẫn chơi", "Sao lưu" (web: tải file `sudoku-backup-<ngày>.json`; Android: bảng chia sẻ), "Khôi phục" (chọn file, `confirm` rồi thay thế toàn bộ tiến độ và `reload`);
+7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối); nhóm radio **Ngôn ngữ** (Theo máy / Tiếng Việt / English — tên ngôn ngữ luôn viết bằng chính nó; đổi là đổi ngay toàn app, không cần tải lại);
+nhóm radio **Màu bàn cờ** (4 bảng, bảng chưa mở khoá bị `disabled` kèm ổ khoá + cấp cần); nhóm **Dữ liệu**: "Hướng dẫn chơi", "Sao lưu" (web: tải file `sudoku-backup-<ngày>.json`; Android: file `.json` qua bảng chia sẻ), "Khôi phục" (chọn file, `confirm` rồi thay thế toàn bộ tiến độ và `reload`);
 nút "Xóa toàn bộ tiến độ" (có `confirm`, rồi `location.reload()`). Mở từ Home.
 
 ### 5.6 Thành tựu (`#/achievements`) — `ui/AchievementsScreen.tsx`

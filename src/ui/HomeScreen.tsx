@@ -21,12 +21,15 @@ import { heartsLeft, pickNextIndex, summarizeByLevel } from '../game/progress';
 import { levelFromPuzzleId, puzzleIdOf } from '../game/puzzleBank';
 import { weeklyProgress, type WeeklyWeek } from '../game/weekly';
 import { playerLevel, totalXp } from '../game/xp';
+import { formatMonthShort } from '../i18n/format';
+import type { MessageKey } from '../i18n';
+import { useI18n } from '../i18n/useI18n';
 import { loadWeekly, type DailyState, type Settings, type Stats } from '../storage/schema';
 import { IntroSheet } from './IntroSheet';
 import { PlayerCard } from './PlayerCard';
 import { SettingsSheet } from './SettingsSheet';
 import { formatTime } from './Timer';
-import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { LEVEL_THEME, levelLabel } from './levelLabels';
 import { useAchievements } from './hooks/useAchievements';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
@@ -57,7 +60,7 @@ function Logo(): JSX.Element {
     <svg width="48" height="48" viewBox="0 0 56 56" aria-hidden="true" className="shrink-0">
       <rect width="56" height="56" rx="14" fill="#312E81" />
       {tiles.map((fill, i) => (
-        <rect key={i} x={7 + (i % 3) * 14} y={7 + Math.floor(i / 3) * 14} width="12" height="12" rx="3.5" fill={fill} />
+        <rect key={i} x={8 + (i % 3) * 14} y={8 + Math.floor(i / 3) * 14} width="12" height="12" rx="3.5" fill={fill} />
       ))}
     </svg>
   );
@@ -76,6 +79,7 @@ export function HomeScreen({
   onSettingsChange,
   onNavigate,
 }: HomeScreenProps): JSX.Element {
+  const { t, intlLocale } = useI18n();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { games, byId, last } = useSavedProgress();
   const summary = useMemo(() => summarizeByLevel(games), [games]);
@@ -99,11 +103,11 @@ export function HomeScreen({
   }, [check]);
   const unlockedCount = ACHIEVEMENTS.filter((a) => Object.hasOwn(unlocked, a.id)).length;
 
-  const links: { icon: LucideIcon; label: string; hash: string; chip: string; badge?: string }[] = [
-    { icon: Trophy, label: 'Thành tựu', hash: '#/achievements', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', badge: `${unlockedCount}/${ACHIEVEMENTS.length}` },
-    { icon: CalendarDays, label: 'Lịch', hash: '#/calendar', chip: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' },
-    { icon: GraduationCap, label: 'Học', hash: '#/learn', chip: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' },
-    { icon: BarChart3, label: 'Thống kê', hash: '#/stats', chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300' },
+  const links: { icon: LucideIcon; label: MessageKey; hash: string; chip: string; badge?: string }[] = [
+    { icon: Trophy, label: 'home.link.achievements', hash: '#/achievements', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', badge: `${unlockedCount}/${ACHIEVEMENTS.length}` },
+    { icon: CalendarDays, label: 'home.link.calendar', hash: '#/calendar', chip: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' },
+    { icon: GraduationCap, label: 'home.link.learn', hash: '#/learn', chip: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' },
+    { icon: BarChart3, label: 'home.link.stats', hash: '#/stats', chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300' },
   ];
 
   const streak = currentStreak(daily, today);
@@ -122,17 +126,17 @@ export function HomeScreen({
     let label: string;
     if (last && lastGame?.status === 'in-progress') {
       id = last.puzzleId;
-      label = 'Chơi tiếp';
+      label = t('home.resume');
     } else {
       const level: Level = last ? levelFromPuzzleId(last.puzzleId) : 'beginner';
       const count = manifest.levels.find((l) => l.level === level)?.count ?? 1;
       id = puzzleIdOf(level, pickNextIndex(level, count, byId));
-      label = last ? 'Màn tiếp theo' : 'Bắt đầu chơi';
+      label = last ? t('home.nextPuzzle') : t('home.start');
     }
     const level = levelFromPuzzleId(id);
     const number = Number(id.slice(id.lastIndexOf('-') + 1));
-    return { id, label, title: `${LEVEL_LABELS[level]} · Màn ${number}`, game: byId.get(id) };
-  }, [manifest, last, byId]);
+    return { id, label, title: t('common.levelPuzzle', { level: levelLabel(level, t), n: number }), game: byId.get(id) };
+  }, [manifest, last, byId, t]);
 
   const [, month, day] = today.split('-');
 
@@ -142,11 +146,11 @@ export function HomeScreen({
         <Logo />
         <div className="min-w-0 flex-1">
           <h1 className="text-[1.9rem] font-black leading-none">Sudoku</h1>
-          <p className="mt-1 whitespace-nowrap text-[0.95rem] font-bold text-accent">Rèn trí não mỗi ngày</p>
+          <p className="mt-1 whitespace-nowrap text-[0.95rem] font-bold text-accent">{t('home.tagline')}</p>
         </div>
         <div
           className="card flex h-11 items-center gap-1 !rounded-full px-3 text-lg font-black text-orange-700 dark:text-orange-300"
-          aria-label={`Chuỗi ${streak} ngày`}
+          aria-label={t('home.streakAria', { count: streak })}
         >
           <Flame
             size={22}
@@ -159,7 +163,7 @@ export function HomeScreen({
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          aria-label="Cài đặt"
+          aria-label={t('home.settingsAria')}
           className="btn btn-white btn-icon !h-11 !w-11 !rounded-2xl"
         >
           <SettingsIcon size={24} strokeWidth={2.5} aria-hidden="true" className="text-accent" />
@@ -204,26 +208,28 @@ export function HomeScreen({
         <section
           className="flex animate-screen-in items-center gap-3 rounded-[1.5rem] bg-orange-50 p-4 shadow-[0_4px_0_0_#FED7AA] dark:bg-[#3A2417] dark:shadow-[0_4px_0_0_#5C3A22]"
           style={stagger(2)}
-          aria-label="Thử thách hôm nay"
+          aria-label={t('home.daily.title')}
         >
           <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-orange-500 text-white">
-            <span className="text-xs font-black leading-none">TH{Number(month)}</span>
+            <span className="text-xs font-black leading-none">
+              {t('home.daily.badge', { month: Number(month), monthShort: formatMonthShort(Number(month), intlLocale) })}
+            </span>
             <span className="text-3xl font-black leading-none">{Number(day)}</span>
           </div>
           <div className="min-w-0 flex-1 text-orange-950 dark:text-orange-50">
-            <h2 className="text-[1.05rem] font-black leading-tight">Thử thách hôm nay</h2>
+            <h2 className="text-[1.05rem] font-black leading-tight">{t('home.daily.title')}</h2>
             <p className="mt-0.5 text-sm font-bold leading-snug text-orange-800 dark:text-orange-200">
-              {dailyDone ? 'Đã hoàn thành hôm nay' : 'Hoàn thành để giữ chuỗi'}
+              {dailyDone ? t('home.daily.done') : t('home.daily.todo')}
               {' '}
               <Flame size={14} className="inline -translate-y-px fill-orange-500 text-orange-500" aria-hidden="true" />{' '}
-              {streak} ngày
+              {t('home.daily.streak', { count: streak })}
             </p>
           </div>
           {dailyDone ? (
             <span
               className="flex h-11 w-11 shrink-0 animate-pop-in items-center justify-center rounded-full bg-emerald-500 text-white"
               role="img"
-              aria-label="Đã hoàn thành"
+              aria-label={t('home.daily.doneAria')}
             >
               <Check size={24} strokeWidth={3.5} aria-hidden="true" />
             </span>
@@ -233,7 +239,7 @@ export function HomeScreen({
               onClick={() => onNavigate(`#/play/${dailyId}`)}
               className="btn btn-orange cta-ring min-h-11 shrink-0 px-4 text-lg"
             >
-              Chơi
+              {t('common.play')}
             </button>
           )}
         </section>
@@ -249,16 +255,16 @@ export function HomeScreen({
           <TimerIcon size={26} strokeWidth={2.75} aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-lg font-black leading-tight">Chế độ thử thách</span>
+          <span className="block text-lg font-black leading-tight">{t('home.modes.title')}</span>
           <span className="block text-sm font-bold text-accent">
-            Đua thời gian · Không sai · Chuỗi tuần{weekly ? ` ${weekDone}/5` : ''}
+            {weekly ? t('home.modes.subtitleWeekly', { done: weekDone }) : t('home.modes.subtitle')}
           </span>
         </span>
       </button>
 
       <PlayerCard games={games} onClick={() => onNavigate('#/achievements')} className="animate-screen-in" style={stagger(3)} />
 
-      <nav className="grid grid-cols-4 gap-3" aria-label="Khám phá">
+      <nav className="grid grid-cols-4 gap-3" aria-label={t('home.nav.aria')}>
         {links.map(({ icon: Icon, label, hash, chip, badge }, i) => (
           <button
             key={hash}
@@ -270,7 +276,7 @@ export function HomeScreen({
             <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${chip}`}>
               <Icon size={20} strokeWidth={2.75} aria-hidden="true" />
             </span>
-            <span className="leading-none">{label}</span>
+            <span className="leading-none">{t(label)}</span>
             {badge && (
               <span className="absolute -right-1 -top-2 rounded-full bg-primary px-1.5 py-0.5 text-[0.65rem] font-black leading-none text-white">
                 {badge}
@@ -280,11 +286,11 @@ export function HomeScreen({
         ))}
       </nav>
 
-      <section className="grid grid-cols-3 gap-3" aria-label="Thống kê">
+      <section className="grid grid-cols-3 gap-3" aria-label={t('home.stats.aria')}>
         {[
-          { icon: Check, chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', value: String(totalSolved), label: 'Đã giải' },
-          { icon: Star, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totalStars), label: 'Sao' },
-          { icon: Clock, chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', value: bestMs === null ? '--:--' : formatTime(bestMs), label: 'Kỷ lục' },
+          { icon: Check, chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', value: String(totalSolved), label: t('home.stat.solved') },
+          { icon: Star, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totalStars), label: t('home.stat.stars') },
+          { icon: Clock, chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', value: bestMs === null ? '--:--' : formatTime(bestMs), label: t('home.stat.record') },
         ].map(({ icon: Icon, chip, value, label }, i) => (
           <div key={label} className="card animate-screen-in flex flex-col gap-2 p-4" style={stagger(3 + i)}>
             <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${chip}`}>
@@ -296,7 +302,7 @@ export function HomeScreen({
         ))}
       </section>
 
-      <h2 className="mt-1 text-2xl font-black">Chọn độ khó</h2>
+      <h2 className="mt-1 text-2xl font-black">{t('home.chooseLevel')}</h2>
       <div className="flex flex-col gap-3">
         {(manifest?.levels ?? []).map(({ level, count }, i) => {
           const theme = LEVEL_THEME[level];
@@ -307,7 +313,7 @@ export function HomeScreen({
               key={level}
               type="button"
               onClick={() => onNavigate(`#/level/${level}`)}
-              aria-label={`${LEVEL_LABELS[level]}, đã xong ${done} trên ${count} màn`}
+              aria-label={t('home.levelAria', { level: levelLabel(level, t), done, count })}
               className="btn btn-white animate-screen-in w-full justify-start gap-4 !rounded-3xl p-4 text-left"
               style={stagger(6 + i)}
             >
@@ -320,7 +326,7 @@ export function HomeScreen({
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-2.5">
                 <span className="flex items-baseline justify-between gap-2">
-                  <span className="text-xl font-black">{LEVEL_LABELS[level]}</span>
+                  <span className="text-xl font-black">{levelLabel(level, t)}</span>
                   <span className="text-base font-extrabold tabular-nums text-accent">
                     {done}/{count}
                   </span>
@@ -336,13 +342,13 @@ export function HomeScreen({
           );
         })}
         {!manifest && !loadFailed && (
-          <p className="py-6 text-center text-base font-bold text-accent">Đang tải danh sách cấp độ...</p>
+          <p className="py-6 text-center text-base font-bold text-accent">{t('home.levelsLoading')}</p>
         )}
         {!manifest && loadFailed && (
           <div role="alert" className="flex flex-col items-center gap-3 py-6 text-center">
-            <p className="text-base font-bold text-accent">Không tải được danh sách cấp độ. Hãy kiểm tra kết nối mạng.</p>
+            <p className="text-base font-bold text-accent">{t('home.levelsFailed')}</p>
             <button type="button" onClick={onRetry} className="btn btn-primary min-h-12 px-6">
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         )}

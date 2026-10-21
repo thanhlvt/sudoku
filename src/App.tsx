@@ -4,6 +4,7 @@ import { preloadSounds } from './feedback';
 import { dailyPuzzle, dateKey } from './game/daily';
 import { weekStartKey, weeklyPuzzles } from './game/weekly';
 import { loadLevel, loadManifest } from './game/puzzleBank';
+import { setLanguage } from './i18n';
 import { setupBackButton } from './native';
 import { migrate, syncGeneratorVersion } from './storage/schema';
 import { AchievementsScreen } from './ui/AchievementsScreen';
@@ -45,6 +46,11 @@ export default function App(): JSX.Element {
   useEffect(() => {
     if (settings.soundEnabled) preloadSounds();
   }, [settings.soundEnabled]);
+
+  // The display language follows the setting; "auto" is the device's language (Android's system language in the app).
+  useEffect(() => {
+    setLanguage(settings.language);
+  }, [settings.language]);
 
   // `data-theme` overrides the OS preference; without it the CSS follows prefers-color-scheme.
   useEffect(() => {

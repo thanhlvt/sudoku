@@ -2,8 +2,9 @@ import { ChevronLeft, Play, Star } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { Level, LevelBank } from '../core/types';
 import { pickNextIndex, starsFor, summarizeByLevel } from '../game/progress';
+import { useI18n } from '../i18n/useI18n';
 import { Stars } from './Stars';
-import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { LEVEL_THEME, levelLabel } from './levelLabels';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
 interface LevelListScreenProps {
@@ -22,6 +23,7 @@ const COMPLETED_STYLE = { '--btn-bg': '34 197 94', '--btn-edge': '21 128 61', '-
 const TAB_ACTIVE_STYLE = { '--btn-bg': '49 46 129', '--btn-edge': '30 27 75', '--btn-fg': '255 255 255' } as CSSProperties;
 
 export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, onBack }: LevelListScreenProps): JSX.Element {
+  const { t } = useI18n();
   const theme = LEVEL_THEME[level];
   const { games, byId } = useSavedProgress();
   const [pageOverride, setPageOverride] = useState<number | null>(null);
@@ -50,17 +52,17 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
           <button
             type="button"
             onClick={onBack}
-            aria-label="Quay lại"
+            aria-label={t('common.back')}
             className="btn btn-icon !h-12 !w-12 !rounded-2xl !shadow-none"
             style={{ '--btn-bg': theme.edgeRgb, '--btn-edge': theme.edgeRgb, '--btn-fg': '255 255 255' } as CSSProperties}
           >
             <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" />
           </button>
-          <h1 className="text-3xl font-black text-white">{LEVEL_LABELS[level]}</h1>
+          <h1 className="text-3xl font-black text-white">{levelLabel(level, t)}</h1>
         </div>
         <div className="relative mt-4 flex gap-2 text-base font-extrabold text-white">
           <span className={`rounded-full px-4 py-2 tabular-nums ${theme.edge}`}>
-            {summary.completed}/{count} màn
+            {t('levels.count', { done: summary.completed, count })}
           </span>
           <span className={`flex items-center gap-1.5 rounded-full px-4 py-2 tabular-nums ${theme.edge}`}>
             <Star size={16} strokeWidth={0} className="fill-amber-400" aria-hidden="true" />
@@ -75,7 +77,7 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
         </div>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto px-5 pb-2 pt-4" role="tablist" aria-label="Nhóm màn">
+      <div className="flex gap-2 overflow-x-auto px-5 pb-2 pt-4" role="tablist" aria-label={t('levels.groupsAria')}>
         {Array.from({ length: pageCount }, (_, p) => {
           const active = p === page;
           const from = p * PAGE_SIZE + 1;
@@ -99,9 +101,9 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
       <div key={page} className="grid grid-cols-4 gap-3 px-5 pb-4 pt-3">
         {!bank && loadFailed && (
           <div role="alert" className="col-span-4 flex flex-col items-center gap-3 py-8 text-center">
-            <p className="text-base font-bold text-accent">Không tải được danh sách màn. Hãy kiểm tra kết nối mạng.</p>
+            <p className="text-base font-bold text-accent">{t('levels.loadFailed')}</p>
             <button type="button" onClick={onRetry} className="btn btn-primary min-h-12 px-6">
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         )}
@@ -118,16 +120,16 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
             status === 'completed' ? '' : isNext ? 'btn-primary cta-ring' : 'btn-tile';
           const statusLabel =
             status === 'completed'
-              ? `đã xong, ${starsFor(saved!.mistakes)} sao`
+              ? t('levels.statusDone', { count: starsFor(saved!.mistakes) })
               : status === 'in-progress'
-                ? 'đang chơi'
-                : 'chưa chơi';
+                ? t('levels.statusPlaying')
+                : t('levels.statusNew');
           return (
             <button
               key={p.id}
               type="button"
               onClick={() => onNavigate(`#/play/${p.id}`)}
-              aria-label={`Màn ${p.index + 1}, ${statusLabel}`}
+              aria-label={t('levels.tileAria', { n: p.index + 1, status: statusLabel })}
               className={`btn aspect-[1/0.88] animate-pop-in flex-col gap-1 !rounded-2xl !px-0 text-2xl font-black ${stateClass}`}
               style={{ ...(status === 'completed' ? COMPLETED_STYLE : null), animationDelay: `${Math.min(i * 22, 440)}ms` }}
             >
@@ -140,7 +142,7 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
                   emptyClass="fill-transparent text-white/70"
                 />
               ) : isNext ? (
-                <span className="text-xs font-black uppercase leading-none tracking-wider">Chơi</span>
+                <span className="text-xs font-black uppercase leading-none tracking-wider">{t('common.play')}</span>
               ) : status === 'in-progress' ? (
                 <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
               ) : null}
@@ -157,7 +159,7 @@ export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, 
           className="btn btn-primary cta-ring cta-shine min-h-16 w-full text-xl"
         >
           <Play size={22} strokeWidth={0} className="fill-white" aria-hidden="true" />
-          {nextPuzzle ? `Chơi màn ${nextPuzzle.index + 1}` : 'Đang tải...'}
+          {nextPuzzle ? t('levels.playPuzzle', { n: nextPuzzle.index + 1 }) : t('common.loading')}
         </button>
       </div>
     </main>

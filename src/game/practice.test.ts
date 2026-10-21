@@ -5,7 +5,8 @@ import { TECHNIQUE_ORDER } from '../core/techniques';
 import type { Level, LevelBank, PuzzleRecord } from '../core/types';
 import type { SavedGame } from '../storage/schema';
 import { indexPuzzles, masteredTechniques, practicePuzzles, usesOf } from './practice';
-import { TECHNIQUE_INFO, isTechniqueId, techniqueLabel } from './techniqueInfo';
+import { LOCALES, translate, type Translate } from '../i18n';
+import { TECHNIQUES, isTechniqueId, techniqueInfo, techniqueLabel } from './techniqueInfo';
 import { findTechniqueExample } from './techniqueExample';
 
 function loadBank(level: Level): LevelBank {
@@ -18,22 +19,33 @@ const fake = (id: string, hardest: string, score: number, counts: Record<string,
 const bankOf = (puzzles: PuzzleRecord[]): LevelBank =>
   ({ schemaVersion: 1, generatorVersion: 1, level: 'hard', count: puzzles.length, puzzles }) as LevelBank;
 
+const inLocale =
+  (locale: (typeof LOCALES)[number]): Translate =>
+  (key, params) =>
+    translate(locale, key, params);
+
 describe('technique info', () => {
   it('describes exactly the techniques the solver has, in the same order', () => {
-    expect(TECHNIQUE_INFO.map((t) => t.id)).toEqual(TECHNIQUE_ORDER.map((t) => t.name));
+    expect(TECHNIQUES.map((t) => t.id)).toEqual(TECHNIQUE_ORDER.map((t) => t.name));
   });
 
-  it('has a lesson for every technique', () => {
-    for (const info of TECHNIQUE_INFO) {
+  it.each(LOCALES)('has a lesson for every technique in %s', (locale) => {
+    const t = inLocale(locale);
+    for (const { id } of TECHNIQUES) {
+      const info = techniqueInfo(id, t)!;
+      expect(info.label).not.toMatch(/^tech./);
+      expect(info.group).not.toMatch(/^tech./);
       expect(info.summary.length).toBeGreaterThan(10);
       expect(info.steps.length).toBeGreaterThan(0);
+      expect(info.steps.every((s) => s.length > 0)).toBe(true);
       expect(info.tip.length).toBeGreaterThan(0);
     }
   });
 
   it('shows unknown ids unchanged', () => {
-    expect(techniqueLabel('x-wing')).toBe('X-Wing');
-    expect(techniqueLabel('some-new-technique')).toBe('some-new-technique');
+    expect(techniqueLabel('x-wing', inLocale('en'))).toBe('X-Wing');
+    expect(techniqueLabel('some-new-technique', inLocale('en'))).toBe('some-new-technique');
+    expect(techniqueInfo('some-new-technique', inLocale('en'))).toBeUndefined();
     expect(isTechniqueId('x-wing')).toBe(true);
     expect(isTechniqueId('__proto__')).toBe(false);
     expect(isTechniqueId(5)).toBe(false);

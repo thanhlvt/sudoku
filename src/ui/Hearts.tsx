@@ -1,12 +1,14 @@
 import { Heart } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MAX_HEARTS, heartsLeft } from '../game/progress';
+import { useI18n } from '../i18n/useI18n';
 
 interface HeartsProps {
   mistakes: number;
 }
 
 export function Hearts({ mistakes }: HeartsProps): JSX.Element {
+  const { t } = useI18n();
   const left = heartsLeft(mistakes);
   const prevMistakes = useRef(mistakes);
   const [lostIdx, setLostIdx] = useState<number | null>(null);
@@ -22,7 +24,7 @@ export function Hearts({ mistakes }: HeartsProps): JSX.Element {
   }, [mistakes]);
 
   return (
-    <div className="flex gap-1.5" role="img" aria-label={`Còn ${left} trên ${MAX_HEARTS} tim`}>
+    <div className="flex gap-1.5" role="img" aria-label={t('hearts.aria', { left, max: MAX_HEARTS })}>
       {Array.from({ length: MAX_HEARTS }, (_, i) => (
         <Heart
           key={i}

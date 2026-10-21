@@ -1,4 +1,5 @@
 import type { TechniqueExample } from '../game/techniqueExample';
+import { useI18n } from '../i18n/useI18n';
 
 const NOTE_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
@@ -11,6 +12,7 @@ interface ExampleBoardProps {
  * their candidates, digits it removes are struck through in red, and a digit it places is green.
  */
 export function ExampleBoard({ example }: ExampleBoardProps): JSX.Element {
+  const { t } = useI18n();
   const { grid, candidates, step } = example;
   const involved = new Set(step.cells);
   const removed = new Map<number, Set<number>>();
@@ -24,7 +26,7 @@ export function ExampleBoard({ example }: ExampleBoardProps): JSX.Element {
   return (
     <div
       role="img"
-      aria-label="Bàn ví dụ minh hoạ kỹ thuật. Ô nền vàng là các ô tham gia; số gạch đỏ là số bị loại."
+      aria-label={t('example.aria')}
       className="mx-auto w-full max-w-[22rem] select-none overflow-hidden rounded-xl border-[3px] border-board-frame bg-board-cell"
     >
       <div className="grid grid-cols-9">

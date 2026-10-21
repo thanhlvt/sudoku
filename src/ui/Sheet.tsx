@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useI18n } from '../i18n/useI18n';
 
 interface SheetProps {
   title: string;
@@ -9,6 +10,7 @@ interface SheetProps {
 
 /** Bottom sheet: dimmed backdrop fades in, the panel slides up. Closes on backdrop tap or Escape. */
 export function Sheet({ title, onClose, children }: SheetProps): JSX.Element {
+  const { t } = useI18n();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function Sheet({ title, onClose, children }: SheetProps): JSX.Element {
         <div className="sheet-handle mx-auto mb-4" />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-2xl font-black">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Đóng" className="btn btn-soft btn-icon !h-10 !w-10 !rounded-xl">
+          <button type="button" onClick={onClose} aria-label={t('common.close')} className="btn btn-soft btn-icon !h-10 !w-10 !rounded-xl">
             <X size={20} strokeWidth={3} aria-hidden="true" />
           </button>
         </div>

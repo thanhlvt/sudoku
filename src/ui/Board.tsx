@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { PEERS } from '../core/board';
 import type { Grid } from '../core/types';
+import { useI18n } from '../i18n/useI18n';
 import { Cell, type HighlightState } from './Cell';
 
 export interface BoardHighlightSettings {
@@ -37,6 +38,7 @@ export function Board({
   hintCells,
   wave,
 }: BoardProps): JSX.Element {
+  const { t } = useI18n();
   const highlights = useMemo<HighlightState[]>(() => {
     const result: HighlightState[] = new Array(81).fill('none');
     const selectedValue = selected !== null ? board[selected]! : 0;
@@ -66,7 +68,7 @@ export function Board({
   return (
     <div
       role="grid"
-      aria-label="Bàn cờ Sudoku"
+      aria-label={t('board.aria')}
       className="board mx-auto grid aspect-square grid-cols-9 grid-rows-9 overflow-hidden rounded-2xl border-[3px] border-board-frame bg-board-cell"
       style={{ width: 'min(100%, max(280px, calc(100dvh - 400px)))' }}
     >

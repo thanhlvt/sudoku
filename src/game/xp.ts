@@ -1,4 +1,5 @@
 import type { Level } from '../core/types';
+import type { MessageKey } from '../i18n';
 import type { GameMode, SavedGame } from '../storage/schema';
 import { MODE_XP_MULTIPLIER } from './modes';
 import { starsFor } from './progress';
@@ -39,23 +40,24 @@ export function xpToReach(level: number): number {
 
 export interface PlayerLevel {
   level: number;
-  title: string;
+  /** Catalog key of the title earned at this level. */
+  titleKey: MessageKey;
   /** Experience earned inside this level, and the span of the level, for a progress bar. */
   into: number;
   span: number;
 }
 
-const TITLES: readonly { from: number; title: string }[] = [
-  { from: 1, title: 'Tân binh' },
-  { from: 5, title: 'Người luyện trí' },
-  { from: 10, title: 'Cao thủ' },
-  { from: 15, title: 'Đại sư' },
-  { from: 20, title: 'Huyền thoại' },
+const TITLES: readonly { from: number; titleKey: MessageKey }[] = [
+  { from: 1, titleKey: 'player.title.1' },
+  { from: 5, titleKey: 'player.title.5' },
+  { from: 10, titleKey: 'player.title.10' },
+  { from: 15, titleKey: 'player.title.15' },
+  { from: 20, titleKey: 'player.title.20' },
 ];
 
 export function playerLevel(xp: number): PlayerLevel {
   let level = 1;
   while (xpToReach(level + 1) <= xp) level++;
-  const title = [...TITLES].reverse().find((t) => level >= t.from)!.title;
-  return { level, title, into: xp - xpToReach(level), span: xpToReach(level + 1) - xpToReach(level) };
+  const titleKey = [...TITLES].reverse().find((t) => level >= t.from)!.titleKey;
+  return { level, titleKey, into: xp - xpToReach(level), span: xpToReach(level + 1) - xpToReach(level) };
 }

@@ -93,6 +93,23 @@ describe('settings palette and intro flag', () => {
   });
 });
 
+describe('settings language', () => {
+  it('follows the device until the player picks a language', () => {
+    expect(loadSettings().language).toBe('auto');
+  });
+
+  it('keeps a supported choice and drops anything else', () => {
+    writeJSON(KEYS.settings, { language: 'en' });
+    expect(loadSettings().language).toBe('en');
+    writeJSON(KEYS.settings, { language: 'vi' });
+    expect(loadSettings().language).toBe('vi');
+    for (const bad of ['fr', 'EN', '', 5, null, ['en']]) {
+      writeJSON(KEYS.settings, { language: bad, theme: 'dark' });
+      expect(loadSettings()).toMatchObject({ language: 'auto', theme: 'dark' });
+    }
+  });
+});
+
 describe('achievements record', () => {
   it('round-trips and starts empty', () => {
     expect(loadAchievements()).toEqual({});

@@ -1,6 +1,6 @@
 import { COLS, PEERS, ROWS, colOf, rowOf } from '../board';
 import type { Step, Technique, Unit } from '../types';
-import { combinations, describeCell, describeUnit } from './helpers';
+import { cellRef, combinations, unitRef } from './helpers';
 
 export const skyscraper: Technique = {
   name: 'skyscraper',
@@ -35,11 +35,16 @@ export const skyscraper: Technique = {
                   placements: [],
                   eliminations,
                   cells: [anchorA, anchorB, endA, endB, ...eliminations.map((e) => e.idx)],
-                  explain: `Skyscraper trên số ${d}: ${describeUnit(a!.unit)} và ${describeUnit(
-                    b!.unit,
-                  )} mỗi hàng/cột chỉ còn 2 vị trí, chung một cột/hàng ở ${describeCell(
-                    anchorA,
-                  )}, nên số ${d} bị loại khỏi ô ${describeCell(eliminations[0]!.idx)}.`,
+                  explain: {
+                    code: 'skyscraper',
+                    args: {
+                      digit: d,
+                      unitA: unitRef(a!.unit),
+                      unitB: unitRef(b!.unit),
+                      anchor: cellRef(anchorA),
+                      target: cellRef(eliminations[0]!.idx),
+                    },
+                  },
                 };
               }
             }

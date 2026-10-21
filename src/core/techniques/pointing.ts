@@ -1,6 +1,6 @@
 import { BOXES, COLS, ROWS, colOf, rowOf } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCells, describeUnit, emptyCellsOf, isColUnit, isRowUnit } from './helpers';
+import { cellRefs, emptyCellsOf, isColUnit, isRowUnit, unitRef } from './helpers';
 
 export const pointing: Technique = {
   name: 'pointing',
@@ -45,8 +45,6 @@ function buildStep(
     placements: [],
     eliminations: targets.map((idx) => ({ idx, digit })),
     cells: [...holders, ...targets],
-    explain: `Trong ${describeUnit(box)}, số ${digit} chỉ còn nằm trên ${describeUnit(
-      line,
-    )}, nên bị loại khỏi các ô còn lại của ${describeUnit(line)} (${describeCells(targets)}).`,
+    explain: { code: 'pointing', args: { box: unitRef(box), line: unitRef(line), digit, targets: cellRefs(targets) } },
   };
 }

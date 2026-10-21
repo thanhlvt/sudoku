@@ -1,0 +1,568 @@
+# Function Design — Sudoku Web Game
+
+Tài liệu mô tả **chức năng, mô hình dữ liệu, luồng xử lý và quan hệ phụ thuộc** của game, theo đúng code
+hiện tại (nhánh `ui-redesign`). Mục đích: làm căn cứ khi sửa/thêm tính năng — trước khi đổi một thứ gì, tra
+mục [§11 Ma trận ảnh hưởng](#11-ma-trận-ảnh-hưởng) để biết nó kéo theo những gì.
+
+Tài liệu đi kèm: [UI_DESIGN.md](UI_DESIGN.md) (giao diện), [ANDROID.md](ANDROID.md) (đóng gói),
+[../CLAUDE.md](../CLAUDE.md) (nguyên tắc dự án). Nếu tài liệu này mâu thuẫn với code, **code đúng** — hãy sửa tài liệu.
+
+---
+
+## 1. Phạm vi sản phẩm
+
+Sudoku chạy hoàn toàn client-side: không backend, không tài khoản. Hai nửa tách biệt:
+
+| Nửa | Chạy khi nào | Việc | Nơi |
+|---|---|---|---|
+| **Offline** | Lúc dev, bằng Node | Sinh + kiểm tra ngân hàng màn chơi, commit thành JSON tĩnh | `src/core`, `tools/`, `public/puzzles/` |
+| **Runtime** | Trong trình duyệt / WebView Android | Đọc JSON, chơi, lưu tiến độ vào `localStorage` | `src/game`, `src/storage`, `src/ui`, `src/App.tsx` |
+
+Hai nửa chỉ gặp nhau ở **định dạng JSON** của bank (`PuzzleRecord`, `LevelBank`, `Manifest`) và ở các hàm thuần trong
+`src/core` mà runtime dùng lại (gợi ý dùng `solveLogically`, bàn cờ dùng `board.ts`).
+
+Android là bản đóng gói của đúng web app này bằng Capacitor (`src/native.ts` là chỗ duy nhất đụng native).
+
+---
+
+## 2. Nguyên tắc bất biến
+
+Từ [CLAUDE.md](../CLAUDE.md), kèm hệ quả cụ thể trong code:
+
+1. **Mỗi màn có đúng 1 lời giải** — `countSolutions(grid, 2) === 1` (generator kiểm khi sinh, `verify` kiểm lại).
+2. **Mỗi màn giải được bằng suy luận thuần** — `rate(grid).solved` phải true với whitelist kỹ thuật của cấp đó.
+3. **Sinh màn deterministic** — seed = `fnv1a("{level}#{index}#{GENERATOR_VERSION}[#{attempt}]")`. Tăng `count` không đổi màn cũ.
+4. **Không sinh màn ở runtime.** Game chỉ `fetch` JSON.
+5. **Không thư viện sudoku bên thứ ba** cho core.
+6. **`src/core` là pure**: không DOM, không `Date.now()`, không `any`. Cả script Node lẫn trình duyệt dùng chung.
+
+Bất biến phụ do tầng game/UI đặt ra:
+
+7. **`solution` không bao giờ được ghi vào `localStorage`** (nó đã có trong bank).
+8. **Không giới hạn cứng số lỗi** — tim chỉ là cách hiển thị `mistakes`, hết tim vẫn chơi tiếp.
+9. **Không khoá màn nào** — người chơi mở màn bất kỳ.
+10. **Mọi thao tác UI mutate bàn cờ phải đi qua `GameSession`** (không UI nào tự sửa `board`/`notes`).
+
+---
+
+## 3. Kiến trúc tổng thể
+
+```mermaid
+flowchart TB
+  subgraph OFFLINE["Offline (Node, tsx)"]
+    gen[tools/generate.ts]
+    ver[tools/verify.ts]
+  end
+
+  subgraph CORE["src/core — pure"]
+    types[types.ts]
+    rng[rng.ts]
+    board[board.ts]
+    solver[solver.ts]
+    tech[techniques/*]
+    logical[logicalSolver.ts]
+    rating[rating.ts]
+    generator[generator.ts]
+  end
+
+  bank[("public/puzzles/*.json\n+ manifest.json")]
+
+  subgraph GAME["src/game"]
+    gstate[gameState.ts\nGameSession]
+    pbank[puzzleBank.ts]
+    progress[progress.ts]
+    daily[daily.ts]
+    unit[unitComplete.ts]
+  end
+
+  subgraph STORAGE["src/storage"]
+    adapter[storage.ts]
+    schema[schema.ts]
+  end
+
+  subgraph UI["src/ui + App.tsx"]
+    hooks[hooks/*]
+    screens[Home / LevelList / Play]
+  end
+
+  ls[(localStorage)]
+  native[native.ts]
+
+  gen --> generator
+  ver --> rating
+  ver --> solver
+  generator --> rating
+  generator --> solver
+  generator --> rng
+  rating --> logical --> tech
+  logical --> board
+  solver --> board
+  gen --> bank
+  ver --> bank
+
+  pbank -- fetch --> bank
+  gstate --> board
+  gstate --> logical
+  gstate -. types .-> schema
+  progress --> pbank
+  daily --> rng
+  daily --> pbank
+  unit --> board
+
+  schema --> adapter --> ls
+  hooks --> schema
+  hooks --> gstate
+  screens --> hooks
+  screens --> pbank
+  screens --> progress
+  screens --> daily
+  screens --> unit
+  screens --> native
+```
+
+Quy tắc phụ thuộc (một chiều, không vòng):
+
+- `core` **không** import từ `game`, `storage`, `ui`.
+- `game` import `core` và chỉ **kiểu** từ `storage/schema` (không tầng game nào đọc/ghi storage).
+- `storage` chỉ phụ thuộc `core/types` (cho `Level`).
+- `ui` import mọi tầng dưới; **chỉ `ui/hooks` và `App`/screens gọi `storage/schema`**, `GameSession` không bao giờ tự lưu.
+- `tools/` import `core` (và `fs`), không import `game/storage/ui`.
+
+---
+
+## 4. Core (`src/core`)
+
+### 4.1 Biểu diễn dữ liệu (`types.ts`, `board.ts`)
+
+| Khái niệm | Kiểu | Quy ước |
+|---|---|---|
+| Bàn cờ `Grid` | `Uint8Array(81)` | chỉ số `idx = row*9 + col`, ô trống = `0` |
+| Chuỗi bàn cờ | `string` 81 ký tự | `.` hoặc `0`–`9`; `parseGrid` / `gridToString(g, '.'\|'0')` |
+| Candidates | `Uint16Array(81)` | bitmask 9 bit, chữ số `d` ↔ `1 << (d-1)` |
+| Ghi chú người chơi | `Uint16Array(81)` | cùng bitmask; mã hoá lưu: 3 ký tự hex/ô, nối liền (`encodeNotes`) |
+| `Unit` | `readonly number[9]` | 27 unit: `ROWS`, `COLS`, `BOXES`, gộp `UNITS`; `UNITS_OF[idx]` = 3 unit chứa ô |
+| `PEERS[idx]` | `Uint8Array` | 20 ô cùng hàng/cột/box |
+
+`board.ts` cũng có `computeCandidates`, `isValidPlacement`, `isComplete`, `findConflicts`, `popcount`,
+`candidateDigits`, `digitToBit`/`bitToDigit`.
+
+### 4.2 Solver đếm nghiệm (`solver.ts`)
+
+- `countSolutions(grid, limit = 2)` — backtracking có candidates, **dừng sớm khi đạt `limit`**. Dùng để kiểm duy nhất.
+- `solveFirst(grid)` — tìm một nghiệm. Brute-force chỉ phục vụ kiểm tra/sinh, **không bao giờ** dùng để hướng dẫn người chơi.
+
+### 4.3 Kỹ thuật & logical solver
+
+`Technique { name, cost, find(grid, cands) → Step | null }`. `Step` = `{ technique, cost, placements[], eliminations[], cells[], explain }`.
+`explain` (tiếng Việt) là nội dung hiển thị khi gợi ý; `cells` là các ô được highlight.
+
+Thứ tự thử (`TECHNIQUE_ORDER` trong `techniques/index.ts`) — kỹ thuật rẻ nhất thử trước:
+
+| Thứ tự | `name` | cost | Nhóm |
+|---|---|---|---|
+| 1 | `full-house` | 1 | Single |
+| 2 | `naked-single` | 2 | Single |
+| 3 | `hidden-single-box` | 3 | Single |
+| 4 | `hidden-single-line` | 4 | Single |
+| 5 | `pointing` | 6 | Locked candidates |
+| 6 | `claiming` | 7 | Locked candidates |
+| 7 | `naked-pair` | 8 | Subset |
+| 8 | `hidden-pair` | 10 | Subset |
+| 9 | `naked-triple` | 14 | Subset |
+| 10 | `hidden-triple` | 16 | Subset |
+| 11 | `x-wing` | 20 | Fish |
+| 12 | `naked-quad` | 21 | Subset |
+| 13 | `hidden-quad` | 22 | Subset |
+| 14 | `skyscraper` | 26 | Single-digit chain |
+| 15 | `swordfish` | 28 | Fish |
+| 16 | `xy-wing` | 30 | Wing |
+| 17 | `xyz-wing` | 32 | Wing |
+| 18 | `w-wing` | 33 | Wing |
+| 19 | `simple-coloring` | 34 | Colouring |
+| 20 | `unique-rectangle-1` | 36 | Uniqueness |
+| 21 | `jellyfish` | 40 | Fish |
+
+`solveLogically(grid, { allowed? })` lặp tối đa 500 vòng: thử lần lượt từng kỹ thuật, kỹ thuật đầu tiên tìm được bước thì
+áp dụng (đặt số → xoá candidate khỏi peers; hoặc xoá candidate theo `eliminations`) rồi quay lại đầu danh sách.
+Trả `{ solved, grid, steps, stuckAt? }`. Hết kỹ thuật mà chưa xong ⇒ `solved: false` ⇒ màn bị loại.
+
+Helper chung (`techniques/helpers.ts`): `nakedSubsetTechnique`, `hiddenSubsetTechnique`, `fishTechnique`.
+
+### 4.4 Chấm độ khó (`rating.ts`)
+
+`rate(grid)` chạy `solveLogically` rồi tính `maxCost` (cost lớn nhất trong các bước), `score` (tổng cost), `hardest`, `counts`
+(số lần mỗi kỹ thuật), và `level` theo `TIERS`:
+
+| Level | `maxCost` | Givens (ràng buộc phụ) | Kỹ thuật khó nhất rơi vào |
+|---|---|---|---|
+| beginner | 0–3 | 40–50 | full house, naked single, hidden single (box) |
+| easy | 4–4 | 34–40 | + hidden single (hàng/cột) |
+| medium | 5–10 | 30–36 | + pointing/claiming, naked/hidden pair |
+| hard | 11–22 | 26–32 | + triple, x-wing, quad |
+| expert | 23–40 | 22–28 | + skyscraper, swordfish, wings, coloring, UR, jellyfish |
+
+> Độ khó được xác định bởi **kỹ thuật khó nhất bắt buộc**, không phải số ô cho sẵn. Đổi `cost` của một kỹ thuật hoặc
+> `TIERS` sẽ làm **xếp lại cấp của mọi màn đã sinh** ⇒ `npm run verify` đỏ ⇒ phải tăng `GENERATOR_VERSION` và sinh lại.
+
+### 4.5 Generator (`generator.ts`)
+
+`generatePuzzle(level, index): PuzzleRecord | null`:
+
+1. Với mỗi `attempt` (tối đa `MAX_ATTEMPTS[level]`: beginner 50, easy 200, medium 300, hard 2000, expert 400),
+   seed = `fnv1a("{level}#{index}#{GENERATOR_VERSION}" + (attempt ? "#"+attempt : ""))`, `rand = mulberry32(seed)`.
+2. `generateFullGrid(rand)` — backtracking có shuffle theo `rand`.
+3. `chooseSymmetry(level)` — beginner/easy: xoay 180°; medium: xoay 180° hoặc đối xứng dọc; hard: xoay hoặc không; expert: không.
+4. `digHoles` — duyệt ô theo thứ tự xáo; mỗi lần gỡ (cả cặp đối xứng) chỉ chấp nhận nếu vẫn **duy nhất nghiệm** và `maxCost`
+   không vượt trần tier; sau mỗi lần gỡ thành công kiểm xem đã vào cửa sổ (givens + `maxCost`) chưa, nếu rồi thì dừng.
+   Cho phép đào thấp hơn sàn givens tới `max(minGivens-10, 17)` để tìm cửa sổ hẹp (easy).
+5. Kiểm lại cuối: duy nhất nghiệm, `solved`, `maxCost` và `givens` nằm trong tier ⇒ trả record; ngược lại thử `attempt` kế.
+
+`GENERATOR_VERSION` (hiện = 1) nằm trong seed ⇒ **đổi version = đổi toàn bộ bank**.
+
+### 4.6 RNG (`rng.ts`)
+
+`fnv1a(string) → uint32`, `mulberry32(seed) → () => [0,1)`, `shuffleInPlace`. Cũng được `src/game/daily.ts` và
+`ui/Confetti.tsx` dùng (confetti dùng seed cố định để vị trí ổn định giữa các lần render).
+
+---
+
+## 5. Pipeline offline & định dạng bank
+
+### 5.1 Lệnh
+
+```bash
+npm run gen -- --level all --count 20          # sinh (giữ nguyên màn đã có nếu generatorVersion khớp)
+npm run gen -- --level expert --count 100 --force   # sinh lại từ đầu (ĐỔI puzzle)
+npm run verify                                  # kiểm toàn bộ bank (thoát mã 1 nếu có lỗi)
+```
+
+`generate.ts`: đọc bank hiện có; nếu `generatorVersion` khớp và không `--force` thì **tái sử dụng** `puzzles[index]` đã có,
+chỉ sinh phần còn thiếu ⇒ tăng `count` không đổi màn cũ. Ghi file theo kiểu atomic (ghi `.tmp` rồi `rename`). Nếu một `index` sinh thất bại sau mọi lần thử, **không ghi đè** file bank cũ (thoát mã 1);
+chỉ bank đủ `0..count-1` mới được ghi. `manifest.json` luôn được cập nhật.
+
+### 5.2 Định dạng
+
+```ts
+PuzzleRecord { id: "easy-007", index: 6, puzzle: "81 ký tự .", solution: "81 chữ số",
+               givens, symmetry, seed, rating: { maxCost, score, hardest, counts } }
+LevelBank    { schemaVersion, generatorVersion, level, count, puzzles: PuzzleRecord[] }
+Manifest     { schemaVersion, generatorVersion, levels: [{ level, count, file }] }
+```
+
+- **ID** = `{level}-{index+1 pad 3}`. Hàm một chiều duy nhất ở runtime: `puzzleIdOf(level, index)` /
+  `levelFromPuzzleId(id)` (`game/puzzleBank.ts`). Mọi nơi dựng/phân tích id phải dùng hai hàm này.
+- Một file/cấp (`beginner.json` … `expert.json`) + `manifest.json`. Hiện 100 màn/cấp.
+
+### 5.3 `verify` kiểm gì (cho mỗi màn)
+
+`bank.level` đúng; `index` liên tục từ 0; `id` không trùng; độ dài 81; solution đầy đủ; givens khớp solution;
+chuỗi round-trip; `givens` ghi đúng số thực; **duy nhất nghiệm**; **giải được bằng logic**; **`rate().level` đúng cấp**.
+
+---
+
+## 6. Mô hình dữ liệu runtime
+
+### 6.1 Khoá `localStorage` (namespace `sudoku:v1:`)
+
+| Khoá | Kiểu | Ghi bởi | Đọc bởi |
+|---|---|---|---|
+| `meta` | `{ schemaVersion, generatorVersion, createdAt, updatedAt }` | `migrate`, `syncGeneratorVersion` | cùng |
+| `settings` | `Settings` | `useSettings` | `useSettings` (App) |
+| `stats` | `Record<Level, LevelStats>` | `useStats` (từ `PlaySession`) | `useStats`, Home |
+| `game:<puzzleId>` | `SavedGame` | `useGameSession` | `useGameSession`, `listGames` |
+| `last` | `{ puzzleId, at }` | `useGameSession` | `useSavedProgress` (Home) |
+| `daily` | `{ streak, longest, lastDate }` | `useDaily` | `useDaily`, Home, Play |
+
+```ts
+SavedGame { puzzleId, board: 81 ký tự ('.' trống), notes: 243 ký tự hex, elapsedMs, mistakes, hintsUsed,
+            status: 'in-progress'|'completed', completedAt?, updatedAt }
+Settings  { highlightSameDigit, highlightPeers, showMistakes, autoRemoveNotes, theme: 'system'|'light'|'dark', soundEnabled }
+LevelStats{ played, completed, bestMs|null, totalMs, perfectRuns }
+DailyState{ streak, longest, lastDate: 'YYYY-MM-DD' | null }   // ngày theo giờ máy
+```
+
+Không lưu: `solution`, undo stack, hint đang xem trước, lựa chọn ô, chế độ ghi chú, trạng thái tạm dừng.
+
+### 6.2 Dữ liệu **dẫn xuất** (không có khoá riêng)
+
+| Đại lượng | Công thức | Hàm |
+|---|---|---|
+| Sao một màn | `max(1, 3 - mistakes)` | `progress.starsFor` |
+| Tim còn lại | `max(0, 3 - mistakes)` | `progress.heartsLeft` |
+| Số màn xong / tổng sao mỗi cấp | quét `listGames()` rồi gộp theo cấp | `progress.summarizeByLevel` |
+| Màn đề xuất kế tiếp của một cấp | in-progress mới nhất → màn đầu chưa xong → màn đầu | `progress.pickNextIndex` |
+| Chuỗi hiển thị | `streak` nếu `lastDate` là hôm nay/hôm qua, ngược lại 0 | `daily.currentStreak` |
+| Kỷ lục toàn cục | `min(stats[level].bestMs)` | tính trong `HomeScreen` |
+
+> Vì sao sao/tim không lưu riêng: `SavedGame.mistakes` đã đủ, lưu thêm là dữ liệu trùng có thể lệch nhau.
+> Hệ quả: đổi công thức `starsFor` sẽ **áp dụng ngược** cho mọi màn đã xong.
+
+---
+
+## 7. Tầng storage (`src/storage`)
+
+### 7.1 Adapter (`storage.ts`)
+
+`readJSON(key, fallback)`, `writeJSON(key, value) → boolean`, `removeKey`, `removeAllWithPrefix`, `listKeysWithPrefix`, `isAvailable`.
+
+- Mọi truy cập bọc `try/catch`. `localStorage` không dùng được ⇒ tự chuyển sang `Map` trong bộ nhớ (game vẫn chơi, mất khi tải lại).
+- `readJSON` gặp JSON hỏng ⇒ xoá khoá, trả `fallback`.
+- `QuotaExceededError` ⇒ xoá ván `completed` cũ nhất (theo `completedAt`) rồi thử lại một lần.
+
+### 7.2 Schema (`schema.ts`)
+
+Chứa kiểu, `KEYS`, `DEFAULT_*`, các hàm `load*/save*`, `listGames()`, `clearAllProgress()` (xoá mọi khoá tiền tố `sudoku:`).
+
+- `loadSettings` / `loadDaily` **gộp lên mặc định** (`{...DEFAULT, ...stored}`) ⇒ thêm trường mới vào `Settings`/`DailyState` an toàn với dữ liệu cũ, không cần migration.
+- `migrate()` chạy một lần khi khởi động (tạo `meta` nếu chưa có; nơi đặt các bước `vN → vN+1` sau này).
+- `syncGeneratorVersion(manifestVersion)` ghi version bank hiện tại vào `meta`, trả `true` nếu khác bản trước. `App` hiện **bỏ qua**
+  giá trị trả về; cơ chế bảo vệ thực sự là `GameSession.matchesGivens` (xem §8.1).
+
+### 7.3 Nhịp ghi (trong `useGameSession`)
+
+- Debounce **500 ms** sau mỗi thay đổi bàn cờ/ghi chú/gợi ý.
+- Ghi **ngay** khi: hoàn thành màn, `reset`, `visibilitychange → hidden`, `pagehide`, rời màn (cleanup khi unmount).
+- Đồng hồ: chỉ lưu `elapsedMs` tích luỹ; chỉ tick khi tab đang `visible`.
+- Mỗi lần ghi `SavedGame` cũng ghi `last`.
+
+---
+
+## 8. Tầng game (`src/game`)
+
+### 8.1 `GameSession` (`gameState.ts`) — máy trạng thái một ván
+
+Trạng thái: `givens`, `solution`, `board`, `notes`, `elapsedMs`, `mistakes`, `hintsUsed`, `status`, `autoRemoveNotes`, `undoStack`, `pendingHintStep`.
+`board`/`notes` **bị sửa tại chỗ** (mutate) — vì vậy UI dùng `version` để biết khi nào đổi (xem §9.3).
+
+| Thao tác | Điều kiện bỏ qua | Hiệu ứng |
+|---|---|---|
+| `setDigit(idx, d)` | `d∉1..9`, đã `completed`, ô là given | đặt số; nếu `autoRemoveNotes` gỡ `d` khỏi ghi chú mọi peer (ghi vào `autoNoteChanges` cùng một `Move`); `d !== solution[idx]` ⇒ `mistakes++`; đẩy `Move`; nếu bàn đầy & khớp `solution` ⇒ `status = 'completed'` |
+| `eraseCell(idx)` | completed, given, ô trống | đặt `0`, đẩy `Move` (ghi chú của ô giữ nguyên) |
+| `toggleNote(idx, d)` | completed, given, ô đã có số | lật bit `d` trong `notes[idx]`, đẩy `Move` |
+| `undo()` | stack rỗng | khôi phục `value`+`notes` của ô và toàn bộ `autoNoteChanges`; nếu đang `completed` ⇒ về `in-progress`. **Không** hoàn `mistakes`/`hintsUsed` |
+| `hint()` | completed | **Lần 1**: `solveLogically(board).steps[0]` lưu vào `pendingHintStep` và trả về (chỉ xem trước). **Lần 2** (còn pending): `hintsUsed++`, áp dụng bước (placements qua `setDigit`, eliminations qua `toggleNote` nếu bit đang bật) |
+| `reset()` | — | về ván mới: `board = givens`, xoá notes/đếm/undo/hint, `in-progress` |
+| `tick(ms)` | completed | cộng `elapsedMs` |
+| `toSaved(now)` / `fromSaved(opts, saved)` | — | (de)serialize; `completedAt` chỉ khi completed |
+| `GameSession.matchesGivens(puzzle, saved)` | — | true nếu mọi given của puzzle hiện tại trùng `saved.board` ⇒ nếu sai thì **bỏ save cũ, bắt đầu lại** (bank đã đổi) |
+
+Không có redo. `clearPendingHint()` tồn tại nhưng UI hiện không gọi.
+
+### 8.2 `progress.ts`
+
+`MAX_HEARTS = 3`, `heartsLeft`, `starsFor`, `summarizeByLevel(games)`, `pickNextIndex(level, count, gamesById)`. Chỉ phụ thuộc kiểu + `puzzleBank` (id helper).
+
+### 8.3 `daily.ts` — thử thách hôm nay
+
+- `dateKey(date)` → `YYYY-MM-DD` giờ máy. Ngày được **truyền vào** (hàm thuần, test được).
+- `dailyPuzzle(key, countOf)` → `{ level, index, id }`. Cấp lấy theo lịch quay 7 ngày
+  `['easy','medium','easy','hard','medium','hard','expert'][dayNumber % 7]`; `index = fnv1a("daily:"+key) % count`.
+  Cùng ngày ⇒ cùng màn trên mọi thiết bị.
+- `recordDailyCompletion(daily, today)`: đã làm hôm nay ⇒ giữ nguyên; `lastDate` là hôm qua ⇒ `streak+1`; ngược lại `streak=1`; luôn cập nhật `longest`.
+- `currentStreak`, `isDailyDone`, `previousDateKey`.
+
+### 8.4 `unitComplete.ts`
+
+`completedUnitCells(board, solution, idx) → Map<cell, khoảng cách>`: nếu ô `idx` đúng, với mỗi unit đi qua `idx` mà **cả 9 ô đều khớp
+solution** thì thêm 9 ô vào map kèm khoảng cách (theo vị trí trong unit) tới `idx` (lấy min nếu thuộc nhiều unit). UI dùng để gợn sóng.
+
+### 8.5 `puzzleBank.ts`
+
+`loadManifest`, `loadLevel(level)` (cache theo module + chia sẻ promise đang chạy), `getPuzzle(id)`, `levelFromPuzzleId`, `puzzleIdOf`,
+`resetPuzzleBankCache` (cho test). URL = `import.meta.env.BASE_URL + 'puzzles/'` (đúng cả khi deploy dưới subpath).
+
+---
+
+## 9. Tầng ứng dụng (`App.tsx`, `src/ui`)
+
+### 9.1 Routing (hash)
+
+| Hash | Màn | Ghi chú |
+|---|---|---|
+| `#/` (hoặc không khớp) | Home | |
+| `#/level/<level>` | LevelList | `level` phải thuộc 5 cấp, nếu không → Home |
+| `#/play/<puzzleId>` | Play | id không tồn tại ⇒ màn lỗi + nút quay lại |
+
+`navigate(hash, replace?)`. Quy ước điều hướng:
+
+| Hành động | Kiểu | Đích |
+|---|---|---|
+| Vào level / vào màn chơi / "Chơi tiếp" / "Thử thách" | push | |
+| Back ở Play | replace | `#/level/<cấp của màn>` |
+| Back ở LevelList | replace | `#/` |
+| "Màn tiếp theo", "Danh sách màn" ở màn Hoàn thành | replace | màn kế / level list |
+| Nút Back Android (`native.ts`) | — | `#/` nếu đang ở màn con, thoát app nếu đang ở Home |
+
+Dùng `replace` cho các bước "đi lên"/"tiếp" để nút Back của trình duyệt không quay lại màn đã xong.
+
+### 9.2 Sở hữu state
+
+```mermaid
+flowchart TB
+  App["App\n(route, settings, stats, daily, manifest, levelBank, today, dailyId)"]
+  App --> Home
+  App --> LevelList
+  App --> PlayScreen
+  Home -->|useSavedProgress| LS[(storage)]
+  LevelList -->|useSavedProgress| LS
+  PlayScreen -->|loadLevel| Bank[(bank JSON)]
+  PlayScreen --> PlaySession
+  PlaySession -->|useGameSession| Session[GameSession]
+  Session -.persist.-> LS
+  PlaySession -->|updateStats / updateDaily| App
+```
+
+| State | Chủ | Vòng đời | Ghi chú |
+|---|---|---|---|
+| `route` | `useHashRoute` (App) | toàn app | |
+| `settings` | `useSettings` (App) | toàn app, lưu | truyền xuống Home (để sửa) và Play (để đọc) |
+| `stats`, `daily` | `useStats`, `useDaily` (App) | toàn app, lưu | Play gọi `updateStats`/`updateDaily` khi hoàn thành |
+| `manifest`, `levelBank` | App | tải lúc cần | `levelBank` chỉ cho route `level` |
+| `today`, `dailyId` | App, tính **mỗi lần render** | — | mở app qua nửa đêm sẽ cập nhật ở lần render kế |
+| `GameSession` | `useGameSession` (ref) | theo `puzzleId` | không phải React state — mutate tại chỗ |
+| `version` | `useGameSession` | tăng mỗi mutation | **khoá thay đổi** cho mọi `useMemo`/memo phụ thuộc bàn cờ |
+| `selected`, `noteMode`, `paused`, `hintPreview`, `wave`, `showCompletion`, `recordAtCompletion` | `PlaySession` | theo màn chơi | không lưu |
+| `settingsOpen` | `HomeScreen` | | |
+| `page` (tab nhóm màn) | `LevelListScreen` (`pageOverride`) | | mặc định = trang chứa màn đề xuất |
+
+### 9.3 Quy tắc "mutate tại chỗ + `version`"
+
+`session.board`/`session.notes` giữ nguyên tham chiếu; `useGameSession` gọi `rerender()` (tăng `version`) sau mỗi thao tác.
+Mọi `useMemo`/`memo` phụ thuộc bàn cờ **phải** lấy `version` làm khoá (đã áp dụng ở `Board.highlights` và `PlaySession.remaining`). `Cell` được
+`memo` theo các prop nguyên thuỷ (`value, notes, isGiven, isWrong, highlight, waveDelay`) và `onSelect` **phải ổn định**
+(`useCallback`) — nếu không, cả 81 ô render lại mỗi lần.
+
+### 9.4 `useSavedProgress`
+
+Home/LevelList đọc `listGames()` + `loadLast()`. Màn Play lưu lần cuối trong **cleanup khi unmount**, tức *sau* lần render đầu của màn kế
+tiếp, nên hook đọc lại trong `useEffect` lúc mount để lấy dữ liệu mới nhất.
+
+### 9.5 Luồng chính
+
+**Mở một màn**
+1. `PlayScreen` `loadLevel(level)` → tìm `puzzle` theo id → `PlaySession` (key = id).
+2. `useGameSession` tạo `GameSession`: có `SavedGame` và `matchesGivens` ⇒ `fromSaved`; ngược lại ván mới.
+3. Nếu `status === 'completed'` ⇒ hiện thẳng màn Hoàn thành, **không** cộng stats.
+
+**Điền số** (`PlaySession.handleDigit`)
+1. Bỏ qua nếu chưa chọn ô / đang tạm dừng / đang hiện màn Hoàn thành.
+2. Chế độ ghi chú ⇒ `toggleNote`; ô đã có đúng số đó ⇒ `eraseCell`; còn lại ⇒ `setDigit` rồi `completedUnitCells` → `wave`.
+3. `useGameSession` bump `version`, lên lịch lưu (debounce).
+
+**Gợi ý**: `H`/nút → `hint()` lần 1 hiện `hintPreview` (highlight `cells`, hiện `explain`, nút đổi thành "Áp dụng"); lần 2 áp dụng, `hintsUsed++`,
+xoá preview, gợn sóng ở các ô vừa đặt.
+
+**Hoàn thành**
+1. `session.status` chuyển `completed` ⇒ `useGameSession` ghi ngay.
+2. `PlaySession` (một lần, nhờ `statsUpdatedRef`): so `elapsedMs` với `stats[level].bestMs` ⇒ `isNewRecord`; `updateStats` (played+1, completed+1, bestMs, totalMs, perfectRuns);
+   nếu `puzzle.id === dailyId` ⇒ `updateDaily(recordDailyCompletion)`.
+3. Sau `COMPLETION_DELAY_MS = 750` hiện `CompletionScreen` (để thấy số cuối + sóng).
+4. "Chơi lại" ⇒ `reset()` + hạ `statsUpdatedRef` ⇒ lần hoàn thành sau sẽ tính lại stats.
+
+**Rời màn / ẩn tab**: lưu ngay.
+
+### 9.6 Home — quy tắc hiển thị
+
+- **Thẻ chính** (cần `manifest`): nếu `last` trỏ tới ván `in-progress` ⇒ "Chơi tiếp" (kèm thời gian, tim); ngược lại ⇒ "Màn tiếp theo"
+  (cấp của `last`, qua `pickNextIndex`) hoặc "Bắt đầu chơi" (beginner khi chưa có `last`).
+- **Thử thách hôm nay** (cần `manifest` và `dailyId`): chưa xong ⇒ nút "Chơi"; xong ⇒ dấu tick.
+- **Thống kê**: Đã giải/Sao từ `summarizeByLevel(listGames())` (nguồn thật là các `SavedGame`, **không** phải `stats.completed`); Kỷ lục = min `bestMs`.
+- **Thẻ cấp**: `completed/count` + thanh tiến độ (tối thiểu 0.75rem khi >0).
+
+### 9.7 LevelList — quy tắc hiển thị
+
+Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất** (tím + "CHƠI", `index === pickNextIndex`), **đang chơi** (chấm tím),
+**chưa chơi**. Nút cố định đáy "Chơi màn N" trỏ tới màn đề xuất.
+
+---
+
+## 10. Ma trận tính năng
+
+| Tính năng | Quyết định ở | Dữ liệu | Hiển thị ở |
+|---|---|---|---|
+| Điền/xoá/ghi chú/undo | `GameSession` | `SavedGame` | `Board`, `Toolbar`, `NumberPad` |
+| Tự gỡ ghi chú peers | `GameSession.setDigit` + `settings.autoRemoveNotes` | `notes` | `Cell` |
+| Báo số sai | `Board` (`isWrong`) + `settings.showMistakes` | `solution` (RAM) | `Cell` (đỏ + viền) |
+| Đếm lỗi / tim / sao | `GameSession.mistakes`, `progress` | `SavedGame.mistakes` | `Hearts`, `CompletionScreen`, `Stars`, tile |
+| Gợi ý dạy kỹ thuật | `GameSession.hint` → `solveLogically` | `hintsUsed` | bong bóng gợi ý, ô highlight |
+| Highlight cùng số / peers | `Board.highlights` + `settings` | — | `Cell` |
+| Đếm số còn lại | `PlaySession.remaining` | `board` | `NumberPad` |
+| Tạm dừng | `PlaySession.paused` | — | overlay phủ bàn cờ; dừng tick |
+| Đặt lại ván | `GameSession.reset` | — | nút trong overlay tạm dừng (có `confirm`) |
+| In câu đố (web) | `window.print()` + `PrintablePuzzle` | givens | nút trong overlay (ẩn ở Android) |
+| Chơi tiếp / màn kế tiếp | `HomeScreen.resume`, `pickNextIndex` | `last`, games | Home, LevelList |
+| Thử thách + chuỗi ngày | `daily.ts` | `daily` | Home, `CompletionScreen` |
+| Cài đặt, theme | `useSettings` (App) | `settings` | `SettingsSheet`, `data-theme` |
+| Xoá toàn bộ tiến độ | `clearAllProgress` + reload | tất cả `sudoku:*` | `SettingsSheet` |
+| Kỷ lục thời gian | `PlaySession` | `stats.bestMs` | Home, `CompletionScreen` |
+
+---
+
+## 11. Ma trận ảnh hưởng
+
+"Nếu tôi sửa … thì phải xem …"
+
+| Sửa | Ảnh hưởng / việc phải làm |
+|---|---|
+| `Technique.cost`, thứ tự `TECHNIQUE_ORDER`, `TIERS` | Cấp của màn cũ đổi ⇒ `verify` đỏ ⇒ tăng `GENERATOR_VERSION` + `gen --force`. Gợi ý (`hint`) cũng đổi (bước đầu tiên = kỹ thuật rẻ nhất) |
+| Thêm kỹ thuật mới | file mới + test + thêm vào `TECHNIQUE_ORDER` + gán `cost` đúng tier; cập nhật `explain`; cân nhắc `GENERATOR_VERSION` |
+| `GENERATOR_VERSION` | Seed đổi ⇒ mọi màn đổi ⇒ `SavedGame` cũ bị `matchesGivens` loại (chơi lại từ đầu, stats giữ nguyên); `daily` trỏ màn khác |
+| `count` trong bank | Tăng: an toàn. Giảm: `daily`/`pickNextIndex`/LevelList dùng `count` mới, `SavedGame` của màn bị cắt thành mồ côi (không lỗi, chỉ không hiển thị) |
+| Định dạng id (`puzzleIdOf`) | `SavedGame` key, `last`, route `#/play/…`, `daily`, `generator` (id trong JSON), `verify` — đổi đồng bộ cả offline lẫn runtime |
+| `SavedGame` thêm/đổi trường | Trường tuỳ chọn ⇒ an toàn; đổi ngữ nghĩa ⇒ bump `SCHEMA_VERSION`/`NAMESPACE` + viết bước trong `migrate`. `listGames` đọc mọi bản ghi — phải chịu được bản ghi cũ |
+| `Settings` thêm trường | Thêm vào `DEFAULT_SETTINGS` (tự gộp), thêm toggle trong `SettingsSheet`, và đọc ở nơi dùng |
+| Công thức `starsFor`/`MAX_HEARTS` | Áp dụng ngược cho màn đã xong; cập nhật chuỗi hiển thị ("x/3 sao", `Hearts`, text hướng dẫn ở `CompletionScreen`), `aria-label` |
+| `GameSession` đổi luật | Bất kỳ đổi nào về `mistakes`/completion ảnh hưởng `progress`, `CompletionScreen`, stats; chạy `gameState.test.ts` |
+| `useGameSession` nhịp lưu | Ảnh hưởng nguy cơ mất tiến độ; `useSavedProgress` giả định có lưu-khi-unmount |
+| `daily` lịch cấp/seed | Đổi màn của ngày hôm nay ngay lập tức; streak giữ nguyên |
+| Route mới | `useHashRoute.parseHash` + `Route` + `App` (render + `screenKey`) + back policy + `native.ts` nếu cần |
+| Đổi `base` deploy | `import.meta.env.BASE_URL` đã được dùng cho `puzzles/`; font/asset do Vite xử lý |
+
+---
+
+## 12. Giới hạn & điểm cần biết (hiện trạng)
+
+Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không bị coi là lỗi mới:
+
+1. `undo` không hoàn lại lỗi/gợi ý đã tính: điền sai rồi undo vẫn mất tim/sao (có chủ ý, để sao phản ánh đúng số lần sai).
+2. `Settings.soundEnabled` tồn tại nhưng **chưa có âm thanh** và chưa có công tắc UI.
+3. Skill `local-storage` yêu cầu banner khi `localStorage` không dùng được (memory-only) — **chưa có UI**.
+4. Skill `game-ui` nêu long-press / giữ `Shift` để nhập ghi chú nhanh — **chưa làm** (chỉ có chế độ ghi chú bật/tắt).
+5. `stats.played/completed` tăng cả khi chơi lại một màn đã xong; `bestMs` toàn cục theo cấp. Home dùng `listGames()` cho số màn xong, nên hai nguồn có thể lệch.
+6. "Chơi lại" ở màn Hoàn thành `reset` ván đã lưu ⇒ **mất sao/thời gian** màn đó.
+7. Gợi ý chạy `solveLogically` trên bàn cờ hiện tại **kể cả khi có số sai** — kết quả có thể vô nghĩa nếu người chơi đang có lỗi (chưa có kiểm tra "bàn cờ đang hợp lệ").
+8. `today` tính bằng giờ máy; đổi múi giờ/chỉnh đồng hồ có thể làm chuỗi sai.
+9. `syncGeneratorVersion` trả cờ "lệch version" nhưng UI chưa dùng (không báo người chơi).
+10. Danh sách màn đọc từng `SavedGame` qua `listGames` mỗi lần mount Home/LevelList (≈ vài trăm khoá nhỏ) — chấp nhận được ở 500 màn; nếu bank lớn hơn nhiều nên gom vào một chỉ mục.
+
+---
+
+## 13. Bản đồ test
+
+| Phạm vi | File |
+|---|---|
+| Board, RNG, solver | `core/board.test.ts`, `rng.test.ts`, `solver.test.ts` |
+| Từng kỹ thuật (bàn mẫu) | `core/techniques/*.test.ts` |
+| Logical solver, rating, generator | `core/logicalSolver.test.ts`, `rating.test.ts`, `generator.test.ts` |
+| `GameSession` | `game/gameState.test.ts` |
+| Bank loader | `game/puzzleBank.test.ts` |
+| Sao/tim, chọn màn kế | `game/progress.test.ts` |
+| Thử thách/chuỗi | `game/daily.test.ts` |
+| Hoàn thành hàng/cột/ô | `game/unitComplete.test.ts` |
+| Adapter + schema + migration + settings/daily/listGames | `storage/storage.test.ts`, `storage/schema.test.ts` |
+
+Chưa có test cho component React (kiểm bằng chạy thật). Toàn bộ bank: `npm run verify`.
+
+---
+
+## 14. Công thức thay đổi thường gặp
+
+**Thêm một tuỳ chọn cài đặt**: `Settings` + `DEFAULT_SETTINGS` (schema.ts) → toggle trong `SettingsSheet` (`TOGGLES`) → nơi tiêu thụ (`Board`/`PlaySession`) → test round-trip trong `schema.test.ts`.
+
+**Thêm thống kê hiển thị trên Home**: nếu suy ra được từ `SavedGame` ⇒ thêm vào `progress.ts` + test, **không** thêm khoá mới; nếu cần dữ liệu không suy ra được ⇒ thêm vào `Stats`/khoá mới + gộp mặc định.
+
+**Thêm cấp độ**: `Level` (types) + `TIERS` + `chooseSymmetry` + `MAX_ATTEMPTS` + `LEVELS` trong `tools/generate.ts` và `tools/verify.ts` + `useHashRoute.LEVELS` + `defaultStats` (schema.ts) + `summarizeByLevel` (progress.ts) + `LEVEL_LABELS`/`LEVEL_THEME` + màu `lvN` trong `tailwind.config.js`. (Danh sách cấp đang lặp ở nhiều nơi — dễ sót.)
+
+**Đổi luật tính sao**: chỉ sửa `progress.starsFor` (+ test + chuỗi hướng dẫn ở `CompletionScreen`); không cần migration.
+
+**Thêm hành động mutate bàn cờ**: thêm method vào `GameSession` (kèm `Move` cho undo + test), bọc trong `useGameSession` (rerender + persist), rồi mới gọi từ `PlaySession`.

@@ -22,7 +22,7 @@ function parseHash(hash: string): Route {
   return { name: 'home' };
 }
 
-export function useHashRoute(): [Route, (hash: string) => void] {
+export function useHashRoute(): [Route, (hash: string, replace?: boolean) => void] {
   const [route, setRoute] = useState<Route>(() => parseHash(window.location.hash));
 
   useEffect(() => {
@@ -31,8 +31,13 @@ export function useHashRoute(): [Route, (hash: string) => void] {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  const navigate = useCallback((hash: string) => {
-    window.location.hash = hash;
+  /** `replace` swaps the current history entry (used for "up"/"next" moves so Back doesn't revisit them). */
+  const navigate = useCallback((hash: string, replace = false) => {
+    if (replace) {
+      window.location.replace(hash);
+    } else {
+      window.location.hash = hash;
+    }
   }, []);
 
   return [route, navigate];

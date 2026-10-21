@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
-import type { LevelBank, Manifest } from './core/types';
+import type { Level, LevelBank, Manifest } from './core/types';
+import { dailyPuzzle, dateKey } from './game/daily';
 import { loadLevel, loadManifest } from './game/puzzleBank';
 import { setupBackButton } from './native';
-import { loadLast, migrate, syncGeneratorVersion } from './storage/schema';
+import { migrate, syncGeneratorVersion } from './storage/schema';
 import { HomeScreen } from './ui/HomeScreen';
 import { LevelListScreen } from './ui/LevelListScreen';
 import { PlayScreen } from './ui/PlayScreen';
+import { useDaily } from './ui/hooks/useDaily';
 import { useHashRoute } from './ui/hooks/useHashRoute';
 import { useSettings } from './ui/hooks/useSettings';
 import { useStats } from './ui/hooks/useStats';
 
 export default function App(): JSX.Element {
   const [route, navigate] = useHashRoute();
-  const [settings] = useSettings();
+  const [settings, updateSettings] = useSettings();
   const [stats, updateStats] = useStats();
+  const [daily, updateDaily] = useDaily();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [levelBank, setLevelBank] = useState<LevelBank | null>(null);
 
@@ -22,6 +25,13 @@ export default function App(): JSX.Element {
   }, []);
 
   useEffect(() => setupBackButton(), []);
+
+  // `data-theme` overrides the OS preference; without it the CSS follows prefers-color-scheme.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === 'system') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', settings.theme);
+  }, [settings.theme]);
 
   useEffect(() => {
     loadManifest()
@@ -42,22 +52,42 @@ export default function App(): JSX.Element {
       .catch(() => {});
   }, [route]);
 
+  const today = dateKey(new Date());
+  const dailyId = manifest
+    ? dailyPuzzle(today, (level: Level) => manifest.levels.find((l) => l.level === level)?.count ?? 0).id
+    : null;
+
+  // Keyed per screen so each navigation replays the entrance animation.
+  const screenKey = route.name === 'home' ? 'home' : route.name === 'level' ? `level-${route.level}` : `play-${route.puzzleId}`;
+
   return (
-    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div key={screenKey} className="mx-auto flex w-full max-w-md flex-1 flex-col animate-screen-in">
       {route.name === 'home' && (
-        <HomeScreen manifest={manifest} stats={stats} last={loadLast()} onNavigate={navigate} />
+        <HomeScreen
+          manifest={manifest}
+          stats={stats}
+          daily={daily}
+          today={today}
+          dailyId={dailyId}
+          settings={settings}
+          onSettingsChange={updateSettings}
+          onNavigate={navigate}
+        />
       )}
       {route.name === 'level' && (
-        <LevelListScreen level={route.level} bank={levelBank} onNavigate={navigate} onBack={() => navigate('#/')} />
+        <LevelListScreen level={route.level} bank={levelBank} onNavigate={navigate} onBack={() => navigate('#/', true)} />
       )}
       {route.name === 'play' && (
         <PlayScreen
           puzzleId={route.puzzleId}
-          onBack={() => navigate('#/')}
           onNavigate={navigate}
           settings={settings}
           stats={stats}
           updateStats={updateStats}
+          dailyId={dailyId}
+          today={today}
+          daily={daily}
+          updateDaily={updateDaily}
         />
       )}
     </div>

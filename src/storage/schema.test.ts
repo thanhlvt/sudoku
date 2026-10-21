@@ -5,11 +5,15 @@ import {
   KEYS,
   clearAllProgress,
   defaultStats,
+  DEFAULT_DAILY,
   deleteGame,
+  listGames,
+  loadDaily,
   loadGame,
   loadSettings,
   loadStats,
   migrate,
+  saveDaily,
   saveGame,
   saveSettings,
   saveStats,
@@ -61,6 +65,39 @@ describe('settings', () => {
 
   it('returns defaults when nothing saved', () => {
     expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('fills fields missing from settings saved by an older build with their defaults', () => {
+    writeJSON(KEYS.settings, { theme: 'dark', highlightPeers: false });
+    expect(loadSettings()).toEqual({ ...DEFAULT_SETTINGS, theme: 'dark', highlightPeers: false });
+  });
+});
+
+describe('daily state', () => {
+  it('defaults to an empty streak', () => {
+    expect(loadDaily()).toEqual(DEFAULT_DAILY);
+  });
+
+  it('round-trips', () => {
+    saveDaily({ streak: 4, longest: 9, lastDate: '2026-10-21' });
+    expect(loadDaily()).toEqual({ streak: 4, longest: 9, lastDate: '2026-10-21' });
+  });
+});
+
+describe('listGames', () => {
+  const base = { board: '.'.repeat(81), notes: '000'.repeat(81), elapsedMs: 0, mistakes: 0, hintsUsed: 0, updatedAt: 1 };
+
+  it('returns every saved game and ignores other keys', () => {
+    saveGame({ ...base, puzzleId: 'easy-001', status: 'completed' });
+    saveGame({ ...base, puzzleId: 'hard-004', status: 'in-progress' });
+    writeJSON(KEYS.stats, defaultStats());
+    const ids = listGames().map((g) => g.puzzleId).sort();
+    expect(ids).toEqual(['easy-001', 'hard-004']);
+  });
+
+  it('skips corrupt records instead of throwing', () => {
+    window.localStorage.setItem(KEYS.game('easy-009'), '{not json');
+    expect(listGames()).toEqual([]);
   });
 });
 

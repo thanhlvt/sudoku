@@ -78,6 +78,14 @@ Số ô cho sẵn chỉ là ràng buộc phụ để bàn cờ nhìn hợp lý.
 
 Bảng cost chi tiết và định nghĩa từng kỹ thuật: `.claude/skills/sudoku-rating/references/techniques.md`.
 
+## Tài liệu thiết kế
+
+Đọc **trước khi sửa** tính năng hoặc giao diện; đổi code thì cập nhật tài liệu tương ứng.
+
+- `docs/FUNCTION_DESIGN.md` — kiến trúc, mô hình dữ liệu, luồng xử lý, ma trận "sửa X ảnh hưởng Y"
+- `docs/UI_DESIGN.md` — design tokens, component, từng màn hình, hệ animation, bẫy kỹ thuật
+- `docs/ANDROID.md` — đóng gói Android
+
 ## Skills
 
 Đọc skill tương ứng **trước khi** viết code phần đó:

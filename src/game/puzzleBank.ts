@@ -44,6 +44,11 @@ export async function loadLevel(level: Level): Promise<LevelBank> {
   return promise;
 }
 
+/** Inverse of `levelFromPuzzleId`: the id the generator gives the puzzle at 0-based `index` of `level`. */
+export function puzzleIdOf(level: Level, index: number): string {
+  return `${level}-${String(index + 1).padStart(3, '0')}`;
+}
+
 export function levelFromPuzzleId(id: string): Level {
   return id.slice(0, id.lastIndexOf('-')) as Level;
 }

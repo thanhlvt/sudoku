@@ -6,11 +6,13 @@ import { Cell, type HighlightState } from './Cell';
 export interface BoardHighlightSettings {
   highlightSameDigit: boolean;
   highlightPeers: boolean;
+  showMistakes: boolean;
 }
 
 interface BoardProps {
   givens: Grid;
   board: Grid;
+  solution: Grid;
   notes: Uint16Array;
   /** Bumps on every mutation; `board`/`notes` are mutated in place so their
    *  references never change -- this is what the highlight memo must key on. */
@@ -19,17 +21,21 @@ interface BoardProps {
   onSelect: (idx: number) => void;
   settings: BoardHighlightSettings;
   hintCells: readonly number[];
+  /** Cells of a just-completed row/column/box -> ripple delay steps. */
+  wave: ReadonlyMap<number, number> | null;
 }
 
 export function Board({
   givens,
   board,
+  solution,
   notes,
   version,
   selected,
   onSelect,
   settings,
   hintCells,
+  wave,
 }: BoardProps): JSX.Element {
   const highlights = useMemo<HighlightState[]>(() => {
     const result: HighlightState[] = new Array(81).fill('none');
@@ -54,26 +60,32 @@ export function Board({
       }
     }
     return result;
+    // `board` is mutated in place; `version` is what actually signals a change.
   }, [board, version, selected, settings, hintCells]);
 
   return (
     <div
       role="grid"
       aria-label="Bàn cờ Sudoku"
-      className="grid aspect-square w-full grid-cols-9 grid-rows-9 border-2 border-slate-500 bg-white dark:border-slate-400 dark:bg-slate-900"
-      style={{ width: 'min(92vw, 60vh, 560px)' }}
+      className="board mx-auto grid aspect-square grid-cols-9 grid-rows-9 overflow-hidden rounded-2xl border-[3px] border-board-frame bg-board-cell"
+      style={{ width: 'min(100%, max(280px, calc(100dvh - 400px)))' }}
     >
-      {Array.from({ length: 81 }, (_, idx) => (
-        <Cell
-          key={idx}
-          idx={idx}
-          value={board[idx]!}
-          notes={notes[idx]!}
-          isGiven={givens[idx] !== 0}
-          highlight={highlights[idx]!}
-          onSelect={onSelect}
-        />
-      ))}
+      {Array.from({ length: 81 }, (_, idx) => {
+        const value = board[idx]!;
+        return (
+          <Cell
+            key={idx}
+            idx={idx}
+            value={value}
+            notes={notes[idx]!}
+            isGiven={givens[idx] !== 0}
+            isWrong={settings.showMistakes && value !== 0 && givens[idx] === 0 && value !== solution[idx]}
+            highlight={highlights[idx]!}
+            waveDelay={wave?.get(idx)}
+            onSelect={onSelect}
+          />
+        );
+      })}
     </div>
   );
 }

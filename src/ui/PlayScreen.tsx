@@ -1,29 +1,41 @@
+import { ChevronLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { PuzzleRecord } from '../core/types';
-import { getPuzzle } from '../game/puzzleBank';
-import type { Settings, Stats } from '../storage/schema';
+import { levelFromPuzzleId, loadLevel } from '../game/puzzleBank';
+import type { DailyState, Settings, Stats } from '../storage/schema';
 import { PlaySession } from './PlaySession';
 
 interface PlayScreenProps {
   puzzleId: string;
-  onBack: () => void;
-  onNavigate: (hash: string) => void;
+  onNavigate: (hash: string, replace?: boolean) => void;
   settings: Settings;
   stats: Stats;
   updateStats: (updater: (prev: Stats) => Stats) => void;
+  dailyId: string | null;
+  today: string;
+  daily: DailyState;
+  updateDaily: (updater: (prev: DailyState) => DailyState) => void;
 }
 
-export function PlayScreen({ puzzleId, onBack, onNavigate, settings, stats, updateStats }: PlayScreenProps): JSX.Element {
-  const [puzzle, setPuzzle] = useState<PuzzleRecord | null>(null);
+interface Loaded {
+  puzzle: PuzzleRecord;
+  levelCount: number;
+}
+
+export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): JSX.Element {
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setPuzzle(null);
+    setLoaded(null);
     setError(null);
-    getPuzzle(puzzleId)
-      .then((p) => {
-        if (!cancelled) setPuzzle(p);
+    loadLevel(levelFromPuzzleId(puzzleId))
+      .then((bank) => {
+        if (cancelled) return;
+        const puzzle = bank.puzzles.find((p) => p.id === puzzleId);
+        if (puzzle) setLoaded({ puzzle, levelCount: bank.puzzles.length });
+        else setError(`Puzzle not found: ${puzzleId}`);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -33,30 +45,32 @@ export function PlayScreen({ puzzleId, onBack, onNavigate, settings, stats, upda
     };
   }, [puzzleId]);
 
+  // Back goes up one level: the puzzle's level list (the home screen is one more step up).
+  const goBack = (): void => onNavigate(`#/level/${levelFromPuzzleId(puzzleId)}`, true);
+
   if (error) {
     return (
-      <div className="p-4">
-        <button type="button" onClick={onBack} className="mb-4 text-sm text-blue-600 dark:text-blue-400">
-          &larr; Quay lại
+      <main className="flex flex-1 flex-col gap-4 p-5">
+        <button type="button" onClick={() => onNavigate('#/', true)} aria-label="Quay lại" className="btn btn-white btn-icon !h-12 !w-12 !rounded-2xl">
+          <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" className="text-accent" />
         </button>
-        <p>Không tải được màn chơi: {error}</p>
-      </div>
+        <p className="text-lg font-bold">Không tải được màn chơi: {error}</p>
+      </main>
     );
   }
 
-  if (!puzzle) {
-    return <div className="p-4 text-sm text-slate-500">Đang tải...</div>;
+  if (!loaded) {
+    return <div className="flex flex-1 items-center justify-center p-5 text-lg font-bold text-accent">Đang tải...</div>;
   }
 
   return (
     <PlaySession
-      key={puzzle.id}
-      puzzle={puzzle}
-      onBack={onBack}
+      key={loaded.puzzle.id}
+      puzzle={loaded.puzzle}
+      levelCount={loaded.levelCount}
+      onBack={goBack}
       onNavigate={onNavigate}
-      settings={settings}
-      stats={stats}
-      updateStats={updateStats}
+      {...rest}
     />
   );
 }

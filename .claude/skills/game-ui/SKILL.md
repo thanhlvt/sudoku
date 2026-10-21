@@ -6,18 +6,26 @@ description: Thiết kế và cài đặt giao diện web game Sudoku - màn hì
 # Game UI
 
 Sudoku là game người ta chơi 20 phút liên tục, nhìn chằm chằm vào một lưới. Giao diện phải
-im lặng và chính xác: không animation thừa, không màu chói, không gì nhảy nhót khi đang tính toán.
-Chỗ duy nhất đáng đầu tư thị giác là **bàn cờ** — kiểu chữ số, độ dày đường kẻ, hệ thống highlight.
+chính xác và dễ chịu: chỗ đáng đầu tư thị giác nhất là **bàn cờ** — kiểu chữ số, độ dày đường kẻ,
+hệ thống highlight. Phong cách tổng thể là "3D chunky" (nút có cạnh dày bên dưới, bo tròn, font Nunito,
+tím làm màu chính) — xem mục *Hệ thiết kế* và *Animation* ở cuối file.
+
+Animation chỉ để **phản hồi hành động** (chạm, điền số, sai, xong hàng, hoàn thành), ngắn (≤ 0.4s trừ
+vòng lặp CTA) và không bao giờ chạy lặp quanh bàn cờ khi người chơi đang suy nghĩ.
 
 Đọc `/mnt/skills/public/frontend-design/SKILL.md` khi chọn palette và typography, nhưng ưu tiên
 các ràng buộc dưới đây khi có xung đột.
 
-## Ba màn hình
+## Ba màn hình (+ màn tổng kết)
 
-1. **Home** — chọn cấp độ (5 thẻ, kèm tiến độ `12/20 đã xong`), nút "Chơi tiếp" nếu có ván dở.
-2. **Level list** — lưới các màn của một cấp: số thứ tự, trạng thái, thời gian tốt nhất.
-   Không khoá màn nào.
-3. **Play** — bàn cờ + thanh công cụ + bàn phím số.
+1. **Home** — chuỗi ngày + cài đặt, thẻ "Chơi tiếp", "Thử thách hôm nay", 3 ô thống kê (đã giải / sao /
+   kỷ lục), 5 thẻ cấp độ kèm thanh tiến độ.
+2. **Level list** — header màu theo cấp, tab nhóm 20 màn, lưới màn (xong = xanh + sao, màn kế tiếp = tím
+   "CHƠI"), nút cố định "Chơi màn N". Không khoá màn nào.
+3. **Play** — tim + đồng hồ, bàn cờ, 4 công cụ (Hoàn tác/Xóa/Ghi chú/Gợi ý), bàn phím số. Nút tạm dừng
+   phủ lên bàn cờ và chứa "Đặt lại ván" / "In".
+4. **Completion** — toàn màn hình: confetti, sao, cúp, thời gian/lỗi/gợi ý, "Màn tiếp theo". Mở lại một
+   màn đã xong sẽ hiện thẳng màn này (không tính lại thống kê); "Chơi lại" mới reset.
 
 Routing: hash-based (`#/`, `#/level/hard`, `#/play/hard-007`) để deploy static ở bất kỳ đâu
 mà không cần cấu hình rewrite.
@@ -58,13 +66,18 @@ mù màu và cho màn hình chói.
 - Không cho sửa givens.
 - `autoRemoveNotes` bật: điền một số thì tự xoá số đó khỏi ghi chú của mọi peer. Thao tác này
   phải nằm trong cùng một bước undo với việc điền số.
-- Đếm lỗi: khi `showMistakes` bật, số nhập khác `solution` được đánh dấu ngay và tăng `mistakes`.
+- Đếm lỗi: số nhập khác `solution` tăng `mistakes`; khi `showMistakes` bật thì ô đó còn được tô đỏ + viền.
   Không giới hạn cứng số lỗi — game này không phạt người chơi bằng cách bắt chơi lại.
+  **Tim** (`MAX_HEARTS = 3`) chỉ là cách hiển thị `mistakes`: hết tim vẫn chơi tiếp. **Sao** suy ra từ
+  `mistakes` (`starsFor`: 0 lỗi = 3, mỗi lỗi −1, tối thiểu 1); gợi ý không làm mất sao. Sao không lưu
+  riêng — tính lại từ `SavedGame.mistakes`.
 - Gợi ý: gọi `solveLogically` trên trạng thái hiện tại, lấy step đầu tiên, hiển thị `explain`
   và highlight `cells`; bấm lần nữa mới áp dụng. Gợi ý dạy kỹ thuật chứ không chỉ tiết lộ đáp án —
   đây là lý do `Step.explain` tồn tại.
 - Hoàn thành: bàn đầy và khớp `solution` → dừng đồng hồ, ghi `completed`, cập nhật stats,
   hiện tổng kết (thời gian, lỗi, gợi ý, có phải kỷ lục mới không) + nút "Màn tiếp theo".
+- Thử thách hôm nay: `dailyPuzzle(ngày)` chọn màn xác định theo ngày (`src/game/daily.ts`); hoàn thành đúng màn
+  đó thì `recordDailyCompletion` tăng chuỗi. Chuỗi còn sống nếu hôm qua hoặc hôm nay đã xong.
 
 ## Undo
 
@@ -96,3 +109,40 @@ Undo một `Move` phải hoàn tác luôn `autoNoteChanges`. Không có redo (hi
   để không render lại cả 81 ô cho một thay đổi.
 - Đồng hồ cập nhật mỗi giây phải nằm trong component riêng, không kéo cả bàn cờ render theo.
 - Không chạy `solveLogically` trong render — chỉ chạy khi người chơi bấm gợi ý.
+
+## Hệ thiết kế
+
+- **Token màu** là biến CSS dạng RGB (`--c-*` giao diện, `--b-*` bàn cờ) trong `src/index.css`, có bản sáng và
+  tối (theo `settings.theme`: `data-theme` trên `<html>`, nếu `system` thì theo `prefers-color-scheme`). Component
+  dùng class Tailwind map tới token (`bg-card`, `text-ink`, `bg-board-sel`...), **không** viết `dark:` cho màu nền
+  hay chữ chính. Màu cấp độ (`lv1`–`lv5`) và tím chính cố định ở cả hai theme.
+- **Nút 3D**: class `.btn` + biến thể (`btn-primary`, `btn-orange`, `btn-white`, `btn-soft`, `btn-tile`, `btn-sky`,
+  `btn-amber`, `btn-icon`). Face phẳng + `box-shadow: 0 4px 0` màu cạnh; nhấn = dịch xuống 4px. Màu đặt qua
+  `--btn-bg/--btn-edge/--btn-fg` (dùng `style` cho màu động như màu cấp). `.card` là bề mặt trắng có cạnh.
+- Font Nunito (`@fontsource-variable/nunito`, đóng gói sẵn để chạy offline trong APK). Icon: `lucide-react`.
+- Chữ số bàn cờ cỡ theo container query (`.board`, `.cell-digit`, `.cell-note`) kèm fallback theo `vw`.
+- Cỡ chạm: nút công cụ 60px, phím số cao 64px (rộng ~35px trên màn 390px, theo thiết kế).
+
+## Animation
+
+Khai báo trong `tailwind.config.js` (keyframes + `animate-*`), vòng lặp CTA trong `src/index.css`.
+
+| Hiệu ứng | Ở đâu | Cách kích hoạt |
+|---|---|---|
+| Nhấn/hover 3D | mọi `.btn` | CSS `:active` / `:hover` (chỉ pointer có hover) |
+| `cta-ring`, `cta-shine` | CTA chính (Chơi tiếp, Chơi màn N, Màn tiếp theo, Chơi) | luôn chạy, tắt khi đang nhấn |
+| `screen-in`, `pop-in` (stagger) | chuyển màn, thẻ Home, lưới màn | mount; `key` theo route để phát lại |
+| `bar-grow` | thanh tiến độ | mount |
+| `digit-pop` / `shake` | số điền vào ô / số sai | `<span key={value}>` trong `Cell`, chỉ sau khi ô đã mount (ván khôi phục không nhảy) |
+| `wave` | hàng/cột/ô 3×3 vừa hoàn thành | `completedUnitCells` → `Board` → `Cell` (delay theo khoảng cách) |
+| `hint-glow`, `wiggle` | ô gợi ý, bóng đèn khi chờ "Áp dụng" | khi có `hintPreview` |
+| `heart-lost` | tim vừa mất | `Hearts` so `mistakes` với lần trước |
+| `star-pop`, `trophy-drop`, `badge-wobble`, confetti | màn Completion | mount, trễ theo thứ tự |
+| `sheet-up`, `fade-in` | Settings, Completion, overlay tạm dừng | mount |
+
+Quy tắc khi thêm animation:
+- Entrance dùng `animation-fill-mode: backwards` (không `both`/`forwards`), nếu không keyframe cuối sẽ giữ
+  `transform` và đè lên hiệu ứng nhấn của `.btn`.
+- Không phát animation cho thứ đã có sẵn lúc mount (givens, ván khôi phục).
+- `prefers-reduced-motion` đã tắt mọi animation/transition và ẩn confetti trong `index.css` — không thêm ngoại lệ.
+- Đồng hồ cập nhật mỗi giây nên đừng gắn animation vào thứ render lại theo `version` mà không có điều kiện.

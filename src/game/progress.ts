@@ -29,8 +29,10 @@ export function summarizeByLevel(games: readonly SavedGame[]): Record<Level, Lev
   };
   for (const game of games) {
     if (game.status !== 'completed') continue;
-    const summary = out[levelFromPuzzleId(game.puzzleId)];
-    if (!summary) continue;
+    // Own-property check: an id like `__proto__-001` must not resolve to Object.prototype and get mutated.
+    const level = levelFromPuzzleId(game.puzzleId);
+    if (!Object.hasOwn(out, level)) continue;
+    const summary = out[level];
     summary.completed++;
     summary.stars += starsFor(game.mistakes);
   }

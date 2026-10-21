@@ -7,6 +7,11 @@ Không có code native tự viết; mọi tương tác native nằm trong `src/n
   **Không đổi được sau khi đã publish lên Play.**
 - `versionCode` / `versionName`: sửa trong `android/app/build.gradle`. Mỗi lần upload bản mới
   `versionCode` phải tăng.
+- `AndroidManifest.xml`: `allowBackup="false"` (tiến độ nằm trong `localStorage` của WebView; backup tự động có thể khôi phục lại dữ liệu hỏng
+  sau khi cài lại) và **không khai báo quyền nào** — puzzle nằm sẵn trong APK, app không dùng mạng. Nếu sau này thêm tính năng gọi ra
+  mạng thì phải thêm lại `INTERNET`. *Chưa thử trên thiết bị thật sau khi bỏ quyền này; kiểm tra bản debug trước khi phát hành.*
+- `android:sync` build web bằng `vite build --mode capacitor`, tức là **không** chèn Content-Security-Policy (bản web thì có, xem `vite.config.ts`).
+  Lý do: Capacitor có thể chèn script bridge vào trang, và `script-src 'self'` sẽ chặn nó.
 
 ## Lệnh
 

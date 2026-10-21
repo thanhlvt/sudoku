@@ -25,6 +25,7 @@ interface Loaded {
 export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): JSX.Element {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +44,7 @@ export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): 
     return () => {
       cancelled = true;
     };
-  }, [puzzleId]);
+  }, [puzzleId, attempt]);
 
   // Back goes up one level: the puzzle's level list (the home screen is one more step up).
   const goBack = (): void => onNavigate(`#/level/${levelFromPuzzleId(puzzleId)}`, true);
@@ -55,6 +56,9 @@ export function PlayScreen({ puzzleId, onNavigate, ...rest }: PlayScreenProps): 
           <ChevronLeft size={28} strokeWidth={3.5} aria-hidden="true" className="text-accent" />
         </button>
         <p className="text-lg font-bold">Không tải được màn chơi: {error}</p>
+        <button type="button" onClick={() => setAttempt((n) => n + 1)} className="btn btn-primary min-h-12 self-start px-6">
+          Thử lại
+        </button>
       </main>
     );
   }

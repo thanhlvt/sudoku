@@ -1,5 +1,6 @@
-import { listKeysWithPrefix, readJSON, removeAllWithPrefix, removeKey, writeJSON } from './storage';
+import { LEVELS, isPuzzleId } from '../core/levels';
 import type { Level } from '../core/types';
+import { listKeysWithPrefix, readJSON, removeAllWithPrefix, removeKey, writeJSON } from './storage';
 
 export const SCHEMA_VERSION = 1;
 export const NAMESPACE = 'sudoku:v1';
@@ -60,13 +61,13 @@ export interface LevelStats {
 
 export type Stats = Record<Level, LevelStats>;
 
-const LEVELS: Level[] = ['beginner', 'easy', 'medium', 'hard', 'expert'];
+function defaultLevelStats(): LevelStats {
+  return { played: 0, completed: 0, bestMs: null, totalMs: 0, perfectRuns: 0 };
+}
 
 export function defaultStats(): Stats {
   const stats = {} as Stats;
-  for (const level of LEVELS) {
-    stats[level] = { played: 0, completed: 0, bestMs: null, totalMs: 0, perfectRuns: 0 };
-  }
+  for (const level of LEVELS) stats[level] = defaultLevelStats();
   return stats;
 }
 
@@ -75,8 +76,106 @@ export interface LastPlayed {
   at: number;
 }
 
+/**
+ * Validators for everything read back from localStorage. The stored text is untrusted: it can be hand-edited,
+ * written by another app on the same origin, truncated, or left by a build with a different shape. Each
+ * `parse*` returns a sanitised value, or `null` when the record is unusable (the caller then drops the key).
+ */
+type Obj = Record<string, unknown>;
+
+const MAX_TIMESTAMP = 8.64e15; // largest valid JS Date
+const MAX_DURATION_MS = 365 * 24 * 3_600_000; // one game taking longer than a year is not a ván
+const MAX_TOTAL_MS = 1e15;
+const MAX_COUNT = 1_000_000;
+const BOARD_RE = /^[.0-9]{81}$/;
+const NOTES_RE = /^[0-9a-fA-F]{243}$/;
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark'];
+
+function isObj(v: unknown): v is Obj {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+function isNumberIn(v: unknown, min: number, max: number): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
+}
+
+function isCountIn(v: unknown, max: number): v is number {
+  return isNumberIn(v, 0, max) && Number.isInteger(v);
+}
+
+export function parseSavedGame(v: unknown): SavedGame | null {
+  if (!isObj(v)) return null;
+  const { puzzleId, board, notes, elapsedMs, mistakes, hintsUsed, status, completedAt, updatedAt } = v;
+  if (!isPuzzleId(puzzleId)) return null;
+  if (typeof board !== 'string' || !BOARD_RE.test(board)) return null;
+  if (typeof notes !== 'string' || !NOTES_RE.test(notes)) return null;
+  if (!isNumberIn(elapsedMs, 0, MAX_DURATION_MS)) return null;
+  if (!isCountIn(mistakes, MAX_COUNT) || !isCountIn(hintsUsed, MAX_COUNT)) return null;
+  if (status !== 'in-progress' && status !== 'completed') return null;
+  if (!isNumberIn(updatedAt, 0, MAX_TIMESTAMP)) return null;
+  if (completedAt !== undefined && !isNumberIn(completedAt, 0, MAX_TIMESTAMP)) return null;
+  const game: SavedGame = { puzzleId, board, notes, elapsedMs, mistakes, hintsUsed, status, updatedAt };
+  if (completedAt !== undefined) game.completedAt = completedAt;
+  return game;
+}
+
+function parseLevelStats(v: unknown): LevelStats | null {
+  if (!isObj(v)) return null;
+  const { played, completed, bestMs, totalMs, perfectRuns } = v;
+  if (!isCountIn(played, MAX_COUNT) || !isCountIn(completed, MAX_COUNT) || !isCountIn(perfectRuns, MAX_COUNT)) return null;
+  if (!isNumberIn(totalMs, 0, MAX_TOTAL_MS)) return null;
+  if (bestMs !== null && !isNumberIn(bestMs, 0, MAX_DURATION_MS)) return null;
+  return { played, completed, bestMs, totalMs, perfectRuns };
+}
+
+/** A non-object is rejected outright; a bad or missing level entry only resets that level. */
+export function parseStats(v: unknown): Stats | null {
+  if (!isObj(v)) return null;
+  const stats = defaultStats();
+  for (const level of LEVELS) stats[level] = parseLevelStats(v[level]) ?? defaultLevelStats();
+  return stats;
+}
+
+/** Field by field over the defaults, so one bad field (or a field added later) never discards the rest. */
+export function parseSettings(v: unknown): Settings | null {
+  if (!isObj(v)) return null;
+  const settings: Settings = { ...DEFAULT_SETTINGS };
+  for (const key of ['highlightSameDigit', 'highlightPeers', 'showMistakes', 'autoRemoveNotes', 'soundEnabled'] as const) {
+    if (typeof v[key] === 'boolean') settings[key] = v[key] as boolean;
+  }
+  if (THEMES.includes(v.theme as Settings['theme'])) settings.theme = v.theme as Settings['theme'];
+  return settings;
+}
+
+export function parseDaily(v: unknown): DailyState | null {
+  if (!isObj(v)) return null;
+  const { streak, longest, lastDate } = v;
+  return {
+    streak: isCountIn(streak, MAX_COUNT) ? streak : 0,
+    longest: isCountIn(longest, MAX_COUNT) ? longest : 0,
+    lastDate: typeof lastDate === 'string' && DATE_KEY_RE.test(lastDate) ? lastDate : null,
+  };
+}
+
+export function parseLast(v: unknown): LastPlayed | null {
+  if (!isObj(v)) return null;
+  const { puzzleId, at } = v;
+  if (!isPuzzleId(puzzleId) || !isNumberIn(at, 0, MAX_TIMESTAMP)) return null;
+  return { puzzleId, at };
+}
+
+export function parseMeta(v: unknown): Meta | null {
+  if (!isObj(v)) return null;
+  const { schemaVersion, generatorVersion, createdAt, updatedAt } = v;
+  if (!isCountIn(schemaVersion, 1000)) return null;
+  if (generatorVersion !== null && !isCountIn(generatorVersion, MAX_COUNT)) return null;
+  if (!isNumberIn(createdAt, 0, MAX_TIMESTAMP) || !isNumberIn(updatedAt, 0, MAX_TIMESTAMP)) return null;
+  return { schemaVersion, generatorVersion, createdAt, updatedAt };
+}
+
 export function migrate(): void {
-  const meta = readJSON<Meta | null>(KEYS.meta, null);
+  const meta = readJSON<Meta | null>(KEYS.meta, null, parseMeta);
   if (meta === null) {
     writeJSON(KEYS.meta, {
       schemaVersion: SCHEMA_VERSION,
@@ -94,7 +193,7 @@ export function migrate(): void {
 
 /** Records the bank's generatorVersion into meta; returns true if it differs from what was stored before. */
 export function syncGeneratorVersion(manifestVersion: number): boolean {
-  const meta = readJSON<Meta | null>(KEYS.meta, null);
+  const meta = readJSON<Meta | null>(KEYS.meta, null, parseMeta);
   if (meta === null) return false;
   const mismatched = meta.generatorVersion !== null && meta.generatorVersion !== manifestVersion;
   writeJSON(KEYS.meta, { ...meta, generatorVersion: manifestVersion, updatedAt: Date.now() } satisfies Meta);
@@ -102,8 +201,8 @@ export function syncGeneratorVersion(manifestVersion: number): boolean {
 }
 
 export function loadSettings(): Settings {
-  // Merge over the defaults so settings saved by an older build pick up newly added fields.
-  return { ...DEFAULT_SETTINGS, ...readJSON<Partial<Settings>>(KEYS.settings, {}) };
+  // `parseSettings` lays the stored fields over the defaults, so settings saved by an older build pick up newly added fields.
+  return readJSON<Settings>(KEYS.settings, { ...DEFAULT_SETTINGS }, parseSettings);
 }
 
 export function saveSettings(settings: Settings): boolean {
@@ -111,7 +210,7 @@ export function saveSettings(settings: Settings): boolean {
 }
 
 export function loadStats(): Stats {
-  return readJSON(KEYS.stats, defaultStats());
+  return readJSON<Stats>(KEYS.stats, defaultStats(), parseStats);
 }
 
 export function saveStats(stats: Stats): boolean {
@@ -119,7 +218,11 @@ export function saveStats(stats: Stats): boolean {
 }
 
 export function loadGame(puzzleId: string): SavedGame | null {
-  return readJSON<SavedGame | null>(KEYS.game(puzzleId), null);
+  // The record must also belong to the key it sits under; a mismatch means it was moved or forged.
+  return readJSON<SavedGame | null>(KEYS.game(puzzleId), null, (v) => {
+    const game = parseSavedGame(v);
+    return game !== null && game.puzzleId === puzzleId ? game : null;
+  });
 }
 
 export function saveGame(game: SavedGame): boolean {
@@ -135,8 +238,8 @@ export function listGames(): SavedGame[] {
   const prefix = KEYS.game('');
   const games: SavedGame[] = [];
   for (const key of listKeysWithPrefix(prefix)) {
-    const game = readJSON<SavedGame | null>(key, null);
-    if (game && typeof game.puzzleId === 'string') games.push(game);
+    const game = loadGame(key.slice(prefix.length));
+    if (game) games.push(game);
   }
   return games;
 }
@@ -151,7 +254,7 @@ export interface DailyState {
 export const DEFAULT_DAILY: DailyState = { streak: 0, longest: 0, lastDate: null };
 
 export function loadDaily(): DailyState {
-  return { ...DEFAULT_DAILY, ...readJSON<Partial<DailyState>>(KEYS.daily, {}) };
+  return readJSON<DailyState>(KEYS.daily, { ...DEFAULT_DAILY }, parseDaily);
 }
 
 export function saveDaily(daily: DailyState): boolean {
@@ -159,7 +262,7 @@ export function saveDaily(daily: DailyState): boolean {
 }
 
 export function loadLast(): LastPlayed | null {
-  return readJSON<LastPlayed | null>(KEYS.last, null);
+  return readJSON<LastPlayed | null>(KEYS.last, null, parseLast);
 }
 
 export function saveLast(last: LastPlayed): boolean {

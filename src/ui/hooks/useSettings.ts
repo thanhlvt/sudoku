@@ -1,16 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { loadSettings, saveSettings, type Settings } from '../../storage/schema';
+import { usePersistedState } from './usePersistedState';
 
 export function useSettings(): [Settings, (patch: Partial<Settings>) => void] {
-  const [settings, setSettings] = useState<Settings>(() => loadSettings());
-
-  const update = useCallback((patch: Partial<Settings>) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...patch };
-      saveSettings(next);
-      return next;
-    });
-  }, []);
-
-  return [settings, update];
+  const [settings, updateSettings] = usePersistedState(loadSettings, saveSettings);
+  const patchSettings = useCallback(
+    (patch: Partial<Settings>) => updateSettings((prev) => ({ ...prev, ...patch })),
+    [updateSettings],
+  );
+  return [settings, patchSettings];
 }

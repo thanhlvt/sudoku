@@ -38,6 +38,7 @@ const EMPTY_CELLS: readonly number[] = [];
 /** Delay before the result screen so the final digit's pop and ripple can be seen first. */
 const COMPLETION_DELAY_MS = 750;
 const WAVE_DURATION_MS = 1100;
+const REPEATABLE_KEY = /^(Arrow(Up|Down|Left|Right)|Backspace|Delete|u|U)$/;
 
 export function PlaySession({
   puzzle,
@@ -67,6 +68,9 @@ export function PlaySession({
     autoRemoveNotes: settings.autoRemoveNotes,
     paused,
   });
+
+  // The preview only counts while the session still holds that step: any edit to the board discards it.
+  const shownHint = session.hasPendingHint() ? hintPreview : null;
 
   // Reopening a finished puzzle shows its result right away instead of re-awarding it.
   const [showCompletion, setShowCompletion] = useState(session.status === 'completed');
@@ -103,14 +107,6 @@ export function PlaySession({
     const timer = window.setTimeout(() => setShowCompletion(true), COMPLETION_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [session.status]);
-
-  const prevHintsUsedRef = useRef(session.hintsUsed);
-  useEffect(() => {
-    if (session.hintsUsed !== prevHintsUsedRef.current) {
-      prevHintsUsedRef.current = session.hintsUsed;
-      setHintPreview(null);
-    }
-  }, [session.hintsUsed]);
 
   const waveTimerRef = useRef<number | null>(null);
   useEffect(
@@ -159,11 +155,11 @@ export function PlaySession({
 
   const handleHint = useCallback(() => {
     if (paused || showCompletion) return;
-    const applying = hintPreview !== null;
+    const applying = session.hasPendingHint();
     const step = hint();
     setHintPreview(step);
     if (applying && step) rippleUnitsThrough(step.placements.map((p) => p.idx));
-  }, [paused, showCompletion, hintPreview, hint, rippleUnitsThrough]);
+  }, [paused, showCompletion, session, hint, rippleUnitsThrough]);
 
   const handleSelect = useCallback((idx: number) => {
     if (!paused) setSelected(idx);
@@ -189,6 +185,13 @@ export function PlaySession({
       const target = e.target;
       if (target instanceof HTMLElement && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
       if (showCompletion) return;
+
+      // A held key auto-repeats; for toggling actions that would flip a cell back and forth dozens of times
+      // a second. Moving, erasing and undoing are fine to repeat.
+      if (e.repeat && !REPEATABLE_KEY.test(e.key)) {
+        if (e.key === ' ') e.preventDefault();
+        return;
+      }
 
       if (e.key === ' ') {
         // A focused button would otherwise also "click" on Space.
@@ -289,7 +292,7 @@ export function PlaySession({
           selected={selected}
           onSelect={handleSelect}
           settings={settings}
-          hintCells={hintPreview?.cells ?? EMPTY_CELLS}
+          hintCells={shownHint?.cells ?? EMPTY_CELLS}
           wave={wave}
         />
         {paused && (
@@ -325,15 +328,15 @@ export function PlaySession({
         )}
       </div>
 
-      {hintPreview && (
+      {shownHint && (
         <div
-          key={hintPreview.explain}
+          key={shownHint.explain}
           role="status"
           className="flex animate-screen-in items-start gap-3 rounded-2xl bg-amber-100 p-4 text-amber-950 shadow-[0_4px_0_0_#FCD34D] dark:bg-amber-900/40 dark:text-amber-50 dark:shadow-[0_4px_0_0_#92400E]"
         >
           <Lightbulb size={24} strokeWidth={2.75} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden="true" />
           <div>
-            <p className="text-base font-extrabold leading-snug">{hintPreview.explain}</p>
+            <p className="text-base font-extrabold leading-snug">{shownHint.explain}</p>
             <p className="mt-1 text-sm font-bold opacity-80">Bấm “Áp dụng” để điền theo gợi ý.</p>
           </div>
         </div>
@@ -348,7 +351,7 @@ export function PlaySession({
           onErase={handleErase}
           canErase={canErase}
           onHint={handleHint}
-          hintPending={hintPreview !== null}
+          hintPending={shownHint !== null}
           hintsUsed={session.hintsUsed}
         />
         <NumberPad noteMode={noteMode} remaining={remaining} onDigit={handleDigit} />

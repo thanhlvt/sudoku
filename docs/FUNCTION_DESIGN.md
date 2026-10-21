@@ -303,17 +303,26 @@ Không lưu: `solution`, undo stack, hint đang xem trước, lựa chọn ô, c
 
 ### 7.1 Adapter (`storage.ts`)
 
-`readJSON(key, fallback)`, `writeJSON(key, value) → boolean`, `removeKey`, `removeAllWithPrefix`, `listKeysWithPrefix`, `isAvailable`.
+`readJSON(key, fallback, validate?)`, `writeJSON(key, value) → boolean`, `removeKey`, `removeAllWithPrefix`, `listKeysWithPrefix`, `isAvailable`,
+`getStorageHealth` / `subscribeStorageHealth`.
 
 - Mọi truy cập bọc `try/catch`. `localStorage` không dùng được ⇒ tự chuyển sang `Map` trong bộ nhớ (game vẫn chơi, mất khi tải lại).
-- `readJSON` gặp JSON hỏng ⇒ xoá khoá, trả `fallback`.
-- `QuotaExceededError` ⇒ xoá ván `completed` cũ nhất (theo `completedAt`) rồi thử lại một lần.
+- `readJSON` gặp JSON hỏng **hoặc `validate` trả `null`** (sai hình dạng) ⇒ xoá khoá, trả `fallback`. Dữ liệu đọc từ storage là **không đáng tin**
+  (người chơi sửa tay, app khác cùng origin ghi đè, bản build cũ); mọi `load*` trong `schema.ts` đều truyền validator.
+- `QuotaExceededError` ⇒ xoá ván `completed` cũ nhất (theo `completedAt`) rồi thử lại một lần; vẫn thất bại ⇒ `writeJSON` trả `false`.
+- `getStorageHealth()` = `'ok' | 'memory-only' | 'write-failed'` (dùng với `useSyncExternalStore`); `StorageBanner` đọc nó để báo người chơi khi tiến độ
+  không được lưu.
 
 ### 7.2 Schema (`schema.ts`)
 
 Chứa kiểu, `KEYS`, `DEFAULT_*`, các hàm `load*/save*`, `listGames()`, `clearAllProgress()` (xoá mọi khoá tiền tố `sudoku:`).
 
-- `loadSettings` / `loadDaily` **gộp lên mặc định** (`{...DEFAULT, ...stored}`) ⇒ thêm trường mới vào `Settings`/`DailyState` an toàn với dữ liệu cũ, không cần migration.
+- Mỗi loại bản ghi có một validator: `parseSavedGame`, `parseStats`, `parseSettings`, `parseDaily`, `parseLast`, `parseMeta`. Chúng kiểm kiểu, độ dài
+  (`board` 81 ký tự, `notes` 243 hex), khoảng giá trị (số hữu hạn, không âm, có trần), `puzzleId` đúng dạng (`core/levels.isPuzzleId`) và — với
+  `SavedGame` — khớp với khoá nó nằm dưới. Bản ghi hỏng bị xoá và thay bằng mặc định; **không validator nào được ném lỗi**.
+- `parseSettings` / `parseDaily` **gộp từng trường lên mặc định** ⇒ thêm trường mới vào `Settings`/`DailyState` an toàn với dữ liệu cũ, một trường sai
+  không làm mất cả bản ghi. `parseStats` đặt lại riêng cấp nào hỏng/thiếu (cấp mới thêm sau cũng tự có mặc định).
+- Thêm trường vào kiểu nào thì **phải** sửa validator tương ứng (nếu quên, trường mới bị bỏ khi đọc lại).
 - `migrate()` chạy một lần khi khởi động (tạo `meta` nếu chưa có; nơi đặt các bước `vN → vN+1` sau này).
 - `syncGeneratorVersion(manifestVersion)` ghi version bank hiện tại vào `meta`, trả `true` nếu khác bản trước. `App` hiện **bỏ qua**
   giá trị trả về; cơ chế bảo vệ thực sự là `GameSession.matchesGivens` (xem §8.1).
@@ -339,14 +348,14 @@ Trạng thái: `givens`, `solution`, `board`, `notes`, `elapsedMs`, `mistakes`, 
 | `setDigit(idx, d)` | `d∉1..9`, đã `completed`, ô là given | đặt số; nếu `autoRemoveNotes` gỡ `d` khỏi ghi chú mọi peer (ghi vào `autoNoteChanges` cùng một `Move`); `d !== solution[idx]` ⇒ `mistakes++`; đẩy `Move`; nếu bàn đầy & khớp `solution` ⇒ `status = 'completed'` |
 | `eraseCell(idx)` | completed, given, ô trống | đặt `0`, đẩy `Move` (ghi chú của ô giữ nguyên) |
 | `toggleNote(idx, d)` | completed, given, ô đã có số | lật bit `d` trong `notes[idx]`, đẩy `Move` |
-| `undo()` | stack rỗng | khôi phục `value`+`notes` của ô và toàn bộ `autoNoteChanges`; nếu đang `completed` ⇒ về `in-progress`. **Không** hoàn `mistakes`/`hintsUsed` |
-| `hint()` | completed | **Lần 1**: `solveLogically(board).steps[0]` lưu vào `pendingHintStep` và trả về (chỉ xem trước). **Lần 2** (còn pending): `hintsUsed++`, áp dụng bước (placements qua `setDigit`, eliminations qua `toggleNote` nếu bit đang bật) |
+| `undo()` | stack rỗng | khôi phục `value`+`notes` của ô và toàn bộ `autoNoteChanges`; nếu đang `completed` ⇒ về `in-progress`. **Không** hoàn `mistakes`/`hintsUsed`. Stack giữ tối đa 500 nước gần nhất |
+| `hint()` | completed | **Lần 1**: `solveLogically(board bỏ các số sai của người chơi).steps[0]` lưu vào `pendingHintStep` và trả về (chỉ xem trước). **Lần 2** (còn pending): `hintsUsed++`, áp dụng bước (placements qua `setDigit`, eliminations qua `toggleNote` nếu bit đang bật). Mọi thay đổi bàn cờ/ghi chú (`setDigit`/`eraseCell`/`toggleNote`/`undo`) **huỷ** `pendingHintStep`; UI hỏi `hasPendingHint()` |
 | `reset()` | — | về ván mới: `board = givens`, xoá notes/đếm/undo/hint, `in-progress` |
 | `tick(ms)` | completed | cộng `elapsedMs` |
-| `toSaved(now)` / `fromSaved(opts, saved)` | — | (de)serialize; `completedAt` chỉ khi completed |
+| `toSaved(now)` / `fromSaved(opts, saved)` | — | (de)serialize; `completedAt` chỉ khi completed. `fromSaved` chỉ tin `status: 'completed'` nếu bàn cờ thật sự khớp `solution`, ngược lại coi là `in-progress`. Ghi chú được che về 9 bit |
 | `GameSession.matchesGivens(puzzle, saved)` | — | true nếu mọi given của puzzle hiện tại trùng `saved.board` ⇒ nếu sai thì **bỏ save cũ, bắt đầu lại** (bank đã đổi) |
 
-Không có redo. `clearPendingHint()` tồn tại nhưng UI hiện không gọi.
+Không có redo. `useGameSession.createSession` dựng session **trong lúc render** nên không bao giờ được ném: save không khôi phục được ⇒ xoá save, bắt đầu ván mới.
 
 ### 8.2 `progress.ts`
 
@@ -369,7 +378,11 @@ solution** thì thêm 9 ô vào map kèm khoảng cách (theo vị trí trong un
 ### 8.5 `puzzleBank.ts`
 
 `loadManifest`, `loadLevel(level)` (cache theo module + chia sẻ promise đang chạy), `getPuzzle(id)`, `levelFromPuzzleId`, `puzzleIdOf`,
-`resetPuzzleBankCache` (cho test). URL = `import.meta.env.BASE_URL + 'puzzles/'` (đúng cả khi deploy dưới subpath).
+`validateManifest`, `validateLevelBank`, `resetPuzzleBankCache` (cho test). URL = `import.meta.env.BASE_URL + 'puzzles/'` (đúng cả khi deploy dưới subpath).
+
+- JSON tải về được **validate** trước khi vào cache (dạng manifest, `file` chỉ là tên `*.json` đơn giản, id/index/puzzle/solution của từng màn, given khớp
+  solution). Sai ⇒ ném lỗi, màn hiển thị lỗi + nút "Thử lại".
+- Chỉ **thành công** mới được nhớ: promise bị reject bị gỡ khỏi cache nên "Thử lại" tải lại thật. `fetch` có timeout 15 s.
 
 ---
 
@@ -381,7 +394,9 @@ solution** thì thêm 9 ô vào map kèm khoảng cách (theo vị trí trong un
 |---|---|---|
 | `#/` (hoặc không khớp) | Home | |
 | `#/level/<level>` | LevelList | `level` phải thuộc 5 cấp, nếu không → Home |
-| `#/play/<puzzleId>` | Play | id không tồn tại ⇒ màn lỗi + nút quay lại |
+| `#/play/<puzzleId>` | Play | `puzzleId` phải đúng dạng `<level>-<số>` (`isPuzzleId`), nếu không → Home. Đúng dạng nhưng không có trong bank ⇒ màn lỗi + nút quay lại |
+
+Hash là thứ duy nhất kẻ khác có thể điều khiển từ xa (gửi link), nên `parseHash` chỉ cho qua giá trị đã kiểm tra.
 
 `navigate(hash, replace?)`. Quy ước điều hướng:
 
@@ -431,6 +446,16 @@ flowchart TB
 Mọi `useMemo`/`memo` phụ thuộc bàn cờ **phải** lấy `version` làm khoá (đã áp dụng ở `Board.highlights` và `PlaySession.remaining`). `Cell` được
 `memo` theo các prop nguyên thuỷ (`value, notes, isGiven, isWrong, highlight, waveDelay`) và `onSelect` **phải ổn định**
 (`useCallback`) — nếu không, cả 81 ô render lại mỗi lần.
+
+### 9.3b Chịu lỗi và dữ liệu không tin cậy
+
+- `ErrorBoundary` (bọc `App` trong `main.tsx`): lỗi ném khi render ⇒ màn "Có lỗi xảy ra" với **Tải lại** và **Xóa dữ liệu và tải lại**. Không có nó, một lỗi render
+  làm cả cây React biến mất và không còn điều khiển nào để thoát.
+- `StorageBanner` (đầu `App`): hiện khi `getStorageHealth() !== 'ok'`.
+- `useStats` / `useDaily` / `useSettings` dùng `usePersistedState`: mỗi lần cập nhật **bắt đầu từ bản đang lưu** (không phải snapshot của tab) để hai tab không
+  ghi đè tiến độ của nhau; updater chạy ngoài `setState` nên StrictMode không áp dụng một lần tăng hai lần. Nếu lần ghi trước thất bại thì dùng bản trong bộ nhớ.
+- Lỗi tải manifest/level ⇒ Home / LevelList / Play hiện nút **Thử lại** (`App.attempt`); phản hồi cũ của level trước không ghi đè level hiện tại.
+- Bàn phím: phím giữ (`e.repeat`) chỉ được lặp với mũi tên, Backspace/Delete và `U`; chữ số, `N`, `H`, Space không lặp.
 
 ### 9.4 `useSavedProgress`
 
@@ -526,14 +551,19 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
 
 1. `undo` không hoàn lại lỗi/gợi ý đã tính: điền sai rồi undo vẫn mất tim/sao (có chủ ý, để sao phản ánh đúng số lần sai).
 2. `Settings.soundEnabled` tồn tại nhưng **chưa có âm thanh** và chưa có công tắc UI.
-3. Skill `local-storage` yêu cầu banner khi `localStorage` không dùng được (memory-only) — **chưa có UI**.
+3. ~~Banner khi `localStorage` không dùng được~~ — đã có (`StorageBanner`, cũng báo khi ghi bị từ chối do hết dung lượng).
 4. Skill `game-ui` nêu long-press / giữ `Shift` để nhập ghi chú nhanh — **chưa làm** (chỉ có chế độ ghi chú bật/tắt).
 5. `stats.played/completed` tăng cả khi chơi lại một màn đã xong; `bestMs` toàn cục theo cấp. Home dùng `listGames()` cho số màn xong, nên hai nguồn có thể lệch.
 6. "Chơi lại" ở màn Hoàn thành `reset` ván đã lưu ⇒ **mất sao/thời gian** màn đó.
-7. Gợi ý chạy `solveLogically` trên bàn cờ hiện tại **kể cả khi có số sai** — kết quả có thể vô nghĩa nếu người chơi đang có lỗi (chưa có kiểm tra "bàn cờ đang hợp lệ").
+7. Gợi ý chạy trên bàn cờ **đã bỏ số sai** của người chơi, nên có thể chỉ ra một ô mà người chơi đã điền sai (bước áp dụng sẽ ghi đè bằng số đúng). Gợi ý không nói riêng "bạn đang có số sai".
 8. `today` tính bằng giờ máy; đổi múi giờ/chỉnh đồng hồ có thể làm chuỗi sai.
 9. `syncGeneratorVersion` trả cờ "lệch version" nhưng UI chưa dùng (không báo người chơi).
-10. Danh sách màn đọc từng `SavedGame` qua `listGames` mỗi lần mount Home/LevelList (≈ vài trăm khoá nhỏ) — chấp nhận được ở 500 màn; nếu bank lớn hơn nhiều nên gom vào một chỉ mục.
+10. Namespace `sudoku:v1:` không đổi. Trên GitHub Pages `localStorage` tính theo origin (`<user>.github.io`), nên project khác của cùng chủ có thể ghi vào các khoá này;
+    validator khiến bản ghi lạ vô hại (bị bỏ qua/xoá) nhưng không ngăn được việc chúng tồn tại. `clearAllProgress` xoá mọi khoá `sudoku:*`.
+11. Trạng thái `completed` trong `listGames` (Home/LevelList) tin vào bản ghi; chỉ `GameSession.fromSaved` mới đối chiếu với `solution`. Không có máy chủ/bảng xếp hạng nên
+    việc tự sửa dữ liệu chỉ ảnh hưởng chính người chơi.
+12. Production web có CSP qua thẻ `<meta>` (`vite.config.ts`). Bản Android build bằng `vite build --mode capacitor` **không** có CSP (bridge native của Capacitor có thể bị `script-src` chặn).
+13. Danh sách màn đọc từng `SavedGame` qua `listGames` mỗi lần mount Home/LevelList (≈ vài trăm khoá nhỏ) — chấp nhận được ở 500 màn; nếu bank lớn hơn nhiều nên gom vào một chỉ mục.
 
 ---
 
@@ -549,9 +579,14 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
 | Sao/tim, chọn màn kế | `game/progress.test.ts` |
 | Thử thách/chuỗi | `game/daily.test.ts` |
 | Hoàn thành hàng/cột/ô | `game/unitComplete.test.ts` |
-| Adapter + schema + migration + settings/daily/listGames | `storage/storage.test.ts`, `storage/schema.test.ts` |
+| Adapter + schema + migration + settings/daily/listGames + dữ liệu hỏng/độc hại | `storage/storage.test.ts`, `storage/schema.test.ts` |
+| Id/level hợp lệ | `core/levels.test.ts` |
+| Route hash | `ui/hooks/useHashRoute.test.ts` |
+| Cập nhật state lưu (nhiều tab, StrictMode, ghi lỗi) | `ui/hooks/usePersistedState.test.tsx` |
+| ErrorBoundary, StorageBanner | `ui/ErrorBoundary.test.tsx` |
+| Cả app với `localStorage` hỏng / mạng lỗi / link độc | `App.test.tsx` |
 
-Chưa có test cho component React (kiểm bằng chạy thật). Toàn bộ bank: `npm run verify`.
+Component bố cục/animation chưa có test (kiểm bằng chạy thật). Toàn bộ bank: `npm run verify`.
 
 ---
 

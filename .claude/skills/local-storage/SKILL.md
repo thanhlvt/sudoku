@@ -77,9 +77,13 @@ isAvailable(): boolean
 Yêu cầu:
 
 - Bọc mọi truy cập trong `try/catch`. Safari chế độ riêng tư ném lỗi ngay khi `setItem`.
-- `readJSON` gặp JSON hỏng hoặc sai kiểu → xoá khoá đó, trả `fallback`, không ném lỗi.
+- `readJSON` gặp JSON hỏng hoặc sai kiểu → xoá khoá đó, trả `fallback`, không ném lỗi. "Sai kiểu"
+  được kiểm bằng tham số `validate` (`readJSON(key, fallback, validate)`): mỗi `load*` trong
+  `schema.ts` phải truyền validator `parse*` tương ứng. Dữ liệu trong storage là không đáng tin
+  (sửa tay, app khác cùng origin, bản build cũ) — **thêm trường vào kiểu nào thì sửa validator đó**.
 - Nếu `isAvailable()` false → chạy ở chế độ memory-only, hiện banner nhẹ báo "tiến độ sẽ không
-  được lưu". Game vẫn chơi được bình thường.
+  được lưu" (`StorageBanner`, dựa trên `getStorageHealth()`; cũng hiện khi ghi bị từ chối do hết
+  dung lượng). Game vẫn chơi được bình thường.
 - Quota vượt (`QuotaExceededError`) → dọn các ván `completed` cũ nhất trước, thử lại một lần,
   rồi mới báo lỗi.
 

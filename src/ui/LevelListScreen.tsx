@@ -9,6 +9,9 @@ import { useSavedProgress } from './hooks/useSavedProgress';
 interface LevelListScreenProps {
   level: Level;
   bank: LevelBank | null;
+  /** The level's bank could not be loaded; show a retry instead of skeletons forever. */
+  loadFailed: boolean;
+  onRetry: () => void;
   onNavigate: (hash: string) => void;
   onBack: () => void;
 }
@@ -18,7 +21,7 @@ const PAGE_SIZE = 20;
 const COMPLETED_STYLE = { '--btn-bg': '34 197 94', '--btn-edge': '21 128 61', '--btn-fg': '255 255 255' } as CSSProperties;
 const TAB_ACTIVE_STYLE = { '--btn-bg': '49 46 129', '--btn-edge': '30 27 75', '--btn-fg': '255 255 255' } as CSSProperties;
 
-export function LevelListScreen({ level, bank, onNavigate, onBack }: LevelListScreenProps): JSX.Element {
+export function LevelListScreen({ level, bank, loadFailed, onRetry, onNavigate, onBack }: LevelListScreenProps): JSX.Element {
   const theme = LEVEL_THEME[level];
   const { games, byId } = useSavedProgress();
   const [pageOverride, setPageOverride] = useState<number | null>(null);
@@ -94,7 +97,16 @@ export function LevelListScreen({ level, bank, onNavigate, onBack }: LevelListSc
       </div>
 
       <div key={page} className="grid grid-cols-4 gap-3 px-5 pb-4 pt-3">
+        {!bank && loadFailed && (
+          <div role="alert" className="col-span-4 flex flex-col items-center gap-3 py-8 text-center">
+            <p className="text-base font-bold text-accent">Không tải được danh sách màn. Hãy kiểm tra kết nối mạng.</p>
+            <button type="button" onClick={onRetry} className="btn btn-primary min-h-12 px-6">
+              Thử lại
+            </button>
+          </div>
+        )}
         {!bank &&
+          !loadFailed &&
           Array.from({ length: PAGE_SIZE }, (_, i) => (
             <div key={i} className="aspect-[1/0.88] animate-pulse rounded-2xl bg-soft" aria-hidden="true" />
           ))}

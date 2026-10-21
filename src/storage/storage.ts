@@ -20,6 +20,34 @@ export function isAvailable(): boolean {
   return checkAvailability();
 }
 
+/**
+ * `memory-only`: localStorage is unusable, progress lives until the tab closes.
+ * `write-failed`: localStorage works but the last write was rejected (quota full, nothing left to evict).
+ */
+export type StorageHealth = 'ok' | 'memory-only' | 'write-failed';
+
+let lastWriteFailed = false;
+const healthListeners = new Set<() => void>();
+
+function setLastWriteFailed(failed: boolean): void {
+  if (failed === lastWriteFailed) return;
+  lastWriteFailed = failed;
+  for (const listener of healthListeners) listener();
+}
+
+/** Snapshot for `useSyncExternalStore`: a primitive, so it is stable between changes. */
+export function getStorageHealth(): StorageHealth {
+  if (!checkAvailability()) return 'memory-only';
+  return lastWriteFailed ? 'write-failed' : 'ok';
+}
+
+export function subscribeStorageHealth(listener: () => void): () => void {
+  healthListeners.add(listener);
+  return () => {
+    healthListeners.delete(listener);
+  };
+}
+
 function isQuotaExceeded(err: unknown): boolean {
   if (!(err instanceof DOMException)) return false;
   return err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22 || err.code === 1014;
@@ -67,16 +95,19 @@ function setRaw(key: string, value: string): boolean {
   if (checkAvailability()) {
     try {
       window.localStorage.setItem(key, value);
+      setLastWriteFailed(false);
       return true;
     } catch (err) {
       if (isQuotaExceeded(err) && evictOldestCompletedGame()) {
         try {
           window.localStorage.setItem(key, value);
+          setLastWriteFailed(false);
           return true;
         } catch {
-          return false;
+          // fall through to the failure path
         }
       }
+      setLastWriteFailed(true);
       return false;
     }
   }
@@ -96,15 +127,26 @@ function removeRaw(key: string): void {
   memoryStore.delete(key);
 }
 
-export function readJSON<T>(key: string, fallback: T): T {
+/**
+ * Reads and parses `key`. Corrupt JSON -- or, when `validate` is given, a value of the wrong shape --
+ * deletes the key and yields `fallback`, so one bad record can never poison later reads.
+ *
+ * `validate` receives the untrusted parsed value and returns the sanitised `T`, or `null` to reject it.
+ * Without it the parsed value is trusted as `T`, which is only acceptable for data the caller checks itself.
+ */
+export function readJSON<T>(key: string, fallback: T, validate?: (value: unknown) => T | null): T {
   const raw = getRaw(key);
   if (raw === null) return fallback;
   try {
-    return JSON.parse(raw) as T;
+    const parsed: unknown = JSON.parse(raw);
+    if (!validate) return parsed as T;
+    const checked = validate(parsed);
+    if (checked !== null) return checked;
   } catch {
-    removeRaw(key);
-    return fallback;
+    // fall through: unparsable (or a validator that threw) is treated as invalid
   }
+  removeRaw(key);
+  return fallback;
 }
 
 export function writeJSON(key: string, value: unknown): boolean {

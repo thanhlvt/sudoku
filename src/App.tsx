@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Level, LevelBank, Manifest } from './core/types';
 import { dailyPuzzle, dateKey } from './game/daily';
 import { loadLevel, loadManifest } from './game/puzzleBank';
@@ -7,6 +7,7 @@ import { migrate, syncGeneratorVersion } from './storage/schema';
 import { HomeScreen } from './ui/HomeScreen';
 import { LevelListScreen } from './ui/LevelListScreen';
 import { PlayScreen } from './ui/PlayScreen';
+import { StorageBanner } from './ui/StorageBanner';
 import { useDaily } from './ui/hooks/useDaily';
 import { useHashRoute } from './ui/hooks/useHashRoute';
 import { useSettings } from './ui/hooks/useSettings';
@@ -19,6 +20,11 @@ export default function App(): JSX.Element {
   const [daily, updateDaily] = useDaily();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [levelBank, setLevelBank] = useState<LevelBank | null>(null);
+  const [manifestFailed, setManifestFailed] = useState(false);
+  const [levelFailed, setLevelFailed] = useState(false);
+  /** Bumped by the "retry" buttons to re-run the loading effects. */
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   useEffect(() => {
     migrate();
@@ -34,23 +40,40 @@ export default function App(): JSX.Element {
   }, [settings.theme]);
 
   useEffect(() => {
+    let cancelled = false;
+    setManifestFailed(false);
     loadManifest()
       .then((m) => {
+        if (cancelled) return;
         setManifest(m);
         syncGeneratorVersion(m.generatorVersion);
       })
       .catch(() => {
-        // Manifest failed to load (offline, bad deploy); screens render their own empty states.
+        // Offline or a bad deploy: the home screen shows a retry button.
+        if (!cancelled) setManifestFailed(true);
       });
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
 
+  const levelRoute = route.name === 'level' ? route.level : null;
   useEffect(() => {
-    if (route.name !== 'level') return;
+    if (levelRoute === null) return;
+    let cancelled = false; // a slow response for an earlier level must not replace the one now on screen
     setLevelBank(null);
-    loadLevel(route.level)
-      .then(setLevelBank)
-      .catch(() => {});
-  }, [route]);
+    setLevelFailed(false);
+    loadLevel(levelRoute)
+      .then((bank) => {
+        if (!cancelled) setLevelBank(bank);
+      })
+      .catch(() => {
+        if (!cancelled) setLevelFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [levelRoute, attempt]);
 
   const today = dateKey(new Date());
   const dailyId = manifest
@@ -61,35 +84,47 @@ export default function App(): JSX.Element {
   const screenKey = route.name === 'home' ? 'home' : route.name === 'level' ? `level-${route.level}` : `play-${route.puzzleId}`;
 
   return (
-    <div key={screenKey} className="mx-auto flex w-full max-w-md flex-1 flex-col animate-screen-in">
-      {route.name === 'home' && (
-        <HomeScreen
-          manifest={manifest}
-          stats={stats}
-          daily={daily}
-          today={today}
-          dailyId={dailyId}
-          settings={settings}
-          onSettingsChange={updateSettings}
-          onNavigate={navigate}
-        />
-      )}
-      {route.name === 'level' && (
-        <LevelListScreen level={route.level} bank={levelBank} onNavigate={navigate} onBack={() => navigate('#/', true)} />
-      )}
-      {route.name === 'play' && (
-        <PlayScreen
-          puzzleId={route.puzzleId}
-          onNavigate={navigate}
-          settings={settings}
-          stats={stats}
-          updateStats={updateStats}
-          dailyId={dailyId}
-          today={today}
-          daily={daily}
-          updateDaily={updateDaily}
-        />
-      )}
-    </div>
+    <>
+      <StorageBanner />
+      <div key={screenKey} className="mx-auto flex w-full max-w-md flex-1 flex-col animate-screen-in">
+        {route.name === 'home' && (
+          <HomeScreen
+            manifest={manifest}
+            loadFailed={manifestFailed}
+            onRetry={retry}
+            stats={stats}
+            daily={daily}
+            today={today}
+            dailyId={dailyId}
+            settings={settings}
+            onSettingsChange={updateSettings}
+            onNavigate={navigate}
+          />
+        )}
+        {route.name === 'level' && (
+          <LevelListScreen
+            level={route.level}
+            bank={levelBank}
+            loadFailed={levelFailed}
+            onRetry={retry}
+            onNavigate={navigate}
+            onBack={() => navigate('#/', true)}
+          />
+        )}
+        {route.name === 'play' && (
+          <PlayScreen
+            puzzleId={route.puzzleId}
+            onNavigate={navigate}
+            settings={settings}
+            stats={stats}
+            updateStats={updateStats}
+            dailyId={dailyId}
+            today={today}
+            daily={daily}
+            updateDaily={updateDaily}
+          />
+        )}
+      </div>
+    </>
   );
 }

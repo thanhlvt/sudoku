@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GameSession } from '../../game/gameState';
-import { loadGame, saveGame, saveLast } from '../../storage/schema';
+import { GameSession, type GameOptions } from '../../game/gameState';
+import { deleteGame, loadGame, saveGame, saveLast } from '../../storage/schema';
 import type { PuzzleRecord, Step } from '../../core/types';
 
 interface UseGameSessionOptions {
@@ -24,16 +24,35 @@ export interface GameSessionApi {
 
 const DEBOUNCE_MS = 500;
 
+/**
+ * Resume the saved game when there is a usable one; otherwise start fresh. This runs during render, so it must
+ * never throw -- a bad save would blank the whole app on every visit to this puzzle. A save that cannot be
+ * restored is deleted so it cannot trip the next visit either.
+ */
+function createSession(opts: GameOptions): GameSession {
+  const saved = loadGame(opts.puzzleId);
+  if (saved) {
+    try {
+      if (GameSession.matchesGivens(opts.puzzle, saved)) return GameSession.fromSaved(opts, saved);
+    } catch {
+      deleteGame(opts.puzzleId);
+    }
+  }
+  return new GameSession(opts);
+}
+
 export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessionOptions): GameSessionApi {
   const sessionRef = useRef<GameSession | null>(null);
   const [version, setVersion] = useState(0);
   const rerender = useCallback(() => setVersion((n) => n + 1), []);
 
   if (!sessionRef.current || sessionRef.current.puzzleId !== puzzle.id) {
-    const opts = { puzzleId: puzzle.id, puzzle: puzzle.puzzle, solution: puzzle.solution, autoRemoveNotes };
-    const saved = loadGame(puzzle.id);
-    sessionRef.current =
-      saved && GameSession.matchesGivens(puzzle.puzzle, saved) ? GameSession.fromSaved(opts, saved) : new GameSession(opts);
+    sessionRef.current = createSession({
+      puzzleId: puzzle.id,
+      puzzle: puzzle.puzzle,
+      solution: puzzle.solution,
+      autoRemoveNotes,
+    });
   }
   const session = sessionRef.current;
   session.autoRemoveNotes = autoRemoveNotes;

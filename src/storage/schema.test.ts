@@ -10,9 +10,16 @@ import {
   listGames,
   loadDaily,
   loadGame,
+  loadLast,
   loadSettings,
   loadStats,
   migrate,
+  parseDaily,
+  parseLast,
+  parseMeta,
+  parseSavedGame,
+  parseSettings,
+  parseStats,
   saveDaily,
   saveGame,
   saveSettings,
@@ -134,6 +141,137 @@ describe('saved games', () => {
     });
     deleteGame('easy-002');
     expect(loadGame('easy-002')).toBeNull();
+  });
+});
+
+describe('hostile or corrupt stored data', () => {
+  const goodGame = {
+    puzzleId: 'easy-001',
+    board: '.'.repeat(81),
+    notes: '000'.repeat(81),
+    elapsedMs: 5000,
+    mistakes: 1,
+    hintsUsed: 0,
+    status: 'in-progress',
+    updatedAt: 10,
+  };
+  const put = (key: string, value: unknown): void => window.localStorage.setItem(key, JSON.stringify(value));
+
+  it('stats that are null, an array, a string or lack levels never crash and fall back to usable values', () => {
+    for (const bad of [null, [], 'oops', 7, true]) {
+      put(KEYS.stats, bad);
+      expect(loadStats()).toEqual(defaultStats());
+      expect(window.localStorage.getItem(KEYS.stats)).toBeNull(); // the bad record was dropped
+    }
+    put(KEYS.stats, { easy: { played: 3, completed: 2, bestMs: 9000, totalMs: 20000, perfectRuns: 1 } });
+    const stats = loadStats();
+    expect(stats.easy.completed).toBe(2);
+    expect(stats.expert).toEqual(defaultStats().expert); // missing level filled in
+  });
+
+  it('resets only the level whose stats are malformed', () => {
+    put(KEYS.stats, {
+      ...defaultStats(),
+      easy: { played: 'many', completed: 2, bestMs: 1, totalMs: 1, perfectRuns: 0 },
+      hard: { played: 4, completed: 4, bestMs: 70000, totalMs: 300000, perfectRuns: 2 },
+    });
+    const stats = loadStats();
+    expect(stats.easy).toEqual(defaultStats().easy);
+    expect(stats.hard.completed).toBe(4);
+  });
+
+  it('rejects stat numbers that are negative, NaN-like or absurd', () => {
+    for (const patch of [{ bestMs: -1 }, { bestMs: 1e30 }, { totalMs: -5 }, { played: 1.5 }, { completed: -1 }]) {
+      put(KEYS.stats, { ...defaultStats(), easy: { ...defaultStats().easy, ...patch } });
+      expect(loadStats().easy).toEqual(defaultStats().easy);
+    }
+  });
+
+  it('settings: wrong types fall back per field, non-objects fall back entirely', () => {
+    put(KEYS.settings, { theme: 'neon', showMistakes: 'yes', highlightPeers: false, extra: 1 });
+    expect(loadSettings()).toEqual({ ...DEFAULT_SETTINGS, highlightPeers: false });
+    for (const bad of [null, 'dark', [], 3]) {
+      put(KEYS.settings, bad);
+      expect(loadSettings()).toEqual(DEFAULT_SETTINGS);
+    }
+  });
+
+  it('daily: junk fields are reset, a valid date survives', () => {
+    put(KEYS.daily, { streak: '9', longest: -2, lastDate: '2026-10-21<script>' });
+    expect(loadDaily()).toEqual(DEFAULT_DAILY);
+    put(KEYS.daily, { streak: 3, longest: 5, lastDate: '2026-10-21' });
+    expect(loadDaily()).toEqual({ streak: 3, longest: 5, lastDate: '2026-10-21' });
+    put(KEYS.daily, null);
+    expect(loadDaily()).toEqual(DEFAULT_DAILY);
+  });
+
+  it('loadLast accepts only a well-formed puzzle id', () => {
+    put(KEYS.last, { puzzleId: 'hard-004', at: 5 });
+    expect(loadLast()).toEqual({ puzzleId: 'hard-004', at: 5 });
+    for (const bad of [{ puzzleId: '__proto__-001', at: 5 }, { puzzleId: 'hard-004', at: 'now' }, null, 'x']) {
+      put(KEYS.last, bad);
+      expect(loadLast()).toBeNull();
+    }
+  });
+
+  it('a saved game with a bad board, notes, numbers or status is rejected and deleted', () => {
+    const bads: Record<string, unknown>[] = [
+      { board: 'x'.repeat(81) },
+      { board: '123' },
+      { board: 5 },
+      { board: undefined },
+      { notes: 'zz'.repeat(121) + 'z' },
+      { notes: '' },
+      { notes: 7 },
+      { elapsedMs: '5' },
+      { elapsedMs: -1 },
+      { elapsedMs: Infinity },
+      { mistakes: -1 },
+      { mistakes: 1.5 },
+      { hintsUsed: '2' },
+      { status: 'won' },
+      { updatedAt: 'later' },
+      { completedAt: 'then' },
+      { puzzleId: 'easy-002' }, // belongs to a different key
+      { puzzleId: '__proto__-001' },
+    ];
+    for (const patch of bads) {
+      put(KEYS.game('easy-001'), { ...goodGame, ...patch });
+      expect(loadGame('easy-001'), JSON.stringify(patch)).toBeNull();
+      expect(window.localStorage.getItem(KEYS.game('easy-001'))).toBeNull();
+    }
+    for (const notObject of [null, 4, 'str', []]) {
+      put(KEYS.game('easy-001'), notObject);
+      expect(loadGame('easy-001')).toBeNull();
+    }
+  });
+
+  it('a well-formed saved game passes, including completedAt', () => {
+    put(KEYS.game('easy-001'), { ...goodGame, status: 'completed', completedAt: 99 });
+    expect(loadGame('easy-001')).toEqual({ ...goodGame, status: 'completed', completedAt: 99 });
+  });
+
+  it('listGames drops invalid records and ones filed under the wrong key', () => {
+    put(KEYS.game('easy-001'), goodGame);
+    put(KEYS.game('easy-002'), { ...goodGame, board: 'bad' });
+    put(KEYS.game('hard-001'), goodGame); // says easy-001 but sits under hard-001
+    put(KEYS.game('__proto__-001'), { ...goodGame, puzzleId: '__proto__-001', status: 'completed' });
+    expect(listGames().map((g) => g.puzzleId)).toEqual(['easy-001']);
+  });
+
+  it('migrate recreates meta when it is malformed, without touching stats', () => {
+    saveStats({ ...defaultStats(), easy: { ...defaultStats().easy, completed: 4 } });
+    put(KEYS.meta, { schemaVersion: 'one' });
+    migrate();
+    expect(readJSON<{ schemaVersion: number } | null>(KEYS.meta, null)!.schemaVersion).toBe(1);
+    expect(loadStats().easy.completed).toBe(4);
+  });
+
+  it('parse functions never throw on arbitrary input', () => {
+    const weird: unknown[] = [undefined, null, 0, NaN, '', 'a', [], [1], {}, { __proto__: { x: 1 } }, () => 1, Symbol('s')];
+    for (const w of weird) {
+      expect(() => [parseSavedGame, parseStats, parseSettings, parseDaily, parseLast, parseMeta].forEach((p) => p(w))).not.toThrow();
+    }
   });
 });
 

@@ -12,7 +12,7 @@
     "gen": "tsx tools/generate.ts",
     "verify": "tsx tools/verify.ts",
     "assets": "node scripts/make-icons.mjs && capacitor-assets generate --android --iconBackgroundColor \"#2563eb\" --iconBackgroundColorDark \"#2563eb\" --splashBackgroundColor \"#ffffff\" --splashBackgroundColorDark \"#0f172a\"",
-    "android:sync": "npm run build && cap sync android",
+    "android:sync": "tsc --noEmit && vite build --mode capacitor && cap sync android",
     "android:open": "cap open android",
     "android:debug": "npm run android:sync && node scripts/gradle.mjs assembleDebug",
     "android:bundle": "npm run android:sync && node scripts/gradle.mjs bundleRelease"

@@ -30,6 +30,21 @@ describe('summarizeByLevel', () => {
   });
 });
 
+describe('summarizeByLevel with hostile ids', () => {
+  it('ignores prototype keys instead of mutating Object.prototype', () => {
+    summarizeByLevel([
+      game('__proto__-001', 'completed'),
+      game('constructor-001', 'completed'),
+      game('toString-001', 'completed'),
+      game('beginner-001', 'completed'),
+    ]);
+    const probe = {} as { completed?: number; stars?: number };
+    expect(probe.completed).toBeUndefined();
+    expect(probe.stars).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(Object.prototype, 'completed')).toBe(false);
+  });
+});
+
 describe('pickNextIndex', () => {
   const byId = (...games: SavedGame[]): Map<string, SavedGame> => new Map(games.map((g) => [g.puzzleId, g]));
 

@@ -12,6 +12,9 @@ import { useSavedProgress } from './hooks/useSavedProgress';
 
 interface HomeScreenProps {
   manifest: Manifest | null;
+  /** The manifest could not be loaded (offline, bad deploy); show a retry instead of waiting forever. */
+  loadFailed: boolean;
+  onRetry: () => void;
   stats: Stats;
   daily: DailyState;
   today: string;
@@ -40,6 +43,8 @@ function Logo(): JSX.Element {
 
 export function HomeScreen({
   manifest,
+  loadFailed,
+  onRetry,
   stats,
   daily,
   today,
@@ -240,7 +245,17 @@ export function HomeScreen({
             </button>
           );
         })}
-        {!manifest && <p className="py-6 text-center text-base font-bold text-accent">Đang tải danh sách cấp độ...</p>}
+        {!manifest && !loadFailed && (
+          <p className="py-6 text-center text-base font-bold text-accent">Đang tải danh sách cấp độ...</p>
+        )}
+        {!manifest && loadFailed && (
+          <div role="alert" className="flex flex-col items-center gap-3 py-6 text-center">
+            <p className="text-base font-bold text-accent">Không tải được danh sách cấp độ. Hãy kiểm tra kết nối mạng.</p>
+            <button type="button" onClick={onRetry} className="btn btn-primary min-h-12 px-6">
+              Thử lại
+            </button>
+          </div>
+        )}
       </div>
 
       {settingsOpen && (

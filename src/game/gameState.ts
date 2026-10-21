@@ -29,10 +29,14 @@ export function encodeNotes(notes: Uint16Array): string {
 export function decodeNotes(encoded: string): Uint16Array {
   const notes = new Uint16Array(81);
   for (let i = 0; i < 81; i++) {
-    notes[i] = parseInt(encoded.slice(i * 3, i * 3 + 3), 16) || 0;
+    // Only the low 9 bits (digits 1-9) mean anything; stray high bits from a bad save are dropped.
+    notes[i] = (parseInt(encoded.slice(i * 3, i * 3 + 3), 16) || 0) & 0x1ff;
   }
   return notes;
 }
+
+/** Older moves are forgotten past this, so holding a key (or a very long ván) cannot grow memory without bound. */
+const MAX_UNDO_MOVES = 500;
 
 export class GameSession {
   readonly puzzleId: string;
@@ -69,7 +73,8 @@ export class GameSession {
     session.elapsedMs = saved.elapsedMs;
     session.mistakes = saved.mistakes;
     session.hintsUsed = saved.hintsUsed;
-    session.status = saved.status;
+    // A save claiming "completed" is only believed if the board really is solved.
+    session.status = saved.status === 'completed' && session.checkCompletion() ? 'completed' : 'in-progress';
     return session;
   }
 
@@ -95,6 +100,7 @@ export class GameSession {
     if (digit < 1 || digit > 9) return;
     if (this.status === 'completed' || this.isGiven(idx)) return;
 
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.board[idx] = digit;
     const after = { value: digit, notes: this.notes[idx]! };
@@ -114,7 +120,7 @@ export class GameSession {
       this.mistakes++;
     }
 
-    this.undoStack.push({
+    this.pushMove({
       type: 'set',
       idx,
       before,
@@ -129,18 +135,26 @@ export class GameSession {
 
   eraseCell(idx: number): void {
     if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] === 0) return;
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.board[idx] = 0;
     const after = { value: 0, notes: this.notes[idx]! };
-    this.undoStack.push({ type: 'erase', idx, before, after });
+    this.pushMove({ type: 'erase', idx, before, after });
   }
 
   toggleNote(idx: number, digit: number): void {
+    if (digit < 1 || digit > 9) return;
     if (this.status === 'completed' || this.isGiven(idx) || this.board[idx] !== 0) return;
+    this.pendingHintStep = null;
     const before = { value: this.board[idx]!, notes: this.notes[idx]! };
     this.notes[idx]! ^= 1 << (digit - 1);
     const after = { value: this.board[idx]!, notes: this.notes[idx]! };
-    this.undoStack.push({ type: 'note', idx, before, after });
+    this.pushMove({ type: 'note', idx, before, after });
+  }
+
+  private pushMove(move: Move): void {
+    this.undoStack.push(move);
+    if (this.undoStack.length > MAX_UNDO_MOVES) this.undoStack.shift();
   }
 
   canUndo(): boolean {
@@ -163,6 +177,7 @@ export class GameSession {
     const move = this.undoStack.pop();
     if (!move) return;
 
+    this.pendingHintStep = null;
     this.board[move.idx] = move.before.value;
     this.notes[move.idx] = move.before.notes;
     if (move.autoNoteChanges) {
@@ -180,7 +195,7 @@ export class GameSession {
   hint(): Step | null {
     if (this.status === 'completed') return null;
     if (!this.pendingHintStep) {
-      const result = solveLogically(this.board);
+      const result = solveLogically(this.boardWithoutMistakes());
       this.pendingHintStep = result.steps[0] ?? null;
       return this.pendingHintStep;
     }
@@ -191,8 +206,25 @@ export class GameSession {
     return step;
   }
 
+  /** True while a previewed hint is waiting to be applied. Any edit to the board or notes discards it. */
+  hasPendingHint(): boolean {
+    return this.pendingHintStep !== null;
+  }
+
   clearPendingHint(): void {
     this.pendingHintStep = null;
+  }
+
+  /**
+   * The board with the player's wrong digits taken out. The logical solver assumes every filled cell is right;
+   * feeding it a mistake can yield a step that places a wrong digit (and costs the player a heart).
+   */
+  private boardWithoutMistakes(): Grid {
+    const clean = cloneGrid(this.board);
+    for (let i = 0; i < 81; i++) {
+      if (this.givens[i] === 0 && clean[i] !== 0 && clean[i] !== this.solution[i]) clean[i] = 0;
+    }
+    return clean;
   }
 
   private applyStep(step: Step): void {

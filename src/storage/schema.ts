@@ -1,4 +1,4 @@
-import { readJSON, removeAllWithPrefix, removeKey, writeJSON } from './storage';
+import { listKeysWithPrefix, readJSON, removeAllWithPrefix, removeKey, writeJSON } from './storage';
 import type { Level } from '../core/types';
 
 export const SCHEMA_VERSION = 1;
@@ -9,6 +9,7 @@ export const KEYS = {
   settings: `${NAMESPACE}:settings`,
   stats: `${NAMESPACE}:stats`,
   last: `${NAMESPACE}:last`,
+  daily: `${NAMESPACE}:daily`,
   game: (puzzleId: string): string => `${NAMESPACE}:game:${puzzleId}`,
 };
 
@@ -34,6 +35,7 @@ export interface SavedGame {
 export interface Settings {
   highlightSameDigit: boolean;
   highlightPeers: boolean;
+  showMistakes: boolean;
   autoRemoveNotes: boolean;
   theme: 'system' | 'light' | 'dark';
   soundEnabled: boolean;
@@ -42,6 +44,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   highlightSameDigit: true,
   highlightPeers: true,
+  showMistakes: true,
   autoRemoveNotes: true,
   theme: 'system',
   soundEnabled: false,
@@ -99,7 +102,8 @@ export function syncGeneratorVersion(manifestVersion: number): boolean {
 }
 
 export function loadSettings(): Settings {
-  return readJSON(KEYS.settings, DEFAULT_SETTINGS);
+  // Merge over the defaults so settings saved by an older build pick up newly added fields.
+  return { ...DEFAULT_SETTINGS, ...readJSON<Partial<Settings>>(KEYS.settings, {}) };
 }
 
 export function saveSettings(settings: Settings): boolean {
@@ -124,6 +128,34 @@ export function saveGame(game: SavedGame): boolean {
 
 export function deleteGame(puzzleId: string): void {
   removeKey(KEYS.game(puzzleId));
+}
+
+/** Every saved game (in progress or completed), for aggregate progress views. */
+export function listGames(): SavedGame[] {
+  const prefix = KEYS.game('');
+  const games: SavedGame[] = [];
+  for (const key of listKeysWithPrefix(prefix)) {
+    const game = readJSON<SavedGame | null>(key, null);
+    if (game && typeof game.puzzleId === 'string') games.push(game);
+  }
+  return games;
+}
+
+/** Daily-challenge streak. Dates are local calendar days as `YYYY-MM-DD`. */
+export interface DailyState {
+  streak: number;
+  longest: number;
+  lastDate: string | null;
+}
+
+export const DEFAULT_DAILY: DailyState = { streak: 0, longest: 0, lastDate: null };
+
+export function loadDaily(): DailyState {
+  return { ...DEFAULT_DAILY, ...readJSON<Partial<DailyState>>(KEYS.daily, {}) };
+}
+
+export function saveDaily(daily: DailyState): boolean {
+  return writeJSON(KEYS.daily, daily);
 }
 
 export function loadLast(): LastPlayed | null {

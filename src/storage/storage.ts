@@ -137,3 +137,19 @@ export function removeAllWithPrefix(prefix: string): void {
     if (key.startsWith(prefix)) memoryStore.delete(key);
   }
 }
+
+export function listKeysWithPrefix(prefix: string): string[] {
+  if (checkAvailability()) {
+    try {
+      const keys: string[] = [];
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith(prefix)) keys.push(key);
+      }
+      return keys;
+    } catch {
+      return [];
+    }
+  }
+  return Array.from(memoryStore.keys()).filter((key) => key.startsWith(prefix));
+}

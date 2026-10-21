@@ -1,3 +1,5 @@
+import { Eraser, Lightbulb, PencilLine, Undo2, type LucideIcon } from 'lucide-react';
+
 interface ToolbarProps {
   noteMode: boolean;
   onToggleNoteMode: () => void;
@@ -6,15 +8,51 @@ interface ToolbarProps {
   onErase: () => void;
   canErase: boolean;
   onHint: () => void;
-  paused: boolean;
-  onTogglePause: () => void;
-  /** Omit where printing is unavailable (e.g. the native Android WebView). */
-  onPrint?: () => void;
-  onReset: () => void;
+  /** A hint has been previewed; the next press applies it. */
+  hintPending: boolean;
+  hintsUsed: number;
 }
 
-const BTN =
-  'min-h-[44px] px-3 rounded-md border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed';
+interface ToolProps {
+  icon: LucideIcon;
+  label: string;
+  ariaLabel: string;
+  onClick: () => void;
+  disabled?: boolean;
+  pressed?: boolean;
+  tone?: string;
+  iconClass?: string;
+  badge?: number;
+}
+
+function Tool({ icon: Icon, label, ariaLabel, onClick, disabled, pressed, tone = 'btn-white', iconClass = '', badge }: ToolProps): JSX.Element {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          aria-pressed={pressed}
+          className={`btn btn-icon !h-[3.75rem] !w-[3.75rem] !rounded-[1.25rem] ${tone}`}
+        >
+          <Icon size={28} strokeWidth={2.75} aria-hidden="true" className={iconClass} />
+        </button>
+        {badge !== undefined && badge > 0 && (
+          <span
+            key={badge}
+            className="pointer-events-none absolute -right-2 -top-2 flex h-6 min-w-6 animate-pop-in items-center justify-center rounded-full bg-rose-500 px-1.5 text-sm font-black text-white"
+            aria-hidden="true"
+          >
+            {badge}
+          </span>
+        )}
+      </div>
+      <span className="text-base font-extrabold leading-none">{label}</span>
+    </div>
+  );
+}
 
 export function Toolbar({
   noteMode,
@@ -24,42 +62,31 @@ export function Toolbar({
   onErase,
   canErase,
   onHint,
-  paused,
-  onTogglePause,
-  onPrint,
-  onReset,
+  hintPending,
+  hintsUsed,
 }: ToolbarProps): JSX.Element {
   return (
-    <div className="flex w-full flex-wrap items-center gap-2" style={{ maxWidth: 560 }}>
-      <button type="button" onClick={onUndo} disabled={!canUndo} aria-label="Hoàn tác (U)" className={BTN}>
-        ↶ Hoàn tác
-      </button>
-      <button type="button" onClick={onErase} disabled={!canErase} aria-label="Xóa số (Backspace)" className={BTN}>
-        🗑 Xóa
-      </button>
-      <button
-        type="button"
+    <div role="toolbar" aria-label="Công cụ" className="grid grid-cols-4 justify-items-center">
+      <Tool icon={Undo2} label="Hoàn tác" ariaLabel="Hoàn tác (U)" onClick={onUndo} disabled={!canUndo} iconClass="text-primary" />
+      <Tool icon={Eraser} label="Xóa" ariaLabel="Xóa số (Backspace)" onClick={onErase} disabled={!canErase} iconClass="text-rose-500" />
+      <Tool
+        icon={PencilLine}
+        label="Ghi chú"
+        ariaLabel={noteMode ? 'Ghi chú: đang bật (N)' : 'Ghi chú: đang tắt (N)'}
         onClick={onToggleNoteMode}
-        aria-pressed={noteMode}
-        aria-label="Chế độ ghi chú (N)"
-        className={`${BTN} ${noteMode ? 'border-blue-400 bg-blue-100 dark:bg-blue-900/50' : ''}`}
-      >
-        ✎ Ghi chú
-      </button>
-      <button type="button" onClick={onHint} aria-label="Gợi ý (H)" className={BTN}>
-        💡 Gợi ý
-      </button>
-      <button type="button" onClick={onTogglePause} aria-label="Tạm dừng (Space)" className={BTN}>
-        {paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'}
-      </button>
-      {onPrint && (
-        <button type="button" onClick={onPrint} aria-label="In câu đố ra giấy" className={BTN}>
-          🖨 In
-        </button>
-      )}
-      <button type="button" onClick={onReset} aria-label="Đặt lại ván chơi" className={BTN}>
-        🔄 Đặt lại
-      </button>
+        pressed={noteMode}
+        tone={noteMode ? 'btn-sky' : 'btn-white'}
+        iconClass={noteMode ? '' : 'text-sky-600'}
+      />
+      <Tool
+        icon={Lightbulb}
+        label={hintPending ? 'Áp dụng' : 'Gợi ý'}
+        ariaLabel={hintPending ? 'Áp dụng gợi ý (H)' : 'Gợi ý (H)'}
+        onClick={onHint}
+        tone="btn-amber"
+        iconClass={hintPending ? 'animate-wiggle' : ''}
+        badge={hintsUsed}
+      />
     </div>
   );
 }

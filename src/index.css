@@ -1,14 +1,85 @@
+@import '@fontsource-variable/nunito/wght.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Design tokens (space-separated RGB so Tailwind opacity modifiers work) ---------- */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
+
+  --c-page: 238 240 255;
+  --c-card: 255 255 255;
+  --c-line: 199 210 254; /* card edge / hairlines */
+  --c-soft: 224 231 255; /* empty progress tracks */
+  --c-ink: 30 27 75;
+  --c-accent: 67 56 202; /* secondary text on light surfaces */
+
+  --b-line: 224 231 255;
+  --b-frame: 49 46 129;
+  --b-cell: 255 255 255;
+  --b-peer: 243 240 255;
+  --b-same: 221 214 254;
+  --b-sel: 196 181 253;
+  --b-hint: 253 230 138;
+  --b-wrong: 254 226 226;
+  --b-wrong-ink: 185 28 28;
+  --b-user: 109 40 217;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --c-page: 14 16 48;
+    --c-card: 27 30 72;
+    --c-line: 46 51 118;
+    --c-soft: 38 42 99;
+    --c-ink: 238 240 255;
+    --c-accent: 165 180 252;
+
+    --b-line: 46 51 118;
+    --b-frame: 165 180 252;
+    --b-cell: 27 30 72;
+    --b-peer: 36 40 96;
+    --b-same: 76 58 154;
+    --b-sel: 109 79 214;
+    --b-hint: 146 64 14;
+    --b-wrong: 91 26 42;
+    --b-wrong-ink: 252 165 165;
+    --b-user: 196 181 253;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-page: 14 16 48;
+  --c-card: 27 30 72;
+  --c-line: 46 51 118;
+  --c-soft: 38 42 99;
+  --c-ink: 238 240 255;
+  --c-accent: 165 180 252;
+
+  --b-line: 46 51 118;
+  --b-frame: 165 180 252;
+  --b-cell: 27 30 72;
+  --b-peer: 36 40 96;
+  --b-same: 76 58 154;
+  --b-sel: 109 79 214;
+  --b-hint: 146 64 14;
+  --b-wrong: 91 26 42;
+  --b-wrong-ink: 252 165 165;
+  --b-user: 196 181 253;
+}
+
+html {
+  background: rgb(var(--c-page));
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100dvh;
+  background: rgb(var(--c-page));
+  color: rgb(var(--c-ink));
   /* Keep content clear of the status/navigation bars and display cutouts (edge-to-edge on Android). */
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
   padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
@@ -22,12 +93,198 @@ body {
   touch-action: manipulation;
 }
 
+:focus-visible {
+  outline: 3px solid rgb(var(--c-accent));
+  outline-offset: 3px;
+}
+
+@keyframes ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--ring) / 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 14px rgb(var(--ring) / 0);
+  }
+}
+
+@keyframes shine {
+  0%,
+  55% {
+    background-position: 180% 0;
+  }
+  100% {
+    background-position: -80% 0;
+  }
+}
+
+body,
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+}
+
+/* ---------- 3D "chunky" surfaces ---------- */
+@layer components {
+  /* Pressable surface: a flat face plus a solid darker edge below it. Pressing pushes the face down
+     onto the edge; on hover-capable pointers it lifts slightly first. */
+  .btn {
+    --btn-bg: 124 58 237;
+    --btn-edge: 91 33 182;
+    --btn-fg: 255 255 255;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3.25rem;
+    padding: 0 1.25rem;
+    border-radius: 1rem;
+    font-weight: 800;
+    line-height: 1;
+    background-color: rgb(var(--btn-bg));
+    color: rgb(var(--btn-fg));
+    box-shadow: 0 4px 0 0 rgb(var(--btn-edge));
+    transition:
+      transform 0.12s ease-out,
+      box-shadow 0.12s ease-out,
+      filter 0.12s ease-out,
+      opacity 0.2s ease-out,
+      background-color 0.2s ease-out;
+    will-change: transform;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 rgb(var(--btn-edge));
+  }
+  @media (hover: hover) {
+    .btn:hover:not(:disabled):not(:active) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 0 rgb(var(--btn-edge));
+      filter: brightness(1.06);
+    }
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .btn-primary {
+    --btn-bg: 124 58 237;
+    --btn-edge: 91 33 182;
+    --btn-fg: 255 255 255;
+    --ring: 124 58 237;
+  }
+  .btn-orange {
+    --btn-bg: 194 65 12;
+    --btn-edge: 124 45 18;
+    --btn-fg: 255 255 255;
+    --ring: 234 88 12;
+  }
+  .btn-white {
+    --btn-bg: var(--c-card);
+    --btn-edge: var(--c-line);
+    --btn-fg: var(--c-ink);
+  }
+  .btn-soft {
+    --btn-bg: var(--c-page);
+    --btn-edge: var(--c-line);
+    --btn-fg: var(--c-ink);
+  }
+  .btn-tile {
+    --btn-bg: var(--c-card);
+    --btn-edge: var(--c-line);
+    --btn-fg: var(--c-accent);
+    --ring: 124 58 237;
+  }
+  .btn-sky {
+    --btn-bg: 224 242 254;
+    --btn-edge: 125 211 252;
+    --btn-fg: 3 105 161;
+  }
+  .btn-amber {
+    --btn-bg: 254 243 199;
+    --btn-edge: 252 211 77;
+    --btn-fg: 180 83 9;
+  }
+  .btn-icon {
+    width: 3.25rem;
+    min-height: 0;
+    height: 3.25rem;
+    padding: 0;
+  }
+
+  /* Looping attention-getters for the primary call-to-action. Both are paused while the button is
+     being pressed so they never fight the press animation. */
+  .cta-ring::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    animation: ring 2.4s ease-out infinite;
+  }
+  .cta-ring:active::after {
+    animation: none;
+  }
+  .cta-shine {
+    background-image: linear-gradient(110deg, transparent 38%, rgb(255 255 255 / 0.28) 50%, transparent 62%);
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    background-position: 180% 0;
+    animation: shine 4.2s ease-in-out infinite;
+  }
+  .cta-shine:active {
+    animation: none;
+  }
+
+  /* Board digits scale with the board (container query units) with a viewport-based fallback. */
+  .board {
+    container-type: inline-size;
+  }
+  .cell-digit {
+    font-size: clamp(18px, 6.4vw, 30px);
+  }
+  .cell-note {
+    font-size: clamp(8px, 2.5vw, 12px);
+  }
+  @supports (font-size: 1cqw) {
+    .cell-digit {
+      font-size: 6.6cqw;
+    }
+    .cell-note {
+      font-size: 3.6cqw;
+    }
+  }
+
+  .card {
+    background-color: rgb(var(--c-card));
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 0 0 rgb(var(--c-line));
+  }
+
+  .sheet-handle {
+    width: 2.5rem;
+    height: 0.3rem;
+    border-radius: 9999px;
+    background-color: rgb(var(--c-line));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .confetti {
+    display: none !important;
   }
 }
 

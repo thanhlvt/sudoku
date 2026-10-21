@@ -20,6 +20,7 @@ Mọi khoá bắt đầu bằng `sudoku:v1:`. Số `v1` là **schema version**, 
 | `sudoku:v1:stats` | thống kê theo cấp độ |
 | `sudoku:v1:game:<puzzleId>` | ván đang chơi hoặc đã xong của màn đó |
 | `sudoku:v1:last` | `{ puzzleId, at }` để nút "Chơi tiếp" |
+| `sudoku:v1:daily` | `{ streak, longest, lastDate }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy |
 
 Một khoá riêng cho mỗi ván (thay vì gộp hết vào một object khổng lồ) giúp ghi nhanh và giới hạn
 thiệt hại khi một bản ghi hỏng.

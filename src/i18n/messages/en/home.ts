@@ -1,0 +1,33 @@
+import type { Message } from '../../message';
+import type { viHome } from '../vi/home';
+
+export const enHome: Record<keyof typeof viHome, Message> = {
+  'home.tagline': 'Train your brain daily',
+  'home.streakAria': '{count}-day streak',
+  'home.settingsAria': 'Settings',
+  'home.resume': 'Continue',
+  'home.nextPuzzle': 'Next puzzle',
+  'home.start': 'Start playing',
+  'home.daily.title': 'Today’s challenge',
+  'home.daily.badge': '{monthShort}',
+  'home.daily.done': 'Completed today',
+  'home.daily.todo': 'Finish it to keep your streak',
+  'home.daily.streak': { one: '{count} day', other: '{count} days' },
+  'home.daily.doneAria': 'Completed',
+  'home.modes.title': 'Challenge modes',
+  'home.modes.subtitle': 'Time attack · No mistakes · Weekly streak',
+  'home.modes.subtitleWeekly': 'Time attack · No mistakes · Weekly streak {done}/5',
+  'home.link.achievements': 'Achievements',
+  'home.link.calendar': 'Calendar',
+  'home.link.learn': 'Learn',
+  'home.link.stats': 'Stats',
+  'home.nav.aria': 'Explore',
+  'home.stats.aria': 'Statistics',
+  'home.stat.solved': 'Solved',
+  'home.stat.stars': 'Stars',
+  'home.stat.record': 'Best time',
+  'home.chooseLevel': 'Choose difficulty',
+  'home.levelAria': '{level}, {done} of {count} puzzles done',
+  'home.levelsLoading': 'Loading difficulties...',
+  'home.levelsFailed': 'Couldn’t load the difficulty list. Check your connection.',
+};

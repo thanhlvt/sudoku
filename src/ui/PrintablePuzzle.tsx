@@ -1,5 +1,6 @@
 import type { Level } from '../core/types';
-import { LEVEL_LABELS } from './levelLabels';
+import { useI18n } from '../i18n/useI18n';
+import { levelLabel } from './levelLabels';
 
 interface PrintablePuzzleProps {
   puzzleId: string;
@@ -16,16 +17,15 @@ export function PrintablePuzzle({
   givens,
   solution,
 }: PrintablePuzzleProps): JSX.Element {
+  const { t } = useI18n();
   return (
     <div className="print-area hidden print:block">
-      <h1 className="mb-1 text-2xl font-bold text-black">Sudoku — {LEVEL_LABELS[level]}</h1>
-      <p className="mb-6 text-sm text-black">
-        Màn số {puzzleNumber} · Mã: {puzzleId}
-      </p>
+      <h1 className="mb-1 text-2xl font-bold text-black">{t('print.title', { level: levelLabel(level, t) })}</h1>
+      <p className="mb-6 text-sm text-black">{t('print.meta', { n: puzzleNumber, id: puzzleId })}</p>
       <PrintGrid cells={givens} />
       {solution && (
         <div className="mt-10" style={{ pageBreakBefore: 'always' }}>
-          <h2 className="mb-4 mt-8 text-lg font-semibold text-black">Đáp án — {puzzleId}</h2>
+          <h2 className="mb-4 mt-8 text-lg font-semibold text-black">{t('print.solution', { id: puzzleId })}</h2>
           <PrintGrid cells={solution} compact />
         </div>
       )}

@@ -1,5 +1,6 @@
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { useI18n } from '../i18n/useI18n';
 import { clearAllProgress } from '../storage/schema';
 
 interface ErrorBoundaryProps {
@@ -17,8 +18,9 @@ function reloadAtHome(): void {
 }
 
 function ErrorFallback(): JSX.Element {
+  const { t } = useI18n();
   function handleClear(): void {
-    if (window.confirm('Xóa toàn bộ tiến độ, sao, thống kê và chuỗi ngày? Hành động này không thể hoàn tác.')) {
+    if (window.confirm(t('confirm.clearAll'))) {
       clearAllProgress();
       reloadAtHome();
     }
@@ -26,18 +28,15 @@ function ErrorFallback(): JSX.Element {
 
   return (
     <main role="alert" className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-3xl font-black">Có lỗi xảy ra</h1>
-      <p className="text-base font-bold text-accent">
-        Ứng dụng gặp sự cố ngoài dự kiến. Hãy thử tải lại. Nếu lỗi cứ lặp lại, dữ liệu đã lưu có thể bị hỏng, khi đó bạn có thể xóa
-        dữ liệu để bắt đầu lại.
-      </p>
+      <h1 className="text-3xl font-black">{t('error.title')}</h1>
+      <p className="text-base font-bold text-accent">{t('error.body')}</p>
       <button type="button" onClick={reloadAtHome} className="btn btn-primary min-h-14 w-full text-lg">
         <RotateCcw size={20} strokeWidth={3} aria-hidden="true" />
-        Tải lại
+        {t('error.reload')}
       </button>
       <button type="button" onClick={handleClear} className="btn btn-soft w-full text-rose-600 dark:text-rose-300">
         <Trash2 size={20} strokeWidth={2.75} aria-hidden="true" />
-        Xóa dữ liệu và tải lại
+        {t('error.clearReload')}
       </button>
     </main>
   );

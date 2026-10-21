@@ -1,6 +1,8 @@
 import { Lock } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
-import { evaluateAchievements } from '../game/achievements';
+import { achievementText, evaluateAchievements } from '../game/achievements';
+import { formatDate } from '../i18n/format';
+import { useI18n } from '../i18n/useI18n';
 import { loadWeekly, type DailyState, type Stats } from '../storage/schema';
 import { AchievementIcon } from './AchievementIcon';
 import { PlayerCard } from './PlayerCard';
@@ -14,12 +16,8 @@ interface AchievementsScreenProps {
   onBack: () => void;
 }
 
-function formatDate(ms: number): string {
-  const d = new Date(ms);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-}
-
 export function AchievementsScreen({ stats, daily, onBack }: AchievementsScreenProps): JSX.Element {
+  const { t, intlLocale } = useI18n();
   const { games } = useSavedProgress();
   const { unlocked, check } = useAchievements();
 
@@ -40,17 +38,18 @@ export function AchievementsScreen({ stats, daily, onBack }: AchievementsScreenP
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 pb-8 pt-5">
       <ScreenHeader
-        title="Thành tựu"
+        title={t('achievements.title')}
         onBack={onBack}
         right={<span className="text-lg font-black tabular-nums text-accent">{earned.length}/{rows.length}</span>}
       />
       <PlayerCard games={games} className="animate-screen-in" />
 
       {earned.length > 0 && (
-        <section aria-label="Đã mở khoá" className="flex flex-col gap-3">
-          <h2 className="text-xl font-black">Đã mở khoá</h2>
+        <section aria-label={t('achievements.unlocked')} className="flex flex-col gap-3">
+          <h2 className="text-xl font-black">{t('achievements.unlocked')}</h2>
           {earned.map(({ def }, i) => {
             const at = unlocked[def.id];
+            const text = achievementText(def.id, t);
             return (
               <div
                 key={def.id}
@@ -61,30 +60,34 @@ export function AchievementsScreen({ stats, daily, onBack }: AchievementsScreenP
                   <AchievementIcon name={def.icon} size={26} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-base font-black leading-tight">{def.title}</span>
-                  <span className="block text-sm font-bold leading-snug text-accent">{def.description}</span>
+                  <span className="block text-base font-black leading-tight">{text.title}</span>
+                  <span className="block text-sm font-bold leading-snug text-accent">{text.description}</span>
                 </span>
-                {at !== undefined && <span className="shrink-0 text-xs font-extrabold tabular-nums text-accent">{formatDate(at)}</span>}
+                {at !== undefined && (
+                  <span className="shrink-0 text-xs font-extrabold tabular-nums text-accent">{formatDate(at, intlLocale)}</span>
+                )}
               </div>
             );
           })}
         </section>
       )}
 
-      <section aria-label="Chưa mở khoá" className="flex flex-col gap-3">
-        <h2 className="text-xl font-black">Chưa mở khoá</h2>
-        {locked.length === 0 && <p className="text-base font-bold text-accent">Bạn đã mở khoá tất cả. Tuyệt vời!</p>}
-        {locked.map(({ def, value }) => (
+      <section aria-label={t('achievements.locked')} className="flex flex-col gap-3">
+        <h2 className="text-xl font-black">{t('achievements.locked')}</h2>
+        {locked.length === 0 && <p className="text-base font-bold text-accent">{t('achievements.allDone')}</p>}
+        {locked.map(({ def, value }) => {
+          const text = achievementText(def.id, t);
+          return (
           <div key={def.id} className="card flex items-center gap-4 p-4 opacity-90">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-soft text-accent">
               <Lock size={22} strokeWidth={2.75} aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-base font-black leading-tight">{def.title}</span>
-              <span className="block text-sm font-bold leading-snug text-accent">{def.description}</span>
+              <span className="block text-base font-black leading-tight">{text.title}</span>
+              <span className="block text-sm font-bold leading-snug text-accent">{text.description}</span>
               {def.target > 1 && (
                 <span className="mt-2 flex items-center gap-2">
-                  <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-soft" role="img" aria-label={`${value} trên ${def.target}`}>
+                  <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-soft" role="img" aria-label={t('achievements.progressAria', { value, target: def.target })}>
                     <span
                       className="block h-full rounded-full bg-primary-light"
                       style={{ width: value > 0 ? `max(${(value / def.target) * 100}%, 0.5rem)` : 0 }}
@@ -97,7 +100,8 @@ export function AchievementsScreen({ stats, daily, onBack }: AchievementsScreenP
               )}
             </span>
           </div>
-        ))}
+          );
+        })}
       </section>
     </main>
   );

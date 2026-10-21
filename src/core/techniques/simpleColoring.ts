@@ -1,6 +1,6 @@
 import { PEERS, UNITS } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCell, describeCells } from './helpers';
+import { cellRef, cellRefs } from './helpers';
 
 export const simpleColoring: Technique = {
   name: 'simple-coloring',
@@ -59,9 +59,10 @@ export const simpleColoring: Technique = {
                 placements: [],
                 eliminations: elimCells.map((idx) => ({ idx, digit: d })),
                 cells: component,
-                explain: `Xích tô màu cho số ${d}: hai ô cùng màu ${describeCell(ci)} và ${describeCell(
-                  cj,
-                )} nhìn thấy nhau nên màu đó sai, loại số ${d} khỏi ${describeCells(elimCells)}.`,
+                explain: {
+                  code: 'coloring-clash',
+                  args: { digit: d, cellA: cellRef(ci), cellB: cellRef(cj), targets: cellRefs(elimCells) },
+                },
               };
             }
           }
@@ -80,9 +81,7 @@ export const simpleColoring: Technique = {
               placements: [],
               eliminations: [{ idx: i, digit: d }],
               cells: [...component, i],
-              explain: `Xích tô màu cho số ${d}: ô ${describeCell(
-                i,
-              )} nhìn thấy cả hai màu của xích, nên số ${d} bị loại khỏi ô đó.`,
+              explain: { code: 'coloring-both', args: { digit: d, cell: cellRef(i) } },
             };
           }
         }

@@ -1,6 +1,6 @@
 import { UNITS, bitToDigit } from '../board';
 import type { Technique } from '../types';
-import { describeUnit } from './helpers';
+import { unitRef } from './helpers';
 
 function digitBitOf(v: number): number {
   return 1 << (v - 1);
@@ -33,14 +33,10 @@ export const fullHouse: Technique = {
           placements: [{ idx: emptyIdx, digit }],
           eliminations: [],
           cells: [emptyIdx],
-          explain: `${capitalize(describeUnit(unit))} chỉ còn đúng 1 ô trống, nên ô đó phải là số ${digit}.`,
+          explain: { code: 'full-house', args: { unit: unitRef(unit), digit } },
         };
       }
     }
     return null;
   },
 };
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}

@@ -1,5 +1,6 @@
 import { LEVELS } from '../core/levels';
 import type { Level } from '../core/types';
+import type { MessageKey, Translate } from '../i18n';
 import type { DailyState, GameMode, SavedGame, Stats } from '../storage/schema';
 import { summarizeByLevel } from './progress';
 
@@ -16,9 +17,8 @@ export interface AchievementContext {
 export type AchievementIcon = 'trophy' | 'flame' | 'zap' | 'star' | 'target' | 'crown' | 'medal' | 'calendar';
 
 export interface AchievementDef {
+  /** Its name and description are in the catalogs, as `ach.<id>.title` and `ach.<id>.desc`. */
   id: string;
-  title: string;
-  description: string;
   icon: AchievementIcon;
   /** `progress(ctx) >= target` unlocks it. */
   target: number;
@@ -57,36 +57,41 @@ const solvedUnder =
 const weeks = (ctx: AchievementContext): number => ctx.weeklyDone;
 
 export const ACHIEVEMENTS: readonly AchievementDef[] = [
-  { id: 'solved-1', title: 'Bước đầu tiên', description: 'Giải xong màn đầu tiên', icon: 'medal', target: 1, progress: solved },
-  { id: 'solved-10', title: 'Khởi động', description: 'Giải 10 màn', icon: 'medal', target: 10, progress: solved },
-  { id: 'solved-50', title: 'Nghiện Sudoku', description: 'Giải 50 màn', icon: 'trophy', target: 50, progress: solved },
-  { id: 'solved-100', title: 'Trăm trận trăm thắng', description: 'Giải 100 màn', icon: 'crown', target: 100, progress: solved },
+  { id: 'solved-1', icon: 'medal', target: 1, progress: solved },
+  { id: 'solved-10', icon: 'medal', target: 10, progress: solved },
+  { id: 'solved-50', icon: 'trophy', target: 50, progress: solved },
+  { id: 'solved-100', icon: 'crown', target: 100, progress: solved },
 
-  { id: 'flawless-1', title: 'Không tì vết', description: 'Giải một màn không sai và không dùng gợi ý', icon: 'star', target: 1, progress: flawless },
-  { id: 'flawless-10', title: 'Chính xác', description: 'Giải 10 màn không sai, không gợi ý', icon: 'star', target: 10, progress: flawless },
-  { id: 'flawless-30', title: 'Bộ óc máy tính', description: 'Giải 30 màn không sai, không gợi ý', icon: 'crown', target: 30, progress: flawless },
+  { id: 'flawless-1', icon: 'star', target: 1, progress: flawless },
+  { id: 'flawless-10', icon: 'star', target: 10, progress: flawless },
+  { id: 'flawless-30', icon: 'crown', target: 30, progress: flawless },
 
-  { id: 'daily-1', title: 'Thử thách đầu tiên', description: 'Hoàn thành một thử thách hằng ngày', icon: 'calendar', target: 1, progress: longestStreak },
-  { id: 'streak-3', title: 'Ba ngày liền', description: 'Chuỗi thử thách 3 ngày', icon: 'flame', target: 3, progress: longestStreak },
-  { id: 'streak-7', title: 'Một tuần lửa', description: 'Chuỗi thử thách 7 ngày', icon: 'flame', target: 7, progress: longestStreak },
-  { id: 'streak-30', title: 'Thói quen thép', description: 'Chuỗi thử thách 30 ngày', icon: 'flame', target: 30, progress: longestStreak },
+  { id: 'daily-1', icon: 'calendar', target: 1, progress: longestStreak },
+  { id: 'streak-3', icon: 'flame', target: 3, progress: longestStreak },
+  { id: 'streak-7', icon: 'flame', target: 7, progress: longestStreak },
+  { id: 'streak-30', icon: 'flame', target: 30, progress: longestStreak },
 
-  { id: 'hard-1', title: 'Thử sức với khó', description: 'Giải một màn cấp Khó', icon: 'target', target: 1, progress: solvedAt('hard') },
-  { id: 'expert-1', title: 'Chuyên gia', description: 'Giải một màn cấp Chuyên gia', icon: 'target', target: 1, progress: solvedAt('expert') },
-  { id: 'expert-10', title: 'Bậc thầy suy luận', description: 'Giải 10 màn cấp Chuyên gia', icon: 'crown', target: 10, progress: solvedAt('expert') },
-  { id: 'all-levels', title: 'Đủ năm cấp', description: 'Giải ít nhất một màn ở mỗi cấp độ', icon: 'trophy', target: 5, progress: levelsTried },
+  { id: 'hard-1', icon: 'target', target: 1, progress: solvedAt('hard') },
+  { id: 'expert-1', icon: 'target', target: 1, progress: solvedAt('expert') },
+  { id: 'expert-10', icon: 'crown', target: 10, progress: solvedAt('expert') },
+  { id: 'all-levels', icon: 'trophy', target: 5, progress: levelsTried },
 
-  { id: 'time-1', title: 'Chạy nước rút', description: 'Thắng một màn Đua thời gian', icon: 'zap', target: 1, progress: solvedUnder('time') },
-  { id: 'perfect-1', title: 'Bất bại', description: 'Thắng một màn Không sai', icon: 'target', target: 1, progress: solvedUnder('perfect') },
-  { id: 'perfect-10', title: 'Tay không run', description: 'Thắng 10 màn Không sai', icon: 'crown', target: 10, progress: solvedUnder('perfect') },
-  { id: 'weekly-1', title: 'Chinh phục tuần', description: 'Hoàn thành chuỗi thử thách tuần', icon: 'calendar', target: 1, progress: weeks },
-  { id: 'weekly-4', title: 'Bốn tuần rực rỡ', description: 'Hoàn thành chuỗi thử thách tuần 4 lần', icon: 'trophy', target: 4, progress: weeks },
+  { id: 'time-1', icon: 'zap', target: 1, progress: solvedUnder('time') },
+  { id: 'perfect-1', icon: 'target', target: 1, progress: solvedUnder('perfect') },
+  { id: 'perfect-10', icon: 'crown', target: 10, progress: solvedUnder('perfect') },
+  { id: 'weekly-1', icon: 'calendar', target: 1, progress: weeks },
+  { id: 'weekly-4', icon: 'trophy', target: 4, progress: weeks },
 
-  { id: 'speed-easy', title: 'Nhanh như chớp', description: 'Giải một màn Dễ trong 4 phút', icon: 'zap', target: 1, progress: fasterThan('easy', 4 * MINUTE_MS) },
-  { id: 'speed-medium', title: 'Tay nhanh', description: 'Giải một màn Trung bình trong 6 phút', icon: 'zap', target: 1, progress: fasterThan('medium', 6 * MINUTE_MS) },
-  { id: 'speed-hard', title: 'Tốc độ ánh sáng', description: 'Giải một màn Khó trong 10 phút', icon: 'zap', target: 1, progress: fasterThan('hard', 10 * MINUTE_MS) },
-  { id: 'speed-expert', title: 'Siêu tốc', description: 'Giải một màn Chuyên gia trong 20 phút', icon: 'zap', target: 1, progress: fasterThan('expert', 20 * MINUTE_MS) },
+  { id: 'speed-easy', icon: 'zap', target: 1, progress: fasterThan('easy', 4 * MINUTE_MS) },
+  { id: 'speed-medium', icon: 'zap', target: 1, progress: fasterThan('medium', 6 * MINUTE_MS) },
+  { id: 'speed-hard', icon: 'zap', target: 1, progress: fasterThan('hard', 10 * MINUTE_MS) },
+  { id: 'speed-expert', icon: 'zap', target: 1, progress: fasterThan('expert', 20 * MINUTE_MS) },
 ];
+
+/** Player-facing name and description of an achievement, in the language `t` translates to. */
+export function achievementText(id: string, t: Translate): { title: string; description: string } {
+  return { title: t(`ach.${id}.title` as MessageKey), description: t(`ach.${id}.desc` as MessageKey) };
+}
 
 export interface AchievementStatus {
   def: AchievementDef;

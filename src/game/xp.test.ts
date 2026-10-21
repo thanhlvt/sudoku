@@ -61,9 +61,9 @@ describe('player level', () => {
   });
 
   it('gives a title that changes with the level', () => {
-    expect(playerLevel(0).title).toBe('Tân binh');
-    expect(playerLevel(xpToReach(5)).title).toBe('Người luyện trí');
-    expect(playerLevel(xpToReach(25)).title).toBe('Huyền thoại');
+    expect(playerLevel(0).titleKey).toBe('player.title.1');
+    expect(playerLevel(xpToReach(5)).titleKey).toBe('player.title.5');
+    expect(playerLevel(xpToReach(25)).titleKey).toBe('player.title.20');
   });
 });
 

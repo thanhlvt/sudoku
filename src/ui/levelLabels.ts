@@ -1,12 +1,18 @@
 import type { Level } from '../core/types';
+import type { MessageKey, Translate } from '../i18n';
 
-export const LEVEL_LABELS: Record<Level, string> = {
-  beginner: 'Mới bắt đầu',
-  easy: 'Dễ',
-  medium: 'Trung bình',
-  hard: 'Khó',
-  expert: 'Chuyên gia',
+const LEVEL_LABEL_KEYS: Record<Level, MessageKey> = {
+  beginner: 'level.beginner',
+  easy: 'level.easy',
+  medium: 'level.medium',
+  hard: 'level.hard',
+  expert: 'level.expert',
 };
+
+/** A difficulty's name in the language `t` translates to. */
+export function levelLabel(level: Level, t: Translate): string {
+  return t(LEVEL_LABEL_KEYS[level]);
+}
 
 export interface LevelTheme {
   /** 1–5, shown in the level badge. */

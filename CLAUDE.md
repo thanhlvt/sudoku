@@ -41,6 +41,7 @@ src/
   game/                 # state máy chơi + logic thuần của tầng game: nhập số, ghi chú, undo/redo, đồng hồ, lỗi,
                         #   thử thách ngày + chuỗi/đóng băng, chế độ thử thách (đua thời gian / không sai) + chuỗi tuần,
                         #   thành tựu, XP, lịch, bài học kỹ thuật, văn bản chia sẻ, kế hoạch nhắc nhở
+  i18n/                 # đa ngôn ngữ (vi, en): catalog messages/, t(), useI18n(), định dạng ngày; mặc định theo ngôn ngữ máy
   storage/              # localStorage adapter, schema versioning, migration, sao lưu/khôi phục (backup.ts)
   ui/                   # components React
   feedback.ts           # âm thanh (mp3 trong public/sounds/) + rung
@@ -105,6 +106,14 @@ Bảng cost chi tiết và định nghĩa từng kỹ thuật: `.claude/skills/s
 - `.claude/skills/puzzle-bank/` — format JSON, seed, CLI, mở rộng 20 → 100
 - `.claude/skills/local-storage/` — schema lưu tiến độ, versioning
 - `.claude/skills/game-ui/` — layout, tương tác, phím tắt, accessibility
+
+## Đa ngôn ngữ
+
+- Mọi chữ người chơi thấy nằm trong `src/i18n/messages/{vi,en}/*.ts`; **không viết chữ cứng trong component**. `vi` là catalog gốc (định nghĩa `MessageKey`),
+  `en` bị kiểu ép phải đủ khoá; `i18n.test.ts` kiểm cùng khoá + cùng placeholder.
+- Component dùng `const { t } = useI18n()`; code ngoài React nhận `t` qua tham số (`planReminders(state, t)`, `buildResultText(r, t, …)`). `src/core` **không chứa chữ nào**:
+  `Step.explain` là dữ liệu (`Explanation`), `game/explain.ts` mới dựng câu.
+- Ngôn ngữ mặc định = ngôn ngữ máy (`navigator.languages`; trên Android là ngôn ngữ hệ thống), ngôn ngữ không có bản dịch ⇒ English. Người chơi đổi được trong Cài đặt (`Settings.language`).
 
 ## Lộ trình
 

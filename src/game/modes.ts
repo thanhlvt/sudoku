@@ -1,4 +1,5 @@
 import type { Level } from '../core/types';
+import type { MessageKey } from '../i18n';
 import { GAME_MODES, type GameMode } from '../storage/schema';
 
 export { GAME_MODES };
@@ -27,14 +28,14 @@ export const TIME_LIMIT_MS: Record<Level, number> = {
 
 export interface ModeInfo {
   id: GameMode;
-  label: string;
-  /** One line for the modes screen. */
-  rule: string;
+  /** Catalog keys for the mode's name and its one-line rule on the modes screen. */
+  labelKey: MessageKey;
+  ruleKey: MessageKey;
 }
 
 export const MODE_INFO: Record<GameMode, ModeInfo> = {
-  time: { id: 'time', label: 'Đua thời gian', rule: 'Giải xong trước khi đồng hồ đếm ngược về 0.' },
-  perfect: { id: 'perfect', label: 'Không sai', rule: 'Chỉ cần điền sai một số là thua.' },
+  time: { id: 'time', labelKey: 'mode.time.label', ruleKey: 'mode.time.rule' },
+  perfect: { id: 'perfect', labelKey: 'mode.perfect.label', ruleKey: 'mode.perfect.rule' },
 };
 
 /** Extra experience for finishing a puzzle under a challenge mode. */

@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, type CSSProperties } from 'react';
+import { useI18n } from '../i18n/useI18n';
 
 export type HighlightState = 'hint' | 'selected' | 'same-value' | 'peer' | 'none';
 
@@ -27,6 +28,7 @@ const NOTE_DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const WAVE_STEP_MS = 45;
 
 function CellImpl({ idx, value, notes, isGiven, isWrong, highlight, waveDelay, onSelect }: CellProps): JSX.Element {
+  const { t } = useI18n();
   // Cells restored from a saved game mount already filled; only changes after mount should animate.
   const mounted = useRef(false);
   useEffect(() => {
@@ -38,8 +40,8 @@ function CellImpl({ idx, value, notes, isGiven, isWrong, highlight, waveDelay, o
   const col = (idx % 9) + 1;
   const label =
     value === 0
-      ? `Hàng ${row}, cột ${col}, trống`
-      : `Hàng ${row}, cột ${col}, số ${value}${isGiven ? ', cho sẵn' : isWrong ? ', sai' : ''}`;
+      ? t('board.cell.empty', { row, col })
+      : t(isGiven ? 'board.cell.given' : isWrong ? 'board.cell.wrong' : 'board.cell.filled', { row, col, value });
 
   const borderRight =
     col === 9 ? '' : col % 3 === 0 ? 'border-r-[3px] border-r-board-frame' : 'border-r border-r-board-line';

@@ -1,6 +1,6 @@
 import { BOXES } from '../board';
 import type { Technique } from '../types';
-import { describeCell, describeUnit, emptyCellsOf } from './helpers';
+import { cellRef, emptyCellsOf, unitRef } from './helpers';
 
 export const hiddenSingleBox: Technique = {
   name: 'hidden-single-box',
@@ -19,7 +19,7 @@ export const hiddenSingleBox: Technique = {
             placements: [{ idx, digit: d }],
             eliminations: [],
             cells: [idx],
-            explain: `Trong ${describeUnit(unit)}, số ${d} chỉ còn nằm được ở ô ${describeCell(idx)}.`,
+            explain: { code: 'hidden-single', args: { unit: unitRef(unit), digit: d, cell: cellRef(idx) } },
           };
         }
       }

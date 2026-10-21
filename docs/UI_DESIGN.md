@@ -298,7 +298,7 @@ Khối dưới giới hạn `max-h-[80dvh]` và cuộn được, phần trên (s
 
 ### 5.5 Bảng Cài đặt — `ui/SettingsSheet.tsx` (bottom sheet)
 
-7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối);
+7 công tắc (`role="switch"`): Báo số sai, Tô số giống nhau, Tô hàng/cột/ô, Tự xóa ghi chú, Âm thanh, Rung (chỉ hiện khi thiết bị rung được: `hapticsSupported`; bật lên thì phát thử một lần), **Nhắc làm thử thách** (chỉ hiện trên bản Android: `remindersSupported`; bật ⇒ xin quyền thông báo, bị từ chối thì công tắc không bật và hiện hướng dẫn; đang bật mà hệ thống chặn thì hiện dòng đỏ "Thông báo đang bị tắt…"); nhóm radio Giao diện (Theo máy/Sáng/Tối); nhóm radio **Ngôn ngữ** (Theo máy / Tiếng Việt / English — tên ngôn ngữ luôn viết bằng chính nó; đổi là đổi ngay toàn app, không cần tải lại);
 nhóm radio **Màu bàn cờ** (4 bảng, bảng chưa mở khoá bị `disabled` kèm ổ khoá + cấp cần); nhóm **Dữ liệu**: "Hướng dẫn chơi", "Sao lưu" (web: tải file `sudoku-backup-<ngày>.json`; Android: bảng chia sẻ), "Khôi phục" (chọn file, `confirm` rồi thay thế toàn bộ tiến độ và `reload`);
 nút "Xóa toàn bộ tiến độ" (có `confirm`, rồi `location.reload()`). Mở từ Home.
 

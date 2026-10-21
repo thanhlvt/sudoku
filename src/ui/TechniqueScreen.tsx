@@ -3,10 +3,12 @@ import { useMemo, type CSSProperties } from 'react';
 import { levelFromPuzzleId } from '../game/puzzleBank';
 import { indexPuzzles, masteredTechniques, practicePuzzles } from '../game/practice';
 import { findTechniqueExample } from '../game/techniqueExample';
+import { explainText } from '../game/explain';
 import { techniqueInfo } from '../game/techniqueInfo';
 import { ExampleBoard } from './ExampleBoard';
 import { ScreenHeader } from './ScreenHeader';
-import { LEVEL_LABELS } from './levelLabels';
+import { useI18n } from '../i18n/useI18n';
+import { levelLabel } from './levelLabels';
 import { useAllBanks } from './hooks/useAllBanks';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
@@ -21,7 +23,8 @@ const MAX_PRACTICE = 6;
 const EXAMPLE_ATTEMPTS = 4;
 
 export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps): JSX.Element {
-  const info = techniqueInfo(id);
+  const { t } = useI18n();
+  const info = techniqueInfo(id, t);
   const { banks, failed, retry } = useAllBanks();
   const { games, byId } = useSavedProgress();
 
@@ -40,8 +43,8 @@ export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps
   if (!info) {
     return (
       <main className="flex flex-1 flex-col gap-4 px-5 pt-5">
-        <ScreenHeader title="Kỹ thuật" onBack={onBack} />
-        <p className="text-base font-bold">Không tìm thấy kỹ thuật này.</p>
+        <ScreenHeader title={t('technique.title')} onBack={onBack} />
+        <p className="text-base font-bold">{t('technique.notFound')}</p>
       </main>
     );
   }
@@ -58,15 +61,15 @@ export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps
         {data?.mastered && (
           <span className="flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-sm font-extrabold text-white">
             <Check size={14} strokeWidth={4} aria-hidden="true" />
-            Đã thành thạo
+            {t('technique.masteredBadge')}
           </span>
         )}
       </div>
 
       <p className="text-lg font-extrabold leading-snug">{info.summary}</p>
 
-      <section className="card p-4" aria-label="Cách nhận biết">
-        <h2 className="mb-2 text-lg font-black">Cách nhận biết</h2>
+      <section className="card p-4" aria-label={t('technique.howToSpot')}>
+        <h2 className="mb-2 text-lg font-black">{t('technique.howToSpot')}</h2>
         <ol className="flex flex-col gap-2.5">
           {info.steps.map((step, i) => (
             <li key={i} className="flex items-start gap-3 text-base font-bold leading-snug">
@@ -83,31 +86,31 @@ export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps
         </p>
       </section>
 
-      <section aria-label="Ví dụ" className="flex flex-col gap-3">
-        <h2 className="text-lg font-black">Ví dụ thật</h2>
+      <section aria-label={t('technique.exampleAria')} className="flex flex-col gap-3">
+        <h2 className="text-lg font-black">{t('technique.example')}</h2>
         {failed && (
           <div role="alert" className="flex flex-col items-start gap-3">
-            <p className="text-base font-bold text-accent">Không tải được dữ liệu màn chơi.</p>
+            <p className="text-base font-bold text-accent">{t('common.dataLoadFailed')}</p>
             <button type="button" onClick={retry} className="btn btn-primary min-h-12 px-6">
-              Thử lại
+              {t('common.retry')}
             </button>
           </div>
         )}
-        {!banks && !failed && <p className="text-base font-bold text-accent">Đang tải...</p>}
+        {!banks && !failed && <p className="text-base font-bold text-accent">{t('common.loading')}</p>}
         {data && !data.example && (
-          <p className="text-base font-bold text-accent">Chưa có ví dụ cho kỹ thuật này trong ngân hàng màn chơi hiện tại.</p>
+          <p className="text-base font-bold text-accent">{t('technique.noExample')}</p>
         )}
         {data?.example && (
           <>
             <ExampleBoard example={data.example} />
-            <p className="text-base font-bold leading-snug">{data.example.step.explain}</p>
+            <p className="text-base font-bold leading-snug">{explainText(data.example.step.explain, t)}</p>
           </>
         )}
       </section>
 
       {data && data.practice.length > 0 && (
-        <section aria-label="Luyện tập" className="flex flex-col gap-3">
-          <h2 className="text-lg font-black">Luyện tập</h2>
+        <section aria-label={t('technique.practice')} className="flex flex-col gap-3">
+          <h2 className="text-lg font-black">{t('technique.practice')}</h2>
           <div className="grid grid-cols-2 gap-3">
             {list.map((p) => {
               const done = byId.get(p.id)?.status === 'completed';
@@ -116,12 +119,12 @@ export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps
                   key={p.id}
                   type="button"
                   onClick={() => onNavigate(`#/play/${p.id}`)}
-                  aria-label={`${LEVEL_LABELS[levelFromPuzzleId(p.id)]}, màn ${p.index + 1}${done ? ', đã xong' : ''}`}
+                  aria-label={t(done ? 'technique.puzzleDoneAria' : 'technique.puzzleAria', { level: levelLabel(levelFromPuzzleId(p.id), t), n: p.index + 1 })}
                   className={`btn min-h-14 flex-col !gap-0.5 !rounded-2xl text-base ${done ? '' : 'btn-white'}`}
                   style={done ? ({ '--btn-bg': '34 197 94', '--btn-edge': '21 128 61', '--btn-fg': '255 255 255' } as CSSProperties) : undefined}
                 >
-                  <span className="leading-none">Màn {p.index + 1}</span>
-                  <span className="text-xs font-extrabold leading-none opacity-80">{LEVEL_LABELS[levelFromPuzzleId(p.id)]}</span>
+                  <span className="leading-none">{t('common.puzzleNumber', { n: p.index + 1 })}</span>
+                  <span className="text-xs font-extrabold leading-none opacity-80">{levelLabel(levelFromPuzzleId(p.id), t)}</span>
                 </button>
               );
             })}
@@ -133,7 +136,7 @@ export function TechniqueScreen({ id, onNavigate, onBack }: TechniqueScreenProps
               className="btn btn-primary cta-ring cta-shine mt-1 min-h-16 w-full text-xl"
             >
               <Play size={22} strokeWidth={0} className="fill-white" aria-hidden="true" />
-              Luyện tập ngay
+              {t('technique.practiceNow')}
             </button>
           )}
         </section>

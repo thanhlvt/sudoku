@@ -3,9 +3,11 @@ import { useMemo } from 'react';
 import { LEVELS } from '../core/levels';
 import { summarizeByLevel } from '../game/progress';
 import type { Stats } from '../storage/schema';
+import { useI18n } from '../i18n/useI18n';
+import type { Translate } from '../i18n';
 import { ScreenHeader } from './ScreenHeader';
 import { formatTime } from './Timer';
-import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { LEVEL_THEME, levelLabel } from './levelLabels';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
 interface StatsScreenProps {
@@ -13,10 +15,10 @@ interface StatsScreenProps {
   onBack: () => void;
 }
 
-function formatDuration(ms: number): string {
+function formatDuration(ms: number, t: Translate): string {
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 60) return `${minutes} phút`;
-  return `${Math.floor(minutes / 60)}g ${minutes % 60}p`;
+  if (minutes < 60) return t('stats.minutes', { count: minutes });
+  return t('stats.hoursMinutes', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
 }
 
 interface Tile {
@@ -27,6 +29,7 @@ interface Tile {
 }
 
 export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
+  const { t } = useI18n();
   const { games } = useSavedProgress();
 
   const totals = useMemo(() => {
@@ -50,19 +53,19 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
   );
 
   const tiles: Tile[] = [
-    { icon: Check, chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', value: String(totals.solved), label: 'Màn đã giải' },
-    { icon: Star, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totalStars), label: 'Tổng số sao' },
-    { icon: Clock, chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', value: formatDuration(totals.timeMs), label: 'Thời gian chơi' },
-    { icon: Check, chip: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300', value: String(totals.flawless), label: 'Không sai, không gợi ý' },
-    { icon: X, chip: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300', value: String(totals.mistakes), label: 'Lần điền sai' },
-    { icon: Lightbulb, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totals.hints), label: 'Gợi ý đã dùng' },
+    { icon: Check, chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', value: String(totals.solved), label: t('stats.solved') },
+    { icon: Star, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totalStars), label: t('stats.stars') },
+    { icon: Clock, chip: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', value: formatDuration(totals.timeMs, t), label: t('stats.time') },
+    { icon: Check, chip: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300', value: String(totals.flawless), label: t('stats.flawless') },
+    { icon: X, chip: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300', value: String(totals.mistakes), label: t('stats.mistakes') },
+    { icon: Lightbulb, chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', value: String(totals.hints), label: t('stats.hints') },
   ];
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 pb-8 pt-5">
-      <ScreenHeader title="Thống kê" onBack={onBack} />
+      <ScreenHeader title={t('stats.title')} onBack={onBack} />
 
-      <section className="grid grid-cols-2 gap-3" aria-label="Tổng quan">
+      <section className="grid grid-cols-2 gap-3" aria-label={t('stats.overviewAria')}>
         {tiles.map(({ icon: Icon, chip, value, label }, i) => (
           <div key={label} className="card flex animate-screen-in items-center gap-3 p-3" style={{ animationDelay: `${i * 45}ms` }}>
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${chip}`}>
@@ -76,7 +79,7 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
         ))}
       </section>
 
-      <h2 className="mt-1 text-xl font-black">Theo cấp độ</h2>
+      <h2 className="mt-1 text-xl font-black">{t('stats.byLevel')}</h2>
       <ul className="flex flex-col gap-3">
         {LEVELS.map((level) => {
           const s = stats[level];
@@ -87,17 +90,17 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-2 text-lg font-black">
                   <span className={`h-3 w-3 rounded-full ${theme.bg}`} aria-hidden="true" />
-                  {LEVEL_LABELS[level]}
+                  {levelLabel(level, t)}
                 </span>
                 <span className="text-sm font-extrabold tabular-nums text-accent">
-                  {summary[level].completed} màn · {summary[level].stars} sao
+                  {t('stats.levelSummary', { solved: summary[level].completed, stars: summary[level].stars })}
                 </span>
               </div>
               <dl className="grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label: 'Nhanh nhất', value: s.bestMs === null ? '--:--' : formatTime(s.bestMs) },
-                  { label: 'Trung bình', value: avg === null ? '--:--' : formatTime(avg) },
-                  { label: 'Hoàn hảo', value: String(s.perfectRuns) },
+                  { label: t('stats.best'), value: s.bestMs === null ? '--:--' : formatTime(s.bestMs) },
+                  { label: t('stats.average'), value: avg === null ? '--:--' : formatTime(avg) },
+                  { label: t('stats.perfect'), value: String(s.perfectRuns) },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-xl bg-soft px-1 py-2">
                     <dd className="text-lg font-black leading-none tabular-nums">{value}</dd>
@@ -105,7 +108,7 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
                   </div>
                 ))}
               </dl>
-              <div className="h-2.5 overflow-hidden rounded-full bg-soft" role="img" aria-label={avg === null ? 'Chưa có dữ liệu thời gian' : `Thời gian trung bình ${formatTime(avg)}`}>
+              <div className="h-2.5 overflow-hidden rounded-full bg-soft" role="img" aria-label={avg === null ? t('stats.noTimeAria') : t('stats.avgAria', { time: formatTime(avg) })}>
                 <span
                   className={`block h-full rounded-full ${theme.bg}`}
                   style={{ width: avg === null ? 0 : `max(${(avg / slowestAvg) * 100}%, 0.5rem)` }}
@@ -116,7 +119,7 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps): JSX.Element {
         })}
       </ul>
       <p className="text-sm font-bold leading-snug text-accent">
-        Thanh dưới mỗi cấp so sánh thời gian trung bình giữa các cấp. Thời gian trung bình và số hoàn hảo tính cả những lần chơi lại.
+        {t('stats.note')}
       </p>
     </main>
   );

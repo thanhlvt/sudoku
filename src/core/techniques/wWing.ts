@@ -1,6 +1,6 @@
 import { PEERS, UNITS, candidateDigits, popcount } from '../board';
 import type { Step, Technique } from '../types';
-import { describeCell, describeCells } from './helpers';
+import { cellRef, cellRefs } from './helpers';
 
 export const wWing: Technique = {
   name: 'w-wing',
@@ -53,9 +53,16 @@ export const wWing: Technique = {
               placements: [],
               eliminations,
               cells: [A, B, ...eliminations.map((e) => e.idx)],
-              explain: `W-Wing giữa ${describeCell(A)} và ${describeCell(B)} (cùng {${xDigit},${yDigit}}), nối bởi liên kết mạnh trên số ${yDigit}: số ${xDigit} bị loại khỏi ${describeCells(
-                eliminations.map((e) => e.idx),
-              )}.`,
+              explain: {
+                code: 'w-wing',
+                args: {
+                  cellA: cellRef(A),
+                  cellB: cellRef(B),
+                  x: xDigit,
+                  y: yDigit,
+                  targets: cellRefs(eliminations.map((e) => e.idx)),
+                },
+              },
             };
           }
         }

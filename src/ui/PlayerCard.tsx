@@ -1,5 +1,6 @@
 import { useMemo, type CSSProperties } from 'react';
 import { playerLevel, totalXp } from '../game/xp';
+import { useI18n } from '../i18n/useI18n';
 import { loadWeekly, type SavedGame } from '../storage/schema';
 
 interface PlayerCardProps {
@@ -11,8 +12,10 @@ interface PlayerCardProps {
 
 /** The player's level, title and progress to the next level. Experience is derived from the saved games. */
 export function PlayerCard({ games, onClick, className = '', style }: PlayerCardProps): JSX.Element {
+  const { t } = useI18n();
   const xp = useMemo(() => totalXp(games, loadWeekly().done.length), [games]);
-  const { level, title, into, span } = playerLevel(xp);
+  const { level, titleKey, into, span } = playerLevel(xp);
+  const title = t(titleKey);
   const pct = (into / span) * 100;
 
   const body = (
@@ -21,7 +24,7 @@ export function PlayerCard({ games, onClick, className = '', style }: PlayerCard
         className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary text-white shadow-[0_4px_0_0_#5B21B6]"
         aria-hidden="true"
       >
-        <span className="text-[0.6rem] font-black uppercase leading-none tracking-wider text-white/80">Cấp</span>
+        <span className="text-[0.6rem] font-black uppercase leading-none tracking-wider text-white/80">{t('player.levelShort')}</span>
         <span className="text-2xl font-black leading-none">{level}</span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-2">
@@ -31,7 +34,7 @@ export function PlayerCard({ games, onClick, className = '', style }: PlayerCard
             {into}/{span} XP
           </span>
         </span>
-        <span className="h-3 overflow-hidden rounded-full bg-soft" role="img" aria-label={`Cấp ${level}, ${into} trên ${span} kinh nghiệm`}>
+        <span className="h-3 overflow-hidden rounded-full bg-soft" role="img" aria-label={t('player.xpAria', { level, into, span })}>
           <span
             className="block h-full animate-bar-grow rounded-full bg-primary-light"
             style={{ width: into > 0 ? `max(${pct}%, 0.75rem)` : 0 }}

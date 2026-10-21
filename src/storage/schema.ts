@@ -1,5 +1,6 @@
 import { LEVELS, isPuzzleId } from '../core/levels';
 import type { Level } from '../core/types';
+import { isLanguagePreference, type LanguagePreference } from '../i18n/locales';
 import { listKeysWithPrefix, readJSON, removeAllWithPrefix, removeKey, writeJSON } from './storage';
 
 export const SCHEMA_VERSION = 1;
@@ -55,6 +56,8 @@ export interface Settings {
   reminderEnabled: boolean;
   /** The how-to-play intro has been shown (or the player already has progress and does not need it). */
   seenIntro: boolean;
+  /** Display language: follow the device (`auto`) or a fixed one. */
+  language: LanguagePreference;
 }
 
 export const PALETTE_IDS = ['violet', 'ocean', 'forest', 'sunset'] as const;
@@ -71,6 +74,7 @@ export const DEFAULT_SETTINGS: Settings = {
   boardPalette: 'violet',
   reminderEnabled: true,
   seenIntro: false,
+  language: 'auto',
 };
 
 export interface LevelStats {
@@ -171,6 +175,7 @@ export function parseSettings(v: unknown): Settings | null {
   }
   if (THEMES.includes(v.theme as Settings['theme'])) settings.theme = v.theme as Settings['theme'];
   if (PALETTE_IDS.includes(v.boardPalette as PaletteId)) settings.boardPalette = v.boardPalette as PaletteId;
+  if (isLanguagePreference(v.language)) settings.language = v.language;
   return settings;
 }
 

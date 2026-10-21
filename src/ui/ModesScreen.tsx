@@ -7,9 +7,11 @@ import { pickFreshIndex } from '../game/progress';
 import { puzzleIdOf } from '../game/puzzleBank';
 import { WEEKLY_BONUS_XP, weekEndKey, weeklyProgress, type WeeklyWeek } from '../game/weekly';
 import { loadWeekly, type GameMode } from '../storage/schema';
+import { formatDayMonth } from '../i18n/format';
+import { useI18n } from '../i18n/useI18n';
 import { ScreenHeader } from './ScreenHeader';
 import { formatTime } from './Timer';
-import { LEVEL_LABELS, LEVEL_THEME } from './levelLabels';
+import { LEVEL_THEME, levelLabel } from './levelLabels';
 import { useSavedProgress } from './hooks/useSavedProgress';
 
 interface ModesScreenProps {
@@ -19,13 +21,10 @@ interface ModesScreenProps {
   onBack: () => void;
 }
 
-function dayMonth(key: string): string {
-  return `${Number(key.slice(8))}/${Number(key.slice(5, 7))}`;
-}
-
 const DONE_STYLE = { '--btn-bg': '34 197 94', '--btn-edge': '21 128 61', '--btn-fg': '255 255 255' } as CSSProperties;
 
 export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScreenProps): JSX.Element {
+  const { t, intlLocale } = useI18n();
   const { games, byId } = useSavedProgress();
   const [message, setMessage] = useState<string | null>(null);
 
@@ -46,7 +45,7 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
   function start(mode: GameMode, level: Level): void {
     const fresh = pickFreshIndex(level, counts.get(level) ?? 0, byId);
     if (fresh === null) {
-      setMessage(`Bạn đã chơi hết các màn cấp ${LEVEL_LABELS[level]}. Hãy thử cấp khác.`);
+      setMessage(t('modes.exhausted', { level: levelLabel(level, t) }));
       return;
     }
     setMessage(null);
@@ -60,20 +59,27 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
 
   return (
     <main className="flex flex-1 flex-col gap-4 px-5 pb-8 pt-5">
-      <ScreenHeader title="Chế độ thử thách" onBack={onBack} />
+      <ScreenHeader title={t('modes.title')} onBack={onBack} />
 
-      <section className="card flex animate-screen-in flex-col gap-4 p-4" aria-label="Chuỗi thử thách tuần">
+      <section className="card flex animate-screen-in flex-col gap-4 p-4" aria-label={t('modes.weekly.title')}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-black">Chuỗi thử thách tuần</h2>
+            <h2 className="text-xl font-black">{t('modes.weekly.title')}</h2>
             <p className="text-sm font-bold text-accent">
-              {weekly ? `Tuần ${dayMonth(weekly.key)} – ${dayMonth(weekEndKey(weekly.key))}` : 'Đang tải...'} · năm màn, tăng dần độ khó
+              {t('modes.weekly.subtitle', {
+                range: weekly
+                  ? t('modes.weekly.range', {
+                      from: formatDayMonth(weekly.key, intlLocale),
+                      to: formatDayMonth(weekEndKey(weekly.key), intlLocale),
+                    })
+                  : t('common.loading'),
+              })}
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-sm font-black tabular-nums text-white">{doneCount}/5</span>
         </div>
 
-        <ol className="grid grid-cols-5 gap-2" aria-label="Các màn trong tuần">
+        <ol className="grid grid-cols-5 gap-2" aria-label={t('modes.weekly.stepsAria')}>
           {(steps ?? Array.from({ length: 5 }, () => null)).map((step, i) => {
             if (!step) return <li key={i} className="aspect-square animate-pulse rounded-2xl bg-soft" aria-hidden="true" />;
             const theme = LEVEL_THEME[step.level];
@@ -82,7 +88,11 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
                 <button
                   type="button"
                   onClick={() => onNavigate(`#/play/${step.id}`)}
-                  aria-label={`Bước ${i + 1}, ${LEVEL_LABELS[step.level]}, ${step.done ? 'đã xong' : 'chưa làm'}`}
+                  aria-label={t('modes.weekly.stepAria', {
+                    n: i + 1,
+                    level: levelLabel(step.level, t),
+                    state: t(step.done ? 'common.done' : 'common.notDone'),
+                  })}
                   className={`btn aspect-square w-full flex-col !gap-1 !rounded-2xl !px-0 text-lg ${step.done ? '' : 'btn-white'}`}
                   style={step.done ? DONE_STYLE : undefined}
                 >
@@ -97,7 +107,7 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
         {weekFinished ? (
           <p className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-100 px-3 py-3 text-base font-extrabold text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
             <Check size={20} strokeWidth={4} aria-hidden="true" />
-            Bạn đã hoàn thành tuần này
+            {t('modes.weekly.finished')}
           </p>
         ) : (
           <button
@@ -107,11 +117,11 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
             className="btn btn-primary cta-ring min-h-14 w-full text-lg"
           >
             <Play size={20} strokeWidth={0} className="fill-white" aria-hidden="true" />
-            {doneCount === 0 ? 'Bắt đầu chuỗi tuần' : 'Làm màn tiếp theo'}
+            {doneCount === 0 ? t('modes.weekly.start') : t('modes.weekly.next')}
           </button>
         )}
         <p className="text-sm font-bold leading-snug text-accent">
-          Giải đủ cả năm màn trong tuần (tính từ thứ Hai) để nhận thêm {WEEKLY_BONUS_XP} XP. Bạn đã hoàn thành {weeksFinished} tuần.
+          {t('modes.weekly.info', { xp: WEEKLY_BONUS_XP, count: weeksFinished })}
         </p>
       </section>
 
@@ -120,21 +130,21 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
           key={mode}
           className="card flex animate-screen-in flex-col gap-3 p-4"
           style={{ animationDelay: `${(n + 1) * 70}ms` }}
-          aria-label={MODE_INFO[mode].label}
+          aria-label={t(MODE_INFO[mode].labelKey)}
         >
           <div className="flex items-start gap-3">
             <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${chip}`}>
               <Icon size={24} strokeWidth={2.75} aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-black leading-tight">{MODE_INFO[mode].label}</h2>
+              <h2 className="text-xl font-black leading-tight">{t(MODE_INFO[mode].labelKey)}</h2>
               <p className="text-sm font-bold leading-snug text-accent">
-                {MODE_INFO[mode].rule} Thưởng thêm {Math.round((MODE_XP_MULTIPLIER - 1) * 100)}% XP.
+                {t('modes.rule', { rule: t(MODE_INFO[mode].ruleKey), percent: Math.round((MODE_XP_MULTIPLIER - 1) * 100) })}
               </p>
             </div>
-            <span className="shrink-0 text-sm font-extrabold tabular-nums text-accent">Thắng {wins(mode)}</span>
+            <span className="shrink-0 text-sm font-extrabold tabular-nums text-accent">{t('modes.wins', { count: wins(mode) })}</span>
           </div>
-          <div className="grid grid-cols-5 gap-2" role="group" aria-label={`Chọn cấp cho ${MODE_INFO[mode].label}`}>
+          <div className="grid grid-cols-5 gap-2" role="group" aria-label={t('modes.pickLevelAria', { mode: t(MODE_INFO[mode].labelKey) })}>
             {LEVELS.map((level) => {
               const theme = LEVEL_THEME[level];
               return (
@@ -143,15 +153,21 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
                   type="button"
                   disabled={!manifest}
                   onClick={() => start(mode, level)}
-                  aria-label={`${MODE_INFO[mode].label}, cấp ${LEVEL_LABELS[level]}${
-                    mode === 'time' ? `, ${formatTime(TIME_LIMIT_MS[level])}` : ''
-                  }`}
+                  aria-label={
+                    mode === 'time'
+                      ? t('modes.startTimedAria', {
+                          mode: t(MODE_INFO[mode].labelKey),
+                          level: levelLabel(level, t),
+                          time: formatTime(TIME_LIMIT_MS[level]),
+                        })
+                      : t('modes.startAria', { mode: t(MODE_INFO[mode].labelKey), level: levelLabel(level, t) })
+                  }
                   className="btn min-h-[4.25rem] flex-col !gap-1 !rounded-2xl !px-0 text-white"
                   style={{ '--btn-bg': theme.rgb, '--btn-edge': theme.edgeRgb, '--btn-fg': '255 255 255' } as CSSProperties}
                 >
                   <span className="text-xl leading-none">{theme.n}</span>
                   <span className="text-[0.7rem] font-extrabold leading-none opacity-90">
-                    {mode === 'time' ? formatTime(TIME_LIMIT_MS[level]) : 'Chơi'}
+                    {mode === 'time' ? formatTime(TIME_LIMIT_MS[level]) : t('common.play')}
                   </span>
                 </button>
               );
@@ -166,7 +182,7 @@ export function ModesScreen({ manifest, weekly, onNavigate, onBack }: ModesScree
         </p>
       )}
       <p className="text-center text-sm font-bold leading-snug text-accent">
-        Mỗi lượt mở một màn bạn chưa chơi. Cấp 1 Mới bắt đầu · 2 Dễ · 3 Trung bình · 4 Khó · 5 Chuyên gia.
+        {t('modes.footer', { levels: LEVELS.map((level) => `${LEVEL_THEME[level].n} ${levelLabel(level, t)}`).join(' · ') })}
       </p>
     </main>
   );

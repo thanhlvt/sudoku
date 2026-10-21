@@ -1,4 +1,4 @@
-import { ChevronLeft, Hourglass, Lightbulb, Link2, Pause, Play, Printer, RotateCcw, Target } from 'lucide-react';
+import { ChevronLeft, Hourglass, Lightbulb, Share2, Pause, Play, Printer, RotateCcw, Target } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PuzzleRecord, Step } from '../core/types';
 import { completeDaily } from '../game/daily';
@@ -15,7 +15,8 @@ import { playerLevel, totalXp, xpForSolve } from '../game/xp';
 import { formatDayMonth } from '../i18n/format';
 import { useI18n } from '../i18n/useI18n';
 import { isNative } from '../native';
-import { puzzleUrl, shareContent } from '../share';
+import { puzzleUrl, shareContent, shareFile } from '../share';
+import { renderPuzzleImage, renderResultImage } from '../shareImage';
 import { listGames, loadWeekly, saveWeekly, type DailyState, type GameMode, type Settings, type Stats } from '../storage/schema';
 import { Board } from './Board';
 import { CompletionScreen, type CompletionReward } from './CompletionScreen';
@@ -386,39 +387,63 @@ export function PlaySession({
   const hasNext = number < levelCount;
 
   const handleShareResult = useCallback(async () => {
-    const text = buildResultText(
-      {
-        levelLabel: levelLabel(level, t),
-        puzzleNumber: number,
-        stars: starsFor(session.mistakes),
-        elapsedMs: session.elapsedMs,
-        mistakes: session.mistakes,
-        hintsUsed: session.hintsUsed,
-        daily: puzzle.id === dailyId ? { date: today, streak: daily.streak } : undefined,
-        url: puzzleUrl(puzzle.id),
-      },
-      t,
-      (key) => formatDayMonth(key, intlLocale),
-    );
-    const outcome = await shareContent({ title: t('play.shareTitle'), text });
-    setShareNote(outcome === 'copied' ? t('play.copiedResult') : outcome === 'failed' ? t('play.shareFailed') : null);
-  }, [level, number, session, puzzle.id, dailyId, today, daily.streak, t, intlLocale]);
+    const result = {
+      levelLabel: levelLabel(level, t),
+      puzzleNumber: number,
+      stars: starsFor(session.mistakes),
+      elapsedMs: session.elapsedMs,
+      mistakes: session.mistakes,
+      hintsUsed: session.hintsUsed,
+      daily: puzzle.id === dailyId ? { date: today, streak: daily.streak } : undefined,
+    };
+    const formatDay = (key: string): string => formatDayMonth(key, intlLocale);
+    const url = puzzleUrl(puzzle.id);
+    let image: Blob;
+    try {
+      image = await renderResultImage({ ...result, givens: puzzle.puzzle, solution: puzzle.solution }, t, formatDay);
+    } catch {
+      // No canvas (very old WebView): share the result as text rather than not at all.
+      const text = buildResultText({ ...result, url }, t, formatDay);
+      const outcome = await shareContent({ title: t('play.shareTitle'), text });
+      setShareNote(outcome === 'copied' ? t('play.copiedResult') : outcome === 'failed' ? t('play.shareFailed') : null);
+      return;
+    }
+    const outcome = await shareFile({
+      title: t('play.shareTitle'),
+      filename: `sudoku-${puzzle.id}.png`,
+      blob: image,
+      text: url ?? undefined,
+    });
+    setShareNote(outcome === 'downloaded' ? t('play.savedImage') : outcome === 'failed' ? t('play.shareFailed') : null);
+  }, [level, number, session, puzzle.id, puzzle.puzzle, puzzle.solution, dailyId, today, daily.streak, t, intlLocale]);
 
   const handleSharePuzzle = useCallback(async () => {
-    const outcome = await shareContent({
+    const url = puzzleUrl(puzzle.id);
+    const invite = t('play.shareInvite', { level: levelLabel(level, t), n: number });
+    let image: Blob;
+    try {
+      image = await renderPuzzleImage({ levelLabel: levelLabel(level, t), puzzleNumber: number, givens: puzzle.puzzle }, t);
+    } catch {
+      // No canvas (very old WebView): fall back to the link.
+      const outcome = await shareContent({ title: t('play.shareTitle'), text: invite, url });
+      setShareNote(outcome === 'copied' ? t('play.copiedLink') : outcome === 'failed' ? t('play.shareFailed') : null);
+      return;
+    }
+    const outcome = await shareFile({
       title: t('play.shareTitle'),
-      text: t('play.shareInvite', { level: levelLabel(level, t), n: number }),
-      url: puzzleUrl(puzzle.id),
+      filename: `sudoku-${puzzle.id}-puzzle.png`,
+      blob: image,
+      text: url ? `${invite}
+${url}` : invite,
     });
-    setShareNote(outcome === 'copied' ? t('play.copiedLink') : outcome === 'failed' ? t('play.shareFailed') : null);
-  }, [level, number, puzzle.id, t]);
+    setShareNote(outcome === 'downloaded' ? t('play.savedImage') : outcome === 'failed' ? t('play.shareFailed') : null);
+  }, [level, number, puzzle.id, puzzle.puzzle, t]);
 
   const hardest = (puzzle.rating as { hardest?: unknown } | undefined)?.hardest;
   const technique =
     isTechniqueId(hardest)
       ? { label: techniqueLabel(hardest, t), onLearn: () => onNavigate(`#/learn/${hardest}`) }
       : null;
-  const canSharePuzzle = !isNative || puzzleUrl(puzzle.id) !== null;
 
   const goBack = (): void => (session.mode ? onNavigate('#/modes', true) : onBack());
 
@@ -555,12 +580,10 @@ export function PlaySession({
               <RotateCcw size={18} strokeWidth={3} aria-hidden="true" />
               {t('play.reset')}
             </button>
-            {canSharePuzzle && (
-              <button type="button" onClick={() => void handleSharePuzzle()} className="btn btn-soft min-h-12 w-full max-w-xs">
-                <Link2 size={18} strokeWidth={3} aria-hidden="true" />
-                {t('play.sharePuzzle')}
-              </button>
-            )}
+            <button type="button" onClick={() => void handleSharePuzzle()} className="btn btn-soft min-h-12 w-full max-w-xs">
+              <Share2 size={18} strokeWidth={3} aria-hidden="true" />
+              {t('play.sharePuzzle')}
+            </button>
             {!isNative && (
               <button type="button" onClick={() => window.print()} className="btn btn-soft min-h-12 w-full max-w-xs">
                 <Printer size={18} strokeWidth={3} aria-hidden="true" />

@@ -34,7 +34,7 @@ export const enSettings: Record<keyof typeof viSettings, Message> = {
   'settings.restore': 'Restore',
   'settings.pickFile': 'Choose a backup file',
   'settings.backupTitle': 'Sudoku backup',
-  'settings.backupShared': 'The share sheet is open. Save the content somewhere you’ll find it.',
+  'settings.backupShared': 'The share sheet is open. Save the backup file somewhere you’ll find it (Drive, Files...).',
   'settings.backupFailed': 'Couldn’t create the backup.',
   'settings.backupDownloaded': 'Backup file downloaded.',
   'settings.fileTooLarge': 'That file is too large to be a Sudoku backup.',

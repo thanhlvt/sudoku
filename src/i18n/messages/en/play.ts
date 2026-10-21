@@ -39,6 +39,7 @@ export const enPlay: Record<keyof typeof viPlay, Message> = {
   'play.nextWeekly': 'Next weekly puzzle',
   'play.shareTitle': 'Sudoku',
   'play.shareInvite': 'Try {level} puzzle {n} on Sudoku!',
+  'play.savedImage': 'Result image saved',
   'play.copiedResult': 'Result copied',
   'play.copiedLink': 'Link copied',
   'play.shareFailed': 'Couldn’t share',

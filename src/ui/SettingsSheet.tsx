@@ -7,7 +7,7 @@ import { LANGUAGE_PREFERENCES, LOCALE_NAMES, type MessageKey } from '../i18n';
 import { formatDate } from '../i18n/format';
 import { useI18n } from '../i18n/useI18n';
 import { isNative } from '../native';
-import { downloadTextFile, shareContent } from '../share';
+import { downloadBlob, shareFile } from '../share';
 import { applyBackup, createBackup, parseBackup } from '../storage/backup';
 import { clearAllProgress, type Settings } from '../storage/schema';
 import { Sheet } from './Sheet';
@@ -110,17 +110,17 @@ export function SettingsSheet({ settings, onChange, onClose, playerLevel, onShow
   }
 
   async function handleBackup(): Promise<void> {
-    const text = createBackup(Date.now());
+    const blob = new Blob([createBackup(Date.now())], { type: 'application/json' });
+    const filename = `sudoku-backup-${new Date().toISOString().slice(0, 10)}.json`;
     if (isNative) {
-      // No file system access in the WebView: hand the text to the share sheet (Drive, e-mail, notes...).
-      const outcome = await shareContent({ title: t('settings.backupTitle'), text });
+      // No downloads folder in the WebView: hand the file to the share sheet (Drive, Files, e-mail...).
+      const outcome = await shareFile({ title: t('settings.backupTitle'), filename, blob });
       setMessage(
         outcome === 'shared' ? t('settings.backupShared') : outcome === 'cancelled' ? null : t('settings.backupFailed'),
       );
       return;
     }
-    const stamp = new Date().toISOString().slice(0, 10);
-    setMessage(downloadTextFile(`sudoku-backup-${stamp}.json`, text) ? t('settings.backupDownloaded') : t('settings.backupFailed'));
+    setMessage(downloadBlob(filename, blob) ? t('settings.backupDownloaded') : t('settings.backupFailed'));
   }
 
   async function handleRestoreFile(file: File | undefined): Promise<void> {
@@ -273,7 +273,8 @@ export function SettingsSheet({ settings, onChange, onClose, playerLevel, onShow
         <input
           ref={fileInput}
           type="file"
-          accept=".json,.txt,application/json,text/plain"
+          // Android pickers label a backup that came through Drive or chat with all sorts of types, so do not filter there.
+          accept={isNative ? undefined : '.json,.txt,application/json,text/plain'}
           className="hidden"
           aria-label={t('settings.pickFile')}
           onChange={(e) => {

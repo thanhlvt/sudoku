@@ -38,6 +38,7 @@ export const viPlay = {
   'play.nextWeekly': 'Màn tuần tiếp theo',
   'play.shareTitle': 'Sudoku',
   'play.shareInvite': 'Thử màn {level} số {n} trên Sudoku nhé!',
+  'play.savedImage': 'Đã lưu ảnh kết quả',
   'play.copiedResult': 'Đã sao chép kết quả',
   'play.copiedLink': 'Đã sao chép liên kết',
   'play.shareFailed': 'Không chia sẻ được',

@@ -588,7 +588,7 @@ Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất
 | Lịch thử thách | `calendar.ts` + `dailyPuzzle` | games | `CalendarScreen` |
 | Bảng màu bàn cờ | `palettes.ts`, `settings.boardPalette` | `settings` | `SettingsSheet`, `index.css` |
 | Học kỹ thuật | `techniqueInfo/practice/techniqueExample` | bank + games | `LearnScreen`, `TechniqueScreen`, `ExampleBoard`, bong bóng gợi ý, `CompletionScreen` |
-| Chia sẻ kết quả / liên kết màn | `shareText.ts`, `share.ts` | — | `CompletionScreen`, overlay tạm dừng |
+| Chia sẻ kết quả / màn chơi (đều là ảnh) | `shareImage.ts`, `shareText.ts` (dự phòng khi không có canvas, cả link màn), `share.ts` | — | `CompletionScreen`, overlay tạm dừng |
 | Sao lưu / khôi phục | `storage/backup.ts` | mọi khoá `sudoku:*` | `SettingsSheet` |
 | Hướng dẫn lần đầu | `IntroSheet`, `settings.seenIntro` | `settings` | Home |
 | Cài đặt offline (PWA) | `public/sw.js`, `manifest.webmanifest`, `main.tsx` | Cache Storage | — |
@@ -646,7 +646,7 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
 15. Thành tựu tốc độ dựa trên `stats[cấp].bestMs`, mà `bestMs` cập nhật cả với ván có sai/gợi ý.
 16. Lịch tính "đã làm" theo *màn* của ngày đó. Hai ngày khác nhau có thể trùng màn (cùng `index`) — khi đó cả hai cùng được đánh dấu.
 17. Chia sẻ: bản web gắn link `origin + pathname + #/play/<id>`; bản Android chỉ gắn link khi build với biến `VITE_PUBLIC_URL` (APK chạy ở `https://localhost`, vô nghĩa với người khác).
-18. Sao lưu là file JSON thuần (không mã hoá, không chữ ký); khôi phục **thay thế** toàn bộ tiến độ trên máy. Trên Android bản sao lưu đi qua bảng chia sẻ dạng văn bản; việc chọn lại file bằng `<input type=file>` trong WebView **chưa thử trên thiết bị thật**.
+18. Sao lưu là file JSON thuần (không mã hoá, không chữ ký); khôi phục **thay thế** toàn bộ tiến độ trên máy. Trên web bản sao lưu được tải về thành file; trên Android file được ghi vào cache rồi đưa qua bảng chia sẻ (Drive, Tệp...). Việc chọn lại file bằng `<input type=file>` trong WebView **chưa thử trên thiết bị thật**.
 20. **Nhắc nhở chỉ có trên Android** (web không hẹn giờ được khi trang đóng): công tắc chỉ hiện trên bản Android. Giờ cố định 20:00 giờ máy, không có tuỳ chọn giờ. Nhắc dùng alarm **không chính xác** (có thể trễ vài phút) vì quyền alarm chính xác bị Google Play hạn chế (`SCHEDULE_EXACT_ALARM` bị gỡ khỏi manifest). Hộp thoại quyền (Android 13+) chỉ bật **sau khi giải xong màn đầu tiên** hoặc khi người chơi tự bật công tắc; bị từ chối thì không hỏi lại (công tắc báo thông báo đang bị tắt). Chưa thử trên thiết bị thật.
 21. Giới hạn thời gian của Đua thời gian là hằng số theo cấp, không tự điều chỉnh theo kỹ năng; Không sai **không** cấm gợi ý. Chuỗi tuần theo giờ máy (đổi múi giờ có thể lệch ranh giới tuần).
 19. Service worker (web) cache theo build (`__BUILD_ID__` được `vite.config.ts` đóng dấu); trang và JSON màn là network-first (hết 5 s thì dùng bản cache), file có hash/âm thanh/icon là cache-first. Chưa có thông báo "có bản mới".

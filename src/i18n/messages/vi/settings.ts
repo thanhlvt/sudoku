@@ -33,7 +33,7 @@ export const viSettings = {
   'settings.restore': 'Khôi phục',
   'settings.pickFile': 'Chọn file sao lưu',
   'settings.backupTitle': 'Sao lưu Sudoku',
-  'settings.backupShared': 'Đã mở bảng chia sẻ. Hãy lưu nội dung lại ở nơi bạn muốn.',
+  'settings.backupShared': 'Đã mở bảng chia sẻ. Hãy lưu file sao lưu vào nơi bạn muốn (Drive, Tệp...).',
   'settings.backupFailed': 'Không sao lưu được.',
   'settings.backupDownloaded': 'Đã tải về file sao lưu.',
   'settings.fileTooLarge': 'File quá lớn, không phải file sao lưu của Sudoku.',

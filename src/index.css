@@ -71,6 +71,71 @@
   --b-user: 196 181 253;
 }
 
+/* ---------- Board palettes (unlocked by player level; `violet` is the default above) ----------
+   Each palette recolours only the highlight cells and the player's own digits, in both themes. */
+:root[data-palette='ocean'] {
+    --b-peer: 240 249 255;
+    --b-same: 186 230 253;
+    --b-sel: 125 211 252;
+    --b-user: 3 105 161;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette='ocean']:not([data-theme='light']) {
+    --b-peer: 28 46 90;
+    --b-same: 22 78 120;
+    --b-sel: 14 116 164;
+    --b-user: 125 211 252;
+  }
+}
+:root[data-palette='ocean'][data-theme='dark'] {
+    --b-peer: 28 46 90;
+    --b-same: 22 78 120;
+    --b-sel: 14 116 164;
+    --b-user: 125 211 252;
+}
+
+:root[data-palette='forest'] {
+    --b-peer: 240 253 244;
+    --b-same: 187 247 208;
+    --b-sel: 134 239 172;
+    --b-user: 21 128 61;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette='forest']:not([data-theme='light']) {
+    --b-peer: 28 48 66;
+    --b-same: 24 86 72;
+    --b-sel: 22 120 80;
+    --b-user: 134 239 172;
+  }
+}
+:root[data-palette='forest'][data-theme='dark'] {
+    --b-peer: 28 48 66;
+    --b-same: 24 86 72;
+    --b-sel: 22 120 80;
+    --b-user: 134 239 172;
+}
+
+:root[data-palette='sunset'] {
+    --b-peer: 255 241 242;
+    --b-same: 254 205 211;
+    --b-sel: 253 164 175;
+    --b-user: 190 18 60;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-palette='sunset']:not([data-theme='light']) {
+    --b-peer: 52 34 76;
+    --b-same: 112 36 70;
+    --b-sel: 159 29 75;
+    --b-user: 253 164 175;
+  }
+}
+:root[data-palette='sunset'][data-theme='dark'] {
+    --b-peer: 52 34 76;
+    --b-same: 112 36 70;
+    --b-sel: 159 29 75;
+    --b-user: 253 164 175;
+}
+
 html {
   background: rgb(var(--c-page));
 }

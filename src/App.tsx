@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Level, LevelBank, Manifest } from './core/types';
+import { preloadSounds } from './feedback';
 import { dailyPuzzle, dateKey } from './game/daily';
 import { loadLevel, loadManifest } from './game/puzzleBank';
 import { setupBackButton } from './native';
 import { migrate, syncGeneratorVersion } from './storage/schema';
+import { AchievementsScreen } from './ui/AchievementsScreen';
+import { CalendarScreen } from './ui/CalendarScreen';
 import { HomeScreen } from './ui/HomeScreen';
+import { LearnScreen } from './ui/LearnScreen';
 import { LevelListScreen } from './ui/LevelListScreen';
 import { PlayScreen } from './ui/PlayScreen';
+import { StatsScreen } from './ui/StatsScreen';
+import { TechniqueScreen } from './ui/TechniqueScreen';
 import { StorageBanner } from './ui/StorageBanner';
 import { useDaily } from './ui/hooks/useDaily';
 import { useHashRoute } from './ui/hooks/useHashRoute';
@@ -32,12 +38,24 @@ export default function App(): JSX.Element {
 
   useEffect(() => setupBackButton(), []);
 
+  // Fetch the sound files up front so the first effect in a game is not late.
+  useEffect(() => {
+    if (settings.soundEnabled) preloadSounds();
+  }, [settings.soundEnabled]);
+
   // `data-theme` overrides the OS preference; without it the CSS follows prefers-color-scheme.
   useEffect(() => {
     const root = document.documentElement;
     if (settings.theme === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', settings.theme);
   }, [settings.theme]);
+
+  // Board colour scheme (`violet` is the stylesheet default, so it needs no attribute).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.boardPalette === 'violet') root.removeAttribute('data-palette');
+    else root.setAttribute('data-palette', settings.boardPalette);
+  }, [settings.boardPalette]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +99,15 @@ export default function App(): JSX.Element {
     : null;
 
   // Keyed per screen so each navigation replays the entrance animation.
-  const screenKey = route.name === 'home' ? 'home' : route.name === 'level' ? `level-${route.level}` : `play-${route.puzzleId}`;
+  const screenKey =
+    route.name === 'level'
+      ? `level-${route.level}`
+      : route.name === 'play'
+        ? `play-${route.puzzleId}`
+        : route.name === 'technique'
+          ? `technique-${route.id}`
+          : route.name;
+  const goHome = (): void => navigate('#/', true);
 
   return (
     <>
@@ -100,6 +126,15 @@ export default function App(): JSX.Element {
             onSettingsChange={updateSettings}
             onNavigate={navigate}
           />
+        )}
+        {route.name === 'achievements' && <AchievementsScreen stats={stats} daily={daily} onBack={goHome} />}
+        {route.name === 'calendar' && (
+          <CalendarScreen manifest={manifest} daily={daily} today={today} onNavigate={navigate} onBack={goHome} />
+        )}
+        {route.name === 'stats' && <StatsScreen stats={stats} onBack={goHome} />}
+        {route.name === 'learn' && <LearnScreen onNavigate={navigate} onBack={goHome} />}
+        {route.name === 'technique' && (
+          <TechniqueScreen id={route.id} onNavigate={navigate} onBack={() => navigate('#/learn', true)} />
         )}
         {route.name === 'level' && (
           <LevelListScreen

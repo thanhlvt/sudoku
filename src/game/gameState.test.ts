@@ -120,6 +120,110 @@ describe('undo', () => {
   });
 });
 
+describe('redo', () => {
+  it('re-applies an undone move, including auto-removed notes', () => {
+    const session = makeSession(true);
+    session.toggleNote(3, 4);
+    session.setDigit(2, 4); // strips note 4 from idx3
+    session.undo();
+    expect(session.board[2]).toBe(0);
+    expect(session.notes[3]! & (1 << 3)).not.toBe(0);
+    expect(session.canRedo()).toBe(true);
+    session.redo();
+    expect(session.board[2]).toBe(4);
+    expect(session.notes[3]! & (1 << 3)).toBe(0);
+    expect(session.canRedo()).toBe(false);
+    expect(session.canUndo()).toBe(true);
+  });
+
+  it('does nothing when there is nothing to redo', () => {
+    const session = makeSession();
+    expect(session.canRedo()).toBe(false);
+    session.redo();
+    expect(session.board[2]).toBe(0);
+  });
+
+  it('is dropped by any new edit', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.undo();
+    session.toggleNote(2, 1);
+    expect(session.canRedo()).toBe(false);
+  });
+
+  it('does not charge a mistake again', () => {
+    const session = makeSession();
+    session.setDigit(2, 1); // wrong
+    session.undo();
+    session.redo();
+    expect(session.mistakes).toBe(1);
+  });
+
+  it('completes the puzzle again when the completing move is redone', () => {
+    const session = makeSession();
+    for (let i = 0; i < 81; i++) {
+      if (!session.isGiven(i)) session.setDigit(i, SOLUTION.charCodeAt(i) - 48);
+    }
+    session.undo();
+    expect(session.status).toBe('in-progress');
+    session.redo();
+    expect(session.status).toBe('completed');
+  });
+
+  it('is cleared by reset', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.undo();
+    session.reset();
+    expect(session.canRedo()).toBe(false);
+  });
+});
+
+describe('fillNotes', () => {
+  it('writes the remaining candidates into every empty cell', () => {
+    const session = makeSession();
+    expect(session.fillNotes()).toBe(true);
+    // idx2 is empty: its row has 5,3,7 + col has 8 + box has 5,3,6,9,8 ... candidates must include the solution digit 4.
+    expect(session.notes[2]! & (1 << 3)).not.toBe(0);
+    // A digit already in the row cannot be a candidate (idx2 is in row 0, which holds a 5).
+    expect(session.notes[2]! & (1 << 4)).toBe(0);
+    // Given cells keep empty notes.
+    expect(session.notes[0]).toBe(0);
+    // Every empty cell's notes contain its solution digit (basic elimination never removes it).
+    for (let i = 0; i < 81; i++) {
+      if (session.isGiven(i)) continue;
+      expect(session.notes[i]! & (1 << (SOLUTION.charCodeAt(i) - 49))).not.toBe(0);
+    }
+  });
+
+  it('replaces notes the player had written, as one undo step', () => {
+    const session = makeSession();
+    session.toggleNote(2, 9);
+    session.fillNotes();
+    expect(session.notes[2]! & (1 << 8)).toBe(0); // 9 is in idx2's box, so it is not a candidate
+    session.undo();
+    expect(session.notes[2]).toBe(1 << 8);
+    expect(session.notes[3]).toBe(0);
+    session.redo();
+    expect(session.notes[3]).not.toBe(0);
+  });
+
+  it('reports false and records nothing when the notes already match', () => {
+    const session = makeSession();
+    session.fillNotes();
+    expect(session.fillNotes()).toBe(false);
+    session.undo();
+    expect(session.canUndo()).toBe(false);
+  });
+
+  it('leaves cells that hold a digit without notes', () => {
+    const session = makeSession();
+    session.setDigit(2, 4);
+    session.fillNotes();
+    expect(session.notes[2]).toBe(0);
+  });
+});
+
 describe('completion', () => {
   it('marks the session completed once the board matches the solution', () => {
     const session = makeSession();

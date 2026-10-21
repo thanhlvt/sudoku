@@ -271,14 +271,16 @@ chuỗi round-trip; `givens` ghi đúng số thực; **duy nhất nghiệm**; **
 | `stats` | `Record<Level, LevelStats>` | `useStats` (từ `PlaySession`) | `useStats`, Home |
 | `game:<puzzleId>` | `SavedGame` | `useGameSession` | `useGameSession`, `listGames` |
 | `last` | `{ puzzleId, at }` | `useGameSession` | `useSavedProgress` (Home) |
-| `daily` | `{ streak, longest, lastDate }` | `useDaily` | `useDaily`, Home, Play |
+| `daily` | `DailyState` | `useDaily` | `useDaily`, Home, Play, Calendar |
+| `achievements` | `Record<id, unlockedAtMs>` | `useAchievements.check` | `useAchievements` (Home, Thành tựu) |
 
 ```ts
 SavedGame { puzzleId, board: 81 ký tự ('.' trống), notes: 243 ký tự hex, elapsedMs, mistakes, hintsUsed,
             status: 'in-progress'|'completed', completedAt?, updatedAt }
-Settings  { highlightSameDigit, highlightPeers, showMistakes, autoRemoveNotes, theme: 'system'|'light'|'dark', soundEnabled }
+Settings  { highlightSameDigit, highlightPeers, showMistakes, autoRemoveNotes, theme: 'system'|'light'|'dark', soundEnabled, hapticsEnabled,
+            boardPalette: 'violet'|'ocean'|'forest'|'sunset', seenIntro }
 LevelStats{ played, completed, bestMs|null, totalMs, perfectRuns }
-DailyState{ streak, longest, lastDate: 'YYYY-MM-DD' | null }   // ngày theo giờ máy
+DailyState{ streak, longest, lastDate: 'YYYY-MM-DD' | null, freezes }   // ngày theo giờ máy; freezes = số đóng băng chuỗi đang giữ (0–2)
 ```
 
 Không lưu: `solution`, undo stack, hint đang xem trước, lựa chọn ô, chế độ ghi chú, trạng thái tạm dừng.
@@ -293,6 +295,10 @@ Không lưu: `solution`, undo stack, hint đang xem trước, lựa chọn ô, c
 | Màn đề xuất kế tiếp của một cấp | in-progress mới nhất → màn đầu chưa xong → màn đầu | `progress.pickNextIndex` |
 | Chuỗi hiển thị | `streak` nếu `lastDate` là hôm nay/hôm qua, ngược lại 0 | `daily.currentStreak` |
 | Kỷ lục toàn cục | `min(stats[level].bestMs)` | tính trong `HomeScreen` |
+| XP, cấp người chơi | tổng `xpForSolve(cấp, lỗi)` trên mọi ván `completed`; cấp `L` cần `50·L·(L−1)` XP | `xp.totalXp`, `xp.playerLevel` |
+| Thành tựu đạt được | mỗi thành tựu = một số đo (`progress(ctx)`) ≥ `target` | `achievements.evaluateAchievements` |
+| Kỹ thuật "đã thành thạo" | có ván `completed` với `hintsUsed = 0` thuộc màn mà `rating.counts[kỹ thuật] > 0` | `practice.masteredTechniques` |
+| Ngày đã làm trên lịch | ván của `dailyPuzzle(ngày)` có `status = completed` | `CalendarScreen` |
 
 > Vì sao sao/tim không lưu riêng: `SavedGame.mistakes` đã đủ, lưu thêm là dữ liệu trùng có thể lệch nhau.
 > Hệ quả: đổi công thức `starsFor` sẽ **áp dụng ngược** cho mọi màn đã xong.
@@ -355,7 +361,7 @@ Trạng thái: `givens`, `solution`, `board`, `notes`, `elapsedMs`, `mistakes`, 
 | `toSaved(now)` / `fromSaved(opts, saved)` | — | (de)serialize; `completedAt` chỉ khi completed. `fromSaved` chỉ tin `status: 'completed'` nếu bàn cờ thật sự khớp `solution`, ngược lại coi là `in-progress`. Ghi chú được che về 9 bit |
 | `GameSession.matchesGivens(puzzle, saved)` | — | true nếu mọi given của puzzle hiện tại trùng `saved.board` ⇒ nếu sai thì **bỏ save cũ, bắt đầu lại** (bank đã đổi) |
 
-Không có redo. `useGameSession.createSession` dựng session **trong lúc render** nên không bao giờ được ném: save không khôi phục được ⇒ xoá save, bắt đầu ván mới.
+`redo()` áp lại nước vừa `undo` (kể cả `autoNoteChanges`), không đụng `mistakes`/`hintsUsed`; mọi nước mới xoá redo stack. `fillNotes()` ghi candidates (từ `computeCandidates(board)`) vào mọi ô trống thay cho ghi chú cũ, thành **một** nước (`type: 'fill-notes'`, `idx: -1`, chỉ có `autoNoteChanges`); trả `false` và không ghi gì nếu không có gì đổi. `useGameSession.createSession` dựng session **trong lúc render** nên không bao giờ được ném: save không khôi phục được ⇒ xoá save, bắt đầu ván mới.
 
 ### 8.2 `progress.ts`
 
@@ -367,8 +373,28 @@ Không có redo. `useGameSession.createSession` dựng session **trong lúc rend
 - `dailyPuzzle(key, countOf)` → `{ level, index, id }`. Cấp lấy theo lịch quay 7 ngày
   `['easy','medium','easy','hard','medium','hard','expert'][dayNumber % 7]`; `index = fnv1a("daily:"+key) % count`.
   Cùng ngày ⇒ cùng màn trên mọi thiết bị.
-- `recordDailyCompletion(daily, today)`: đã làm hôm nay ⇒ giữ nguyên; `lastDate` là hôm qua ⇒ `streak+1`; ngược lại `streak=1`; luôn cập nhật `longest`.
-- `currentStreak`, `isDailyDone`, `previousDateKey`.
+- `completeDaily(daily, today)` → `{ next, milestone, freezeUsed, freezeEarned }`: đã làm hôm nay ⇒ giữ nguyên (`next === daily`); `lastDate` là hôm qua ⇒ `streak+1`;
+  `lastDate` là **hôm kia** và còn `freezes > 0` ⇒ tiêu một đóng băng, `streak+1`; ngược lại `streak=1`. Luôn cập nhật `longest`. Cứ mỗi bội số 7 của `streak`
+  nhận thêm 1 đóng băng (tối đa `MAX_FREEZES = 2`). `milestone` là độ dài chuỗi nếu thuộc `STREAK_MILESTONES` (3, 7, 14, 30, 60, 100, 365). `recordDailyCompletion` = `completeDaily(...).next`.
+- `currentStreak`: chuỗi còn sống nếu `lastDate` là hôm nay/hôm qua, hoặc là hôm kia mà còn đóng băng. `isDailyDone`, `previousDateKey`.
+- Chỉ thử thách **hôm nay** (`dailyId`) mới tính vào chuỗi; làm bù ngày cũ từ Lịch chỉ đánh dấu trên lịch (ván đã xong), không đổi `daily`.
+
+### 8.3b `achievements.ts`, `xp.ts`, `palettes.ts`, `calendar.ts`
+
+- **`achievements.ts`**: `ACHIEVEMENTS` (19 mục) — mỗi mục là `{ id, title, description, icon, target, progress(ctx) }` với `ctx = { games, stats, daily }`. Không có khoá lưu riêng cho *tiến độ*;
+  chỉ lưu *thời điểm mở khoá* (`achievements`) để (a) báo "Thành tựu mới" đúng một lần, (b) giữ thành tựu đã đạt kể cả khi dữ liệu nền co lại (chơi lại một màn xoá save của nó).
+  `unlockNew(stored, ctx, now)` trả `{ unlocked, added }` (cùng tham chiếu `stored` nếu không có gì mới). `useAchievements.check()` đọc games/stats/daily **thẳng từ storage** (nên thấy kết quả ván vừa lưu) rồi ghi bản mới.
+  Thêm thành tựu = thêm một phần tử vào `ACHIEVEMENTS` (id mới, chữ thường/số/gạch ngang); thành tựu mới tự được mở khoá hồi tố ở lần `check()` kế.
+- **`xp.ts`**: `xpForSolve(cấp, lỗi)` = `{10, 20, 40, 80, 150}[cấp] × {1, 0.8, 0.6}[sao]`. `playerLevel(xp)` → `{ level, title, into, span }`. Vì XP dẫn xuất từ các ván đã xong, chơi lại một màn không làm XP phình ra.
+- **`palettes.ts`**: 4 bảng màu bàn cờ, mở khoá theo cấp người chơi (1, 3, 6, 10). `Settings.boardPalette` → `data-palette` trên `<html>` (App), CSS ở `index.css`.
+- **`calendar.ts`**: `monthWeeks(ym)` (tuần bắt đầu thứ Hai, ô ngoài tháng là `null`), `addMonths`, `compareMonths`. Lịch cho duyệt lùi `CALENDAR_MONTHS_BACK = 12` tháng.
+
+### 8.3c Học kỹ thuật: `techniqueInfo.ts`, `practice.ts`, `techniqueExample.ts`
+
+- **`techniqueInfo.ts`**: `TECHNIQUE_INFO` — nhãn tiếng Việt, nhóm, tóm tắt, các bước nhận biết và mẹo cho đủ 21 kỹ thuật, **cùng thứ tự `TECHNIQUE_ORDER`** (có test khoá điều này). Thêm kỹ thuật vào core ⇒ phải thêm bài học ở đây.
+- **`practice.ts`**: `practicePuzzles(kỹ thuật, banks)` xếp các màn cần kỹ thuật đó (màn mà nó là bước khó nhất trước, rồi theo `rating.score` tăng dần). Đọc `rating` **phòng thủ** vì `validateLevelBank` chỉ kiểm lưới. `masteredTechniques` xem bảng §6.2.
+- **`techniqueExample.ts`**: `findTechniqueExample(puzzle, kỹ thuật)` chạy lại logical solver (cùng `TECHNIQUE_ORDER`, dùng `applyStep` export từ `logicalSolver`) và dừng ở lần đầu kỹ thuật đó tiến hành ⇒ bàn thật + candidates + `Step` để vẽ `ExampleBoard`. Chạy theo yêu cầu (khi mở bài học), không trong render danh sách.
+- Hiện bank không có màn nào cần `naked-quad`, `hidden-quad`, `jellyfish` ⇒ bài học vẫn hiện, ví dụ/luyện tập báo "chưa có". `swordfish` chỉ có 1 màn.
 
 ### 8.4 `unitComplete.ts`
 
@@ -395,6 +421,11 @@ solution** thì thêm 9 ô vào map kèm khoảng cách (theo vị trí trong un
 | `#/` (hoặc không khớp) | Home | |
 | `#/level/<level>` | LevelList | `level` phải thuộc 5 cấp, nếu không → Home |
 | `#/play/<puzzleId>` | Play | `puzzleId` phải đúng dạng `<level>-<số>` (`isPuzzleId`), nếu không → Home. Đúng dạng nhưng không có trong bank ⇒ màn lỗi + nút quay lại |
+| `#/achievements` | Thành tựu | |
+| `#/calendar` | Lịch thử thách | |
+| `#/stats` | Thống kê | |
+| `#/learn` | Danh sách kỹ thuật | |
+| `#/learn/<kỹ thuật>` | Bài học một kỹ thuật | `id` phải thuộc `TECHNIQUE_INFO` (`isTechniqueId`), nếu không → Home |
 
 Hash là thứ duy nhất kẻ khác có thể điều khiển từ xa (gửi link), nên `parseHash` chỉ cho qua giá trị đã kiểm tra.
 
@@ -405,6 +436,8 @@ Hash là thứ duy nhất kẻ khác có thể điều khiển từ xa (gửi li
 | Vào level / vào màn chơi / "Chơi tiếp" / "Thử thách" | push | |
 | Back ở Play | replace | `#/level/<cấp của màn>` |
 | Back ở LevelList | replace | `#/` |
+| Back ở Thành tựu / Lịch / Thống kê / Học | replace | `#/` |
+| Back ở bài học một kỹ thuật | replace | `#/learn` |
 | "Màn tiếp theo", "Danh sách màn" ở màn Hoàn thành | replace | màn kế / level list |
 | Nút Back Android (`native.ts`) | — | `#/` nếu đang ở màn con, thoát app nếu đang ở Home |
 
@@ -480,8 +513,10 @@ xoá preview, gợn sóng ở các ô vừa đặt.
 **Hoàn thành**
 1. `session.status` chuyển `completed` ⇒ `useGameSession` ghi ngay.
 2. `PlaySession` (một lần, nhờ `statsUpdatedRef`): so `elapsedMs` với `stats[level].bestMs` ⇒ `isNewRecord`; `updateStats` (played+1, completed+1, bestMs, totalMs, perfectRuns);
-   nếu `puzzle.id === dailyId` ⇒ `updateDaily(recordDailyCompletion)`.
-3. Sau `COMPLETION_DELAY_MS = 750` hiện `CompletionScreen` (để thấy số cuối + sóng).
+   nếu `puzzle.id === dailyId` ⇒ `updateDaily(completeDaily)` (và giữ `DailyCompletion` để biết mốc/đóng băng).
+   Cũng ở bước này (vẫn đúng một lần): tính **phần thưởng** `CompletionReward` — XP của ván (`xpForSolve`), có lên cấp không (so `playerLevel` trước/sau, trước = sau − XP),
+   bảng màu vừa mở khoá, `useAchievements.check()` (thành tựu mới), mốc chuỗi, đóng băng dùng/nhận. Mở lại màn đã xong **không** có phần thưởng.
+3. Sau `COMPLETION_DELAY_MS = 750` hiện `CompletionScreen` (để thấy số cuối + sóng) và phát tiếng `win`.
 4. "Chơi lại" ⇒ `reset()` + hạ `statsUpdatedRef` ⇒ lần hoàn thành sau sẽ tính lại stats.
 
 **Rời màn / ẩn tab**: lưu ngay.
@@ -493,6 +528,9 @@ xoá preview, gợn sóng ở các ô vừa đặt.
 - **Thử thách hôm nay** (cần `manifest` và `dailyId`): chưa xong ⇒ nút "Chơi"; xong ⇒ dấu tick.
 - **Thống kê**: Đã giải/Sao từ `summarizeByLevel(listGames())` (nguồn thật là các `SavedGame`, **không** phải `stats.completed`); Kỷ lục = min `bestMs`.
 - **Thẻ cấp**: `completed/count` + thanh tiến độ (tối thiểu 0.75rem khi >0).
+- **Thẻ người chơi** (`PlayerCard`): cấp, danh hiệu, thanh XP; bấm vào mở Thành tựu. **Lối tắt** 4 ô: Thành tựu (kèm `đạt/tổng`), Lịch, Học, Thống kê.
+- **Hướng dẫn lần đầu** (`IntroSheet`, 4 trang): hiện khi `!settings.seenIntro` **và** chưa có ván nào lưu; đóng (kể cả "Bỏ qua") ⇒ `seenIntro = true`. Mở lại từ Cài đặt.
+- Home gọi `useAchievements().check()` khi mount: ghi hồi tố các thành tựu đạt từ trước.
 
 ### 9.7 LevelList — quy tắc hiển thị
 
@@ -520,6 +558,17 @@ Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất
 | Cài đặt, theme | `useSettings` (App) | `settings` | `SettingsSheet`, `data-theme` |
 | Xoá toàn bộ tiến độ | `clearAllProgress` + reload | tất cả `sudoku:*` | `SettingsSheet` |
 | Kỷ lục thời gian | `PlaySession` | `stats.bestMs` | Home, `CompletionScreen` |
+| Âm thanh, rung | `feedback.ts` (`playCue`) + `settings.soundEnabled/hapticsEnabled` | — | `PlaySession`, `SettingsSheet` |
+| Redo, "Ghi hết", ghi chú nhanh | `GameSession.redo/fillNotes`, `NumberPad` (nhấn giữ), phím Shift | `undoStack/redoStack` | `Toolbar`, `NumberPad` |
+| Thành tựu + XP + cấp | `achievements.ts`, `xp.ts` | `achievements` + dẫn xuất | Home, Thành tựu, `CompletionScreen` |
+| Đóng băng, mốc chuỗi | `daily.completeDaily` | `daily.freezes` | Lịch, `CompletionScreen` |
+| Lịch thử thách | `calendar.ts` + `dailyPuzzle` | games | `CalendarScreen` |
+| Bảng màu bàn cờ | `palettes.ts`, `settings.boardPalette` | `settings` | `SettingsSheet`, `index.css` |
+| Học kỹ thuật | `techniqueInfo/practice/techniqueExample` | bank + games | `LearnScreen`, `TechniqueScreen`, `ExampleBoard`, bong bóng gợi ý, `CompletionScreen` |
+| Chia sẻ kết quả / liên kết màn | `shareText.ts`, `share.ts` | — | `CompletionScreen`, overlay tạm dừng |
+| Sao lưu / khôi phục | `storage/backup.ts` | mọi khoá `sudoku:*` | `SettingsSheet` |
+| Hướng dẫn lần đầu | `IntroSheet`, `settings.seenIntro` | `settings` | Home |
+| Cài đặt offline (PWA) | `public/sw.js`, `manifest.webmanifest`, `main.tsx` | Cache Storage | — |
 
 ---
 
@@ -550,9 +599,9 @@ Chia trang 20 màn. Trạng thái ô: **xong** (xanh + sao), **màn đề xuất
 Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không bị coi là lỗi mới:
 
 1. `undo` không hoàn lại lỗi/gợi ý đã tính: điền sai rồi undo vẫn mất tim/sao (có chủ ý, để sao phản ánh đúng số lần sai).
-2. `Settings.soundEnabled` tồn tại nhưng **chưa có âm thanh** và chưa có công tắc UI.
+2. ~~Chưa có âm thanh~~ — đã có (`src/feedback.ts`, `public/sounds/*.mp3`; xem UI_DESIGN §9.1). `soundEnabled` mặc định `true`; người dùng cũ đã lưu `false` giữ nguyên `false`.
 3. ~~Banner khi `localStorage` không dùng được~~ — đã có (`StorageBanner`, cũng báo khi ghi bị từ chối do hết dung lượng).
-4. Skill `game-ui` nêu long-press / giữ `Shift` để nhập ghi chú nhanh — **chưa làm** (chỉ có chế độ ghi chú bật/tắt).
+4. ~~Ghi chú nhanh~~ — đã có (nhấn giữ phím số / `Shift`+số, đảo chế độ ghi chú cho một lần nhập).
 5. `stats.played/completed` tăng cả khi chơi lại một màn đã xong; `bestMs` toàn cục theo cấp. Home dùng `listGames()` cho số màn xong, nên hai nguồn có thể lệch.
 6. "Chơi lại" ở màn Hoàn thành `reset` ván đã lưu ⇒ **mất sao/thời gian** màn đó.
 7. Gợi ý chạy trên bàn cờ **đã bỏ số sai** của người chơi, nên có thể chỉ ra một ô mà người chơi đã điền sai (bước áp dụng sẽ ghi đè bằng số đúng). Gợi ý không nói riêng "bạn đang có số sai".
@@ -564,6 +613,12 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
     việc tự sửa dữ liệu chỉ ảnh hưởng chính người chơi.
 12. Production web có CSP qua thẻ `<meta>` (`vite.config.ts`). Bản Android build bằng `vite build --mode capacitor` **không** có CSP (bridge native của Capacitor có thể bị `script-src` chặn).
 13. Danh sách màn đọc từng `SavedGame` qua `listGames` mỗi lần mount Home/LevelList (≈ vài trăm khoá nhỏ) — chấp nhận được ở 500 màn; nếu bank lớn hơn nhiều nên gom vào một chỉ mục.
+14. XP/cấp/"thành thạo" dẫn xuất từ các ván `completed`, nên "Chơi lại" một màn đã xong (xoá save của nó) làm XP và thành tựu *dựa trên số đếm* tụt tạm thời; riêng thành tựu đã ghi vào `achievements` thì giữ nguyên.
+15. Thành tựu tốc độ dựa trên `stats[cấp].bestMs`, mà `bestMs` cập nhật cả với ván có sai/gợi ý.
+16. Lịch tính "đã làm" theo *màn* của ngày đó. Hai ngày khác nhau có thể trùng màn (cùng `index`) — khi đó cả hai cùng được đánh dấu.
+17. Chia sẻ: bản web gắn link `origin + pathname + #/play/<id>`; bản Android chỉ gắn link khi build với biến `VITE_PUBLIC_URL` (APK chạy ở `https://localhost`, vô nghĩa với người khác).
+18. Sao lưu là file JSON thuần (không mã hoá, không chữ ký); khôi phục **thay thế** toàn bộ tiến độ trên máy. Trên Android bản sao lưu đi qua bảng chia sẻ dạng văn bản; việc chọn lại file bằng `<input type=file>` trong WebView **chưa thử trên thiết bị thật**.
+19. Service worker (web) cache theo build (`__BUILD_ID__` được `vite.config.ts` đóng dấu); trang và JSON màn là network-first (hết 5 s thì dùng bản cache), file có hash/âm thanh/icon là cache-first. Chưa có thông báo "có bản mới".
 
 ---
 
@@ -585,6 +640,13 @@ Những điều này **có chủ ý hoặc chưa làm**; ghi lại để không 
 | Cập nhật state lưu (nhiều tab, StrictMode, ghi lỗi) | `ui/hooks/usePersistedState.test.tsx` |
 | ErrorBoundary, StorageBanner | `ui/ErrorBoundary.test.tsx` |
 | Cả app với `localStorage` hỏng / mạng lỗi / link độc | `App.test.tsx` |
+| Nhập liệu, redo, ghi hết, nhấn giữ, phần thưởng khi hoàn thành, chia sẻ | `ui/PlaySession.test.tsx` |
+| Hướng dẫn lần đầu, lối tắt Home, Thành tựu, Lịch, Học kỹ thuật, Thống kê | `ui/screens.test.tsx` |
+| Thành tựu, XP/cấp, bảng màu | `game/achievements.test.ts`, `game/xp.test.ts` |
+| Lịch (tuần, tháng, năm nhuận) | `game/calendar.test.ts` |
+| Bài học, màn luyện, "thành thạo", ví dụ thật từ bank | `game/practice.test.ts` |
+| Văn bản chia sẻ | `game/shareText.test.ts` |
+| Sao lưu/khôi phục (vòng đi-về, file độc hại) | `storage/backup.test.ts` |
 
 Component bố cục/animation chưa có test (kiểm bằng chạy thật). Toàn bộ bank: `npm run verify`.
 

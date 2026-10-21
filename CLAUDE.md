@@ -38,9 +38,12 @@ src/
     rating.ts           # chấm điểm + map sang Level
     generator.ts        # sinh full grid + đào lỗ + retry theo target level
     rng.ts              # mulberry32 + fnv1a hash (deterministic)
-  game/                 # state máy chơi: nhập số, ghi chú, undo, đồng hồ, lỗi
-  storage/              # localStorage adapter, schema versioning, migration
+  game/                 # state máy chơi + logic thuần của tầng game: nhập số, ghi chú, undo/redo, đồng hồ, lỗi,
+                        #   thử thách ngày + chuỗi/đóng băng, thành tựu, XP, lịch, bài học kỹ thuật, văn bản chia sẻ
+  storage/              # localStorage adapter, schema versioning, migration, sao lưu/khôi phục (backup.ts)
   ui/                   # components React
+  feedback.ts           # âm thanh (mp3 trong public/sounds/) + rung
+  share.ts              # chia sẻ / tải file
   App.tsx
 tools/
   generate.ts           # CLI sinh ngân hàng màn chơi
@@ -48,6 +51,8 @@ tools/
 public/puzzles/
   beginner.json easy.json medium.json hard.json expert.json
   manifest.json         # tổng số màn mỗi cấp, generatorVersion
+public/sounds/*.mp3     # hiệu ứng âm thanh (thay bằng file riêng được; tên giữ nguyên)
+public/sw.js, manifest.webmanifest, icons/   # PWA: cài đặt + chơi offline trên web
 ```
 
 ## Lệnh
@@ -60,6 +65,8 @@ npm run gen -- --level all --count 20         # sinh ngân hàng màn (giai đo�
 npm run gen -- --level all --count 100        # mở rộng, giữ nguyên 20 màn cũ
 npm run gen -- --level expert --count 100 --force   # sinh lại từ đầu (đổi puzzle!)
 npm run verify                                # kiểm unique + solvable + đúng tier cho toàn bank
+npm run sounds                                # tạo lại public/sounds/*.mp3 (ghi đè nếu bạn đã thay bằng file riêng!)
+npm run pwa-icons                             # vẽ lại public/icons/ từ assets/
 npm run android:debug                         # build APK debug (Capacitor); release/AAB: xem docs/ANDROID.md
 ```
 

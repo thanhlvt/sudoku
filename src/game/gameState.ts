@@ -1,10 +1,11 @@
-import { PEERS, cloneGrid, gridToString, isComplete, parseGrid } from '../core/board';
+import { PEERS, cloneGrid, computeCandidates, gridToString, isComplete, parseGrid } from '../core/board';
 import { solveLogically } from '../core/logicalSolver';
 import type { Grid, Step } from '../core/types';
 import type { SavedGame } from '../storage/schema';
 
 export interface Move {
-  type: 'set' | 'erase' | 'note';
+  type: 'set' | 'erase' | 'note' | 'fill-notes';
+  /** The cell the move acts on; `-1` for `fill-notes`, which only has `autoNoteChanges`. */
   idx: number;
   before: { value: number; notes: number };
   after: { value: number; notes: number };
@@ -51,6 +52,7 @@ export class GameSession {
   autoRemoveNotes: boolean;
 
   private undoStack: Move[] = [];
+  private redoStack: Move[] = [];
   private pendingHintStep: Step | null = null;
 
   constructor(opts: GameOptions) {
@@ -152,13 +154,44 @@ export class GameSession {
     this.pushMove({ type: 'note', idx, before, after });
   }
 
+  /**
+   * Writes every empty cell's candidates (what the digits already on the board still allow) into its notes,
+   * replacing whatever notes were there. One undo step. Returns false when nothing would change.
+   */
+  fillNotes(): boolean {
+    if (this.status === 'completed') return false;
+    const candidates = computeCandidates(this.board);
+    const changes: { idx: number; before: number; after: number }[] = [];
+    for (let i = 0; i < 81; i++) {
+      if (this.board[i] !== 0 || this.isGiven(i)) continue;
+      if (this.notes[i] !== candidates[i]) changes.push({ idx: i, before: this.notes[i]!, after: candidates[i]! });
+    }
+    if (changes.length === 0) return false;
+    this.pendingHintStep = null;
+    for (const change of changes) this.notes[change.idx] = change.after;
+    this.pushMove({
+      type: 'fill-notes',
+      idx: -1,
+      before: { value: 0, notes: 0 },
+      after: { value: 0, notes: 0 },
+      autoNoteChanges: changes,
+    });
+    return true;
+  }
+
   private pushMove(move: Move): void {
+    // A new edit makes the undone moves unreachable.
+    this.redoStack = [];
     this.undoStack.push(move);
     if (this.undoStack.length > MAX_UNDO_MOVES) this.undoStack.shift();
   }
 
   canUndo(): boolean {
     return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
   }
 
   /** Clears all player input and counters, returning the session to a fresh in-progress state. */
@@ -170,6 +203,7 @@ export class GameSession {
     this.hintsUsed = 0;
     this.status = 'in-progress';
     this.undoStack = [];
+    this.redoStack = [];
     this.pendingHintStep = null;
   }
 
@@ -178,14 +212,39 @@ export class GameSession {
     if (!move) return;
 
     this.pendingHintStep = null;
-    this.board[move.idx] = move.before.value;
-    this.notes[move.idx] = move.before.notes;
+    if (move.idx >= 0) {
+      this.board[move.idx] = move.before.value;
+      this.notes[move.idx] = move.before.notes;
+    }
     if (move.autoNoteChanges) {
       for (const change of move.autoNoteChanges) {
         this.notes[change.idx] = change.before;
       }
     }
     if (this.status === 'completed') this.status = 'in-progress';
+    this.redoStack.push(move);
+  }
+
+  /**
+   * Re-applies the move most recently undone. Counters are not touched in either direction: a wrong digit
+   * costs a heart once, when it is first entered, however often it is undone and redone.
+   */
+  redo(): void {
+    const move = this.redoStack.pop();
+    if (!move) return;
+
+    this.pendingHintStep = null;
+    if (move.idx >= 0) {
+      this.board[move.idx] = move.after.value;
+      this.notes[move.idx] = move.after.notes;
+    }
+    if (move.autoNoteChanges) {
+      for (const change of move.autoNoteChanges) {
+        this.notes[change.idx] = change.after;
+      }
+    }
+    this.undoStack.push(move);
+    if (this.checkCompletion()) this.status = 'completed';
   }
 
   /**

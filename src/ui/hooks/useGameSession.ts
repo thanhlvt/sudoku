@@ -18,6 +18,9 @@ export interface GameSessionApi {
   eraseCell: (idx: number) => void;
   toggleNote: (idx: number, digit: number) => void;
   undo: () => void;
+  redo: () => void;
+  /** Fills every empty cell's notes with its candidates. Returns false when nothing changed. */
+  fillNotes: () => boolean;
   hint: () => Step | null;
   reset: () => void;
 }
@@ -133,6 +136,21 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     persist(false);
   }, [session, persist, rerender]);
 
+  const redo = useCallback(() => {
+    session.redo();
+    rerender();
+    persist(session.status === 'completed');
+  }, [session, persist, rerender]);
+
+  const fillNotes = useCallback(() => {
+    const changed = session.fillNotes();
+    if (changed) {
+      rerender();
+      persist(false);
+    }
+    return changed;
+  }, [session, persist, rerender]);
+
   const hint = useCallback(() => {
     const step = session.hint();
     rerender();
@@ -146,5 +164,5 @@ export function useGameSession({ puzzle, autoRemoveNotes, paused }: UseGameSessi
     persist(true);
   }, [session, persist, rerender]);
 
-  return { session, version, setDigit, eraseCell, toggleNote, undo, hint, reset };
+  return { session, version, setDigit, eraseCell, toggleNote, undo, redo, fillNotes, hint, reset };
 }

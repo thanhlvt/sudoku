@@ -11,6 +11,7 @@ export const KEYS = {
   stats: `${NAMESPACE}:stats`,
   last: `${NAMESPACE}:last`,
   daily: `${NAMESPACE}:daily`,
+  achievements: `${NAMESPACE}:achievements`,
   game: (puzzleId: string): string => `${NAMESPACE}:game:${puzzleId}`,
 };
 
@@ -40,7 +41,15 @@ export interface Settings {
   autoRemoveNotes: boolean;
   theme: 'system' | 'light' | 'dark';
   soundEnabled: boolean;
+  hapticsEnabled: boolean;
+  /** Board colour scheme; the non-default ones unlock with the player level. */
+  boardPalette: PaletteId;
+  /** The how-to-play intro has been shown (or the player already has progress and does not need it). */
+  seenIntro: boolean;
 }
+
+export const PALETTE_IDS = ['violet', 'ocean', 'forest', 'sunset'] as const;
+export type PaletteId = (typeof PALETTE_IDS)[number];
 
 export const DEFAULT_SETTINGS: Settings = {
   highlightSameDigit: true,
@@ -48,7 +57,10 @@ export const DEFAULT_SETTINGS: Settings = {
   showMistakes: true,
   autoRemoveNotes: true,
   theme: 'system',
-  soundEnabled: false,
+  soundEnabled: true,
+  hapticsEnabled: true,
+  boardPalette: 'violet',
+  seenIntro: false,
 };
 
 export interface LevelStats {
@@ -87,6 +99,7 @@ const MAX_TIMESTAMP = 8.64e15; // largest valid JS Date
 const MAX_DURATION_MS = 365 * 24 * 3_600_000; // one game taking longer than a year is not a ván
 const MAX_TOTAL_MS = 1e15;
 const MAX_COUNT = 1_000_000;
+const MAX_FREEZES_STORED = 9; // the game holds at most 2; the cap only bounds what a hand-edited save can claim
 const BOARD_RE = /^[.0-9]{81}$/;
 const NOTES_RE = /^[0-9a-fA-F]{243}$/;
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -141,21 +154,41 @@ export function parseStats(v: unknown): Stats | null {
 export function parseSettings(v: unknown): Settings | null {
   if (!isObj(v)) return null;
   const settings: Settings = { ...DEFAULT_SETTINGS };
-  for (const key of ['highlightSameDigit', 'highlightPeers', 'showMistakes', 'autoRemoveNotes', 'soundEnabled'] as const) {
+  for (const key of ['highlightSameDigit', 'highlightPeers', 'showMistakes', 'autoRemoveNotes', 'soundEnabled', 'hapticsEnabled', 'seenIntro'] as const) {
     if (typeof v[key] === 'boolean') settings[key] = v[key] as boolean;
   }
   if (THEMES.includes(v.theme as Settings['theme'])) settings.theme = v.theme as Settings['theme'];
+  if (PALETTE_IDS.includes(v.boardPalette as PaletteId)) settings.boardPalette = v.boardPalette as PaletteId;
   return settings;
 }
 
 export function parseDaily(v: unknown): DailyState | null {
   if (!isObj(v)) return null;
-  const { streak, longest, lastDate } = v;
+  const { streak, longest, lastDate, freezes } = v;
   return {
     streak: isCountIn(streak, MAX_COUNT) ? streak : 0,
     longest: isCountIn(longest, MAX_COUNT) ? longest : 0,
     lastDate: typeof lastDate === 'string' && DATE_KEY_RE.test(lastDate) ? lastDate : null,
+    freezes: isCountIn(freezes, MAX_FREEZES_STORED) ? freezes : 0,
   };
+}
+
+const ACHIEVEMENT_ID_RE = /^[a-z0-9-]{1,40}$/;
+const MAX_ACHIEVEMENTS = 200;
+
+/** `id -> unlock time`. Unknown ids are kept (a later build may define them); malformed entries are dropped. */
+export function parseAchievements(v: unknown): Record<string, number> | null {
+  if (!isObj(v)) return null;
+  const out: Record<string, number> = {};
+  let count = 0;
+  for (const [id, at] of Object.entries(v)) {
+    if (count >= MAX_ACHIEVEMENTS) break;
+    if (ACHIEVEMENT_ID_RE.test(id) && isNumberIn(at, 0, MAX_TIMESTAMP)) {
+      out[id] = at;
+      count++;
+    }
+  }
+  return out;
 }
 
 export function parseLast(v: unknown): LastPlayed | null {
@@ -249,9 +282,11 @@ export interface DailyState {
   streak: number;
   longest: number;
   lastDate: string | null;
+  /** Streak freezes in hand: each covers one missed day. */
+  freezes: number;
 }
 
-export const DEFAULT_DAILY: DailyState = { streak: 0, longest: 0, lastDate: null };
+export const DEFAULT_DAILY: DailyState = { streak: 0, longest: 0, lastDate: null, freezes: 0 };
 
 export function loadDaily(): DailyState {
   return readJSON<DailyState>(KEYS.daily, { ...DEFAULT_DAILY }, parseDaily);
@@ -259,6 +294,14 @@ export function loadDaily(): DailyState {
 
 export function saveDaily(daily: DailyState): boolean {
   return writeJSON(KEYS.daily, daily);
+}
+
+export function loadAchievements(): Record<string, number> {
+  return readJSON<Record<string, number>>(KEYS.achievements, {}, parseAchievements);
+}
+
+export function saveAchievements(unlocked: Readonly<Record<string, number>>): boolean {
+  return writeJSON(KEYS.achievements, unlocked);
 }
 
 export function loadLast(): LastPlayed | null {

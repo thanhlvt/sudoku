@@ -1,0 +1,234 @@
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LevelBank, PuzzleRecord } from '../core/types';
+import { DEFAULT_DAILY, DEFAULT_SETTINGS, defaultStats } from '../storage/schema';
+import { PlaySession } from './PlaySession';
+
+const playCue = vi.fn();
+vi.mock('../feedback', () => ({
+  playCue: (...args: unknown[]) => playCue(...args),
+  preloadSounds: () => {},
+  hapticsSupported: false,
+}));
+
+const bank = JSON.parse(readFileSync(join(process.cwd(), 'public', 'puzzles', 'beginner.json'), 'utf8')) as LevelBank;
+const puzzle: PuzzleRecord = bank.puzzles[0]!;
+
+/** An empty cell, as a 0-based index, with the solution digit and a digit that would be wrong there. */
+const EMPTY = puzzle.puzzle.indexOf('.');
+const RIGHT = Number(puzzle.solution[EMPTY]);
+const WRONG = RIGHT === 9 ? 8 : RIGHT + 1;
+
+function cellLabel(idx: number, state = 'trống'): string {
+  return `Hàng ${Math.floor(idx / 9) + 1}, cột ${(idx % 9) + 1}, ${state}`;
+}
+
+function cell(idx: number): HTMLElement {
+  const row = Math.floor(idx / 9) + 1;
+  const col = (idx % 9) + 1;
+  return screen.getByRole('gridcell', { name: new RegExp(`^Hàng ${row}, cột ${col},`) });
+}
+
+function press(key: string, init: KeyboardEventInit = {}): void {
+  fireEvent.keyDown(window, { key, ...init });
+}
+
+/** jsdom has no PointerEvent, so React's pointer handlers are driven with mouse events of the same name. */
+function pointer(target: HTMLElement, type: 'pointerdown' | 'pointerup'): void {
+  fireEvent(target, new MouseEvent(type, { bubbles: true, cancelable: true, button: 0 }));
+}
+
+function renderPlay(): void {
+  render(
+    <PlaySession
+      puzzle={puzzle}
+      levelCount={bank.count}
+      onBack={() => {}}
+      onNavigate={() => {}}
+      settings={DEFAULT_SETTINGS}
+      stats={defaultStats()}
+      updateStats={() => {}}
+      dailyId={null}
+      today="2026-10-21"
+      daily={DEFAULT_DAILY}
+      updateDaily={() => {}}
+    />,
+  );
+  fireEvent.click(cell(EMPTY));
+}
+
+beforeEach(() => {
+  window.localStorage.clear();
+  playCue.mockClear();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+describe('PlaySession input', () => {
+  it('places a correct digit with the place cue', () => {
+    renderPlay();
+    press(String(RIGHT));
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY, `số ${RIGHT}`));
+    expect(['place', 'unit']).toContain(playCue.mock.calls.at(-1)![0]);
+  });
+
+  it('plays the error cue for a wrong digit', () => {
+    renderPlay();
+    press(String(WRONG));
+    expect(playCue.mock.calls.at(-1)![0]).toBe('error');
+  });
+
+  it('writes a note instead of a digit while Shift is held', () => {
+    renderPlay();
+    press('!', { code: 'Digit1', shiftKey: true });
+    const target = cell(EMPTY);
+    expect(target.getAttribute('aria-label')).toBe(cellLabel(EMPTY)); // still empty
+    expect(target.textContent).toBe('1'); // ...but carries the note
+    expect(playCue.mock.calls.at(-1)![0]).toBe('note');
+  });
+
+  it('does nothing, silently, on a given cell', () => {
+    renderPlay();
+    const given = puzzle.puzzle.search(/\d/);
+    fireEvent.click(cell(given));
+    playCue.mockClear();
+    press('5');
+    expect(playCue).not.toHaveBeenCalled();
+  });
+});
+
+describe('PlaySession undo / redo', () => {
+  it('redoes what was undone, from the keyboard', () => {
+    renderPlay();
+    press(String(RIGHT));
+    press('u');
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY));
+    press('r');
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY, `số ${RIGHT}`));
+  });
+
+  it('supports Ctrl+Z and Ctrl+Y', () => {
+    renderPlay();
+    press(String(RIGHT));
+    press('z', { ctrlKey: true });
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY));
+    press('y', { ctrlKey: true });
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY, `số ${RIGHT}`));
+  });
+
+  it('keeps the redo button disabled until something is undone', () => {
+    renderPlay();
+    const redo = screen.getByRole('button', { name: /Làm lại/ });
+    expect((redo as HTMLButtonElement).disabled).toBe(true);
+    press(String(RIGHT));
+    press('u');
+    expect((redo as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+describe('PlaySession fill notes', () => {
+  it('fills every empty cell with its candidates, and undoes in one step', () => {
+    renderPlay();
+    const emptyCount = puzzle.puzzle.split('').filter((c) => c === '.').length;
+    const notedCells = (): number =>
+      screen.getAllByRole('gridcell').filter((c) => /trống/.test(c.getAttribute('aria-label')!) && c.textContent !== '').length;
+    expect(notedCells()).toBe(0);
+    fireEvent.click(screen.getByRole('button', { name: /Điền tất cả ghi chú/ }));
+    expect(notedCells()).toBe(emptyCount);
+    press('u');
+    expect(notedCells()).toBe(0);
+  });
+});
+
+describe('PlaySession held digit', () => {
+  it('enters a note after a long press and ignores the click that follows', () => {
+    vi.useFakeTimers();
+    renderPlay();
+    const pad = screen.getByRole('button', { name: new RegExp(`^Số ${RIGHT},`) });
+    pointer(pad, 'pointerdown');
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    pointer(pad, 'pointerup');
+    fireEvent.click(pad);
+    const target = cell(EMPTY);
+    expect(target.getAttribute('aria-label')).toBe(cellLabel(EMPTY)); // not placed
+    expect(target.textContent).toBe(String(RIGHT)); // noted
+  });
+
+  it('places the digit on a normal tap', () => {
+    vi.useFakeTimers();
+    renderPlay();
+    const pad = screen.getByRole('button', { name: new RegExp(`^Số ${RIGHT},`) });
+    pointer(pad, 'pointerdown');
+    pointer(pad, 'pointerup');
+    fireEvent.click(pad);
+    expect(cell(EMPTY).getAttribute('aria-label')).toBe(cellLabel(EMPTY, `số ${RIGHT}`));
+  });
+});
+
+describe('PlaySession completion', () => {
+  function solveEverything(): void {
+    for (let i = 0; i < 81; i++) {
+      if (puzzle.puzzle[i] !== '.') continue;
+      fireEvent.click(cell(i));
+      press(puzzle.solution[i]!);
+    }
+  }
+
+  it('shows the xp earned and the achievements unlocked by the solve', () => {
+    vi.useFakeTimers();
+    renderPlay();
+    solveEverything();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByText('Tuyệt vời!')).toBeTruthy();
+    expect(screen.getByText('+10 XP')).toBeTruthy();
+    expect(screen.getByText('Bước đầu tiên')).toBeTruthy();
+    expect(screen.getByText('Không tì vết')).toBeTruthy();
+    // Recorded, so it is not announced a second time.
+    expect(Object.keys(JSON.parse(window.localStorage.getItem('sudoku:v1:achievements')!))).toEqual(
+      expect.arrayContaining(['solved-1', 'flawless-1']),
+    );
+  });
+
+  it('copies the result when there is no share sheet', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderPlay();
+    solveEverything();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Chia sẻ/ }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText.mock.calls[0]![0]).toMatch(/^Sudoku\nMới bắt đầu · Màn 1 ⭐⭐⭐\n⏱ 00:0\d · ❌ 0 lỗi · 💡 0 gợi ý/);
+    expect(screen.getByText('Đã sao chép kết quả')).toBeTruthy();
+  });
+
+  it('does not reward a puzzle that is merely reopened', () => {
+    vi.useFakeTimers();
+    renderPlay();
+    solveEverything();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    cleanup();
+    renderPlay();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.queryByText('+10 XP')).toBeNull();
+  });
+});

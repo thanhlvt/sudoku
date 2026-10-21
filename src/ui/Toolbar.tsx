@@ -1,12 +1,16 @@
-import { Eraser, Lightbulb, PencilLine, Undo2, type LucideIcon } from 'lucide-react';
+import { Eraser, Lightbulb, PencilLine, Redo2, Undo2, WandSparkles, type LucideIcon } from 'lucide-react';
 
 interface ToolbarProps {
   noteMode: boolean;
   onToggleNoteMode: () => void;
   onUndo: () => void;
   canUndo: boolean;
+  onRedo: () => void;
+  canRedo: boolean;
   onErase: () => void;
   canErase: boolean;
+  /** Write every empty cell's candidates into its notes. */
+  onFillNotes: () => void;
   onHint: () => void;
   /** A hint has been previewed; the next press applies it. */
   hintPending: boolean;
@@ -27,7 +31,7 @@ interface ToolProps {
 
 function Tool({ icon: Icon, label, ariaLabel, onClick, disabled, pressed, tone = 'btn-white', iconClass = '', badge }: ToolProps): JSX.Element {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-1.5">
       <div className="relative">
         <button
           type="button"
@@ -35,9 +39,9 @@ function Tool({ icon: Icon, label, ariaLabel, onClick, disabled, pressed, tone =
           disabled={disabled}
           aria-label={ariaLabel}
           aria-pressed={pressed}
-          className={`btn btn-icon !h-[3.75rem] !w-[3.75rem] !rounded-[1.25rem] ${tone}`}
+          className={`btn btn-icon !h-[3.25rem] !w-[3.25rem] !rounded-2xl ${tone}`}
         >
-          <Icon size={28} strokeWidth={2.75} aria-hidden="true" className={iconClass} />
+          <Icon size={25} strokeWidth={2.75} aria-hidden="true" className={iconClass} />
         </button>
         {badge !== undefined && badge > 0 && (
           <span
@@ -49,7 +53,7 @@ function Tool({ icon: Icon, label, ariaLabel, onClick, disabled, pressed, tone =
           </span>
         )}
       </div>
-      <span className="text-base font-extrabold leading-none">{label}</span>
+      <span className="whitespace-nowrap text-[0.8rem] font-extrabold leading-none max-[359px]:text-[0.7rem]">{label}</span>
     </div>
   );
 }
@@ -59,15 +63,19 @@ export function Toolbar({
   onToggleNoteMode,
   onUndo,
   canUndo,
+  onRedo,
+  canRedo,
   onErase,
   canErase,
+  onFillNotes,
   onHint,
   hintPending,
   hintsUsed,
 }: ToolbarProps): JSX.Element {
   return (
-    <div role="toolbar" aria-label="Công cụ" className="grid grid-cols-4 justify-items-center">
+    <div role="toolbar" aria-label="Công cụ" className="grid grid-cols-6 justify-items-center">
       <Tool icon={Undo2} label="Hoàn tác" ariaLabel="Hoàn tác (U)" onClick={onUndo} disabled={!canUndo} iconClass="text-primary" />
+      <Tool icon={Redo2} label="Làm lại" ariaLabel="Làm lại (R)" onClick={onRedo} disabled={!canRedo} iconClass="text-primary" />
       <Tool icon={Eraser} label="Xóa" ariaLabel="Xóa số (Backspace)" onClick={onErase} disabled={!canErase} iconClass="text-rose-500" />
       <Tool
         icon={PencilLine}
@@ -77,6 +85,13 @@ export function Toolbar({
         pressed={noteMode}
         tone={noteMode ? 'btn-sky' : 'btn-white'}
         iconClass={noteMode ? '' : 'text-sky-600'}
+      />
+      <Tool
+        icon={WandSparkles}
+        label="Ghi hết"
+        ariaLabel="Điền tất cả ghi chú (F)"
+        onClick={onFillNotes}
+        iconClass="text-sky-600"
       />
       <Tool
         icon={Lightbulb}

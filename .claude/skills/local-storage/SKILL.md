@@ -20,7 +20,8 @@ Mọi khoá bắt đầu bằng `sudoku:v1:`. Số `v1` là **schema version**, 
 | `sudoku:v1:stats` | thống kê theo cấp độ |
 | `sudoku:v1:game:<puzzleId>` | ván đang chơi hoặc đã xong của màn đó |
 | `sudoku:v1:last` | `{ puzzleId, at }` để nút "Chơi tiếp" |
-| `sudoku:v1:daily` | `{ streak, longest, lastDate }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy |
+| `sudoku:v1:daily` | `{ streak, longest, lastDate, freezes }` — chuỗi thử thách hàng ngày, `lastDate` là `YYYY-MM-DD` theo giờ máy, `freezes` = đóng băng chuỗi đang giữ (0–2) |
+| `sudoku:v1:achievements` | `Record<id, unlockedAtMs>` — chỉ lưu *thời điểm mở khoá*; tiến độ thành tựu luôn tính lại từ games/stats/daily |
 
 Một khoá riêng cho mỗi ván (thay vì gộp hết vào một object khổng lồ) giúp ghi nhanh và giới hạn
 thiệt hại khi một bản ghi hỏng.
@@ -46,7 +47,10 @@ interface Settings {
   showMistakes: boolean;         // default true
   autoRemoveNotes: boolean;      // default true
   theme: 'system' | 'light' | 'dark';
-  soundEnabled: boolean;         // default false
+  soundEnabled: boolean;         // default true
+  hapticsEnabled: boolean;       // default true
+  boardPalette: 'violet' | 'ocean' | 'forest' | 'sunset';   // default 'violet'; ngoài 'violet' mở khoá theo cấp người chơi
+  seenIntro: boolean;            // default false; hướng dẫn lần đầu đã hiện
 }
 
 interface LevelStats {

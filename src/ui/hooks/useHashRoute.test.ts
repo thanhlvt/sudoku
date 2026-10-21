@@ -9,6 +9,21 @@ describe('parseHash', () => {
     expect(parseHash('#/play/expert-012')).toEqual({ name: 'play', puzzleId: 'expert-012' });
   });
 
+  it('routes the secondary screens', () => {
+    expect(parseHash('#/achievements')).toEqual({ name: 'achievements' });
+    expect(parseHash('#/calendar')).toEqual({ name: 'calendar' });
+    expect(parseHash('#/stats')).toEqual({ name: 'stats' });
+    expect(parseHash('#/learn')).toEqual({ name: 'learn' });
+    expect(parseHash('#/learn/x-wing')).toEqual({ name: 'technique', id: 'x-wing' });
+  });
+
+  it('only accepts a technique the game knows', () => {
+    for (const hash of ['#/learn/nonsense', '#/learn/__proto__', '#/calendar/2026-10']) {
+      const route = parseHash(hash);
+      expect(route.name === 'technique' || route.name === 'calendar', hash).toBe(false);
+    }
+  });
+
   it('sends anything malformed to home, so a crafted link cannot reach a screen with junk input', () => {
     for (const hash of [
       '#/level/master',

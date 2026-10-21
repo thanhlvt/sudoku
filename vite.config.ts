@@ -1,3 +1,5 @@
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -41,12 +43,36 @@ function contentSecurityPolicy(): Plugin {
   };
 }
 
+/**
+ * public/sw.js caches per build: stamp it with an id that changes on every build so an old build's files are
+ * dropped. The Android build runs from the APK and never registers a worker, so it does not ship one.
+ */
+function serviceWorker(mode: string): Plugin {
+  return {
+    name: 'sudoku-service-worker',
+    apply: 'build',
+    closeBundle() {
+      const file = resolve('dist', 'sw.js');
+      try {
+        if (mode === 'capacitor') {
+          rmSync(file, { force: true });
+          return;
+        }
+        writeFileSync(file, readFileSync(file, 'utf8').replace('__BUILD_ID__', Date.now().toString(36)));
+      } catch {
+        // No sw.js in the output (e.g. a custom outDir): nothing to stamp.
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
   // Set by the GitHub Pages workflow (actions/configure-pages) so the build works
   // both locally (base '/') and under a project-page subpath ('/<repo>/').
   base,
   plugins: [
     react(),
+    serviceWorker(mode),
     // The Android WebView gets Capacitor's native bridge injected into the page, which a strict
     // script-src can block; `npm run android:sync` builds with `--mode capacitor` to leave the CSP out.
     ...(mode === 'capacitor' ? [] : [contentSecurityPolicy()]),

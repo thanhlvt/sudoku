@@ -39,7 +39,7 @@ export function solveLogically(grid: Grid, opts?: { allowed?: string[] }): Logic
   return { solved: false, grid: working, steps, stuckAt: cloneGrid(working) };
 }
 
-function applyStep(grid: Grid, cands: Candidates, step: Step): void {
+export function applyStep(grid: Grid, cands: Candidates, step: Step): void {
   for (const { idx, digit } of step.placements) {
     grid[idx] = digit;
     cands[idx] = 0;

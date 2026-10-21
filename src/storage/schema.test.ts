@@ -8,6 +8,7 @@ import {
   DEFAULT_DAILY,
   deleteGame,
   listGames,
+  loadAchievements,
   loadDaily,
   loadGame,
   loadLast,
@@ -20,6 +21,7 @@ import {
   parseSavedGame,
   parseSettings,
   parseStats,
+  saveAchievements,
   saveDaily,
   saveGame,
   saveSettings,
@@ -65,7 +67,7 @@ describe('syncGeneratorVersion', () => {
 
 describe('settings', () => {
   it('round-trips settings', () => {
-    const settings = { ...DEFAULT_SETTINGS, theme: 'dark' as const, soundEnabled: true };
+    const settings = { ...DEFAULT_SETTINGS, theme: 'dark' as const, soundEnabled: false, hapticsEnabled: false };
     saveSettings(settings);
     expect(loadSettings()).toEqual(settings);
   });
@@ -80,14 +82,47 @@ describe('settings', () => {
   });
 });
 
+describe('settings palette and intro flag', () => {
+  it('keeps a known palette and drops an unknown one', () => {
+    writeJSON(KEYS.settings, { boardPalette: 'ocean', seenIntro: true });
+    expect(loadSettings()).toMatchObject({ boardPalette: 'ocean', seenIntro: true });
+    writeJSON(KEYS.settings, { boardPalette: '<script>', seenIntro: 'yes' });
+    expect(loadSettings()).toMatchObject({ boardPalette: 'violet', seenIntro: false });
+  });
+});
+
+describe('achievements record', () => {
+  it('round-trips and starts empty', () => {
+    expect(loadAchievements()).toEqual({});
+    saveAchievements({ 'solved-1': 123, 'streak-7': 456 });
+    expect(loadAchievements()).toEqual({ 'solved-1': 123, 'streak-7': 456 });
+  });
+
+  it('drops malformed entries but keeps the good ones', () => {
+    // Raw text: a `__proto__` key only survives JSON.parse, not an object literal.
+    window.localStorage.setItem(
+      KEYS.achievements,
+      '{"solved-1":5,"__proto__":{"polluted":1},"bad id":2,"x-1":-4,"y-1":"now","ok-2":9}',
+    );
+    const loaded = loadAchievements();
+    expect(loaded).toEqual({ 'solved-1': 5, 'ok-2': 9 });
+    expect(Object.getPrototypeOf(loaded)).toBe(Object.prototype);
+  });
+
+  it('replaces a record of the wrong shape', () => {
+    writeJSON(KEYS.achievements, [1, 2, 3]);
+    expect(loadAchievements()).toEqual({});
+  });
+});
+
 describe('daily state', () => {
   it('defaults to an empty streak', () => {
     expect(loadDaily()).toEqual(DEFAULT_DAILY);
   });
 
   it('round-trips', () => {
-    saveDaily({ streak: 4, longest: 9, lastDate: '2026-10-21' });
-    expect(loadDaily()).toEqual({ streak: 4, longest: 9, lastDate: '2026-10-21' });
+    saveDaily({ streak: 4, longest: 9, lastDate: '2026-10-21', freezes: 1 });
+    expect(loadDaily()).toEqual({ streak: 4, longest: 9, lastDate: '2026-10-21', freezes: 1 });
   });
 });
 
@@ -200,7 +235,7 @@ describe('hostile or corrupt stored data', () => {
     put(KEYS.daily, { streak: '9', longest: -2, lastDate: '2026-10-21<script>' });
     expect(loadDaily()).toEqual(DEFAULT_DAILY);
     put(KEYS.daily, { streak: 3, longest: 5, lastDate: '2026-10-21' });
-    expect(loadDaily()).toEqual({ streak: 3, longest: 5, lastDate: '2026-10-21' });
+    expect(loadDaily()).toEqual({ streak: 3, longest: 5, lastDate: '2026-10-21', freezes: 0 });
     put(KEYS.daily, null);
     expect(loadDaily()).toEqual(DEFAULT_DAILY);
   });

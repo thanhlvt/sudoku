@@ -13,7 +13,7 @@
     "verify": "tsx tools/verify.ts",
     "sounds": "node scripts/make-sounds.mjs",
     "pwa-icons": "node scripts/make-pwa-icons.mjs",
-    "assets": "node scripts/make-icons.mjs && capacitor-assets generate --android --iconBackgroundColor \"#2563eb\" --iconBackgroundColorDark \"#2563eb\" --splashBackgroundColor \"#ffffff\" --splashBackgroundColorDark \"#0f172a\"",
+    "assets": "node scripts/make-icons.mjs && capacitor-assets generate --android --iconBackgroundColor \"#312E81\" --iconBackgroundColorDark \"#312E81\" --splashBackgroundColor \"#ffffff\" --splashBackgroundColorDark \"#0f172a\"",
     "android:sync": "tsc --noEmit && vite build --mode capacitor && cap sync android",
     "android:open": "cap open android",
     "android:debug": "npm run android:sync && node scripts/gradle.mjs assembleDebug",

@@ -1,50 +1,58 @@
 // Renders the source artwork in assets/ (consumed by `npm run assets`) from SVG built here.
+//
+// The artwork is the logo shown in the header of the home screen (`Logo` in src/ui/HomeScreen.tsx): an indigo
+// tile holding a 3x3 grid of coloured cells. Keep the two in sync.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import sharp from 'sharp';
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets');
-const BLUE = '#2563eb';
+const INDIGO = '#312E81';
+const INDIGO_SPLASH_DARK = '#4338CA'; // lifted so the logo stays visible on the dark splash background
 const DARK = '#0f172a';
 
-/** A 9x9 board centred in a 1024 canvas, `size` px wide, with a few filled cells. */
-function board(size, ink, paper, filled) {
-  const x0 = (1024 - size) / 2;
-  const cell = size / 9;
-  const r = size * 0.06;
-  let g = `<rect x="${x0}" y="${x0}" width="${size}" height="${size}" rx="${r}" fill="${paper}"/>`;
-  for (const [row, col] of filled) {
-    g += `<rect x="${x0 + col * cell + cell * 0.14}" y="${x0 + row * cell + cell * 0.14}" width="${cell * 0.72}" height="${cell * 0.72}" rx="${cell * 0.14}" fill="${ink}" opacity="0.9"/>`;
-  }
-  for (let i = 1; i < 9; i++) {
-    const thick = i % 3 === 0;
-    const w = thick ? size * 0.014 : size * 0.005;
-    const p = x0 + i * cell;
-    g += `<line x1="${p}" y1="${x0}" x2="${p}" y2="${x0 + size}" stroke="${ink}" stroke-width="${w}"/>`;
-    g += `<line x1="${x0}" y1="${p}" x2="${x0 + size}" y2="${p}" stroke="${ink}" stroke-width="${w}"/>`;
-  }
-  g += `<rect x="${x0}" y="${x0}" width="${size}" height="${size}" rx="${r}" fill="none" stroke="${ink}" stroke-width="${size * 0.02}"/>`;
+// Cell colours in reading order, as in the home-screen logo.
+const TILES = ['#22C55E', '#FFFFFF', '#F97316', '#0EA5E9', '#A78BFA', '#FFFFFF', '#FFFFFF', '#FACC15', '#F43F5E'];
+
+/**
+ * The 3x3 grid of cells, `span` px wide with its top-left corner at (x0, y0). In the 56-unit logo the cells are 12
+ * wide with a 2 gap, so the grid is 40 units wide.
+ */
+function grid(span, x0, y0) {
+  const unit = span / 40;
+  let g = '';
+  TILES.forEach((fill, i) => {
+    const x = x0 + (i % 3) * 14 * unit;
+    const y = y0 + Math.floor(i / 3) * 14 * unit;
+    g += `<rect x="${x}" y="${y}" width="${12 * unit}" height="${12 * unit}" rx="${3.5 * unit}" fill="${fill}"/>`;
+  });
   return g;
 }
 
-const FILLED = [
-  [0, 1], [0, 5], [1, 3], [2, 7], [3, 0], [3, 4], [4, 2], [4, 6],
-  [5, 8], [6, 1], [6, 5], [7, 3], [8, 4], [8, 7],
-];
+/** The grid centred on the 1024 canvas. */
+const centred = (span) => grid(span, (1024 - span) / 2, (1024 - span) / 2);
+
+/** The whole logo (rounded indigo tile + grid, 8 units of padding), `size` px wide, centred on the canvas. */
+function logo(size, base) {
+  const x0 = (1024 - size) / 2;
+  const unit = size / 56;
+  const tile = `<rect x="${x0}" y="${x0}" width="${size}" height="${size}" rx="${14 * unit}" fill="${base}"/>`;
+  return tile + grid(40 * unit, x0 + 8 * unit, x0 + 8 * unit);
+}
 
 const svg = (inner, bg) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">${bg ? `<rect width="1024" height="1024" fill="${bg}"/>` : ''}${inner}</svg>`;
 
 const files = {
-  // Legacy/full icon: board fills most of the square.
-  'icon-only.png': svg(board(760, BLUE, '#ffffff', FILLED), BLUE),
-  // Adaptive icon layers: foreground stays inside the central ~66% safe zone.
-  'icon-foreground.png': svg(board(600, BLUE, '#ffffff', FILLED), null),
-  'icon-background.png': svg('', BLUE),
-  // Splash screens: board centred on a flat background.
-  'splash.png': svg(board(360, BLUE, '#ffffff', FILLED), '#ffffff'),
-  'splash-dark.png': svg(board(360, '#93c5fd', '#1e293b', FILLED), DARK),
+  // Legacy/full icon: indigo fills the square (the launcher / Play Store applies its own corner mask).
+  'icon-only.png': svg(centred(660), INDIGO),
+  // Adaptive icon layers: the grid stays inside the central circle of the safe zone (~66% of the canvas).
+  'icon-foreground.png': svg(centred(470), null),
+  'icon-background.png': svg('', INDIGO),
+  // Splash screens: the logo centred on a flat background.
+  'splash.png': svg(logo(420, INDIGO), '#ffffff'),
+  'splash-dark.png': svg(logo(420, INDIGO_SPLASH_DARK), DARK),
 };
 
 await mkdir(OUT, { recursive: true });
